@@ -15,6 +15,7 @@ import Translator from './pages/Translator';
 import PdfToExcel from './pages/PdfToExcel';
 import History from './pages/History';
 import SettingsPage from './pages/SettingsPage';
+import FileConverter from './pages/FileConverter';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -45,6 +46,7 @@ const AuthenticatedApp = () => {
         <Route path="ats-checker" element={<ATSChecker />} />
         <Route path="translator" element={<Translator />} />
         <Route path="pdf-to-excel" element={<PdfToExcel />} />
+        <Route path="file-converter" element={<FileConverter />} />
         <Route path="history" element={<History />} />
         <Route path="settings" element={<SettingsPage />} />
       </Route>

@@ -13,6 +13,7 @@ import {
   Zap,
   ChevronLeft,
   Lock,
+  RefreshCw,
 } from "lucide-react";
 
 const navItems = [
@@ -21,6 +22,7 @@ const navItems = [
   { label: "ATS Checker", icon: BarChart3, path: "/dashboard/ats-checker", active: true },
   { label: "Translator", icon: Languages, path: "/dashboard/translator", active: true },
   { label: "PDF to Excel", icon: Table2, path: "/dashboard/pdf-to-excel", active: true },
+  { label: "File Converter", icon: RefreshCw, path: "/dashboard/file-converter", active: true },
   { divider: true },
   { label: "Financial Analyzer", icon: TrendingUp, path: "#", active: false },
   { label: "Chat with Document", icon: MessageSquare, path: "#", active: false },
