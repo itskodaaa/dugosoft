@@ -7,8 +7,8 @@ import UseCases from "../components/landing/UseCases";
 import PricingSection from "../components/landing/PricingSection";
 import Footer from "../components/landing/Footer";
 
-const HERO_IMAGE = "/__generating__/img_6bfc035b42ef.png";
-const FEATURES_IMAGE = "/__generating__/img_1318b67e5c64.png";
+const HERO_IMAGE = "https://media.base44.com/images/public/69c7f271f712e2f213ac7d0b/9bc0b0e7c_generated_11ff43b7.png";
+const FEATURES_IMAGE = "https://media.base44.com/images/public/69c7f271f712e2f213ac7d0b/9441e4f0f_generated_a5609f95.png";
 
 export default function Landing() {
   return (
