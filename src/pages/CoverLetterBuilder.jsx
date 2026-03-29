@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { FileText, Copy, Download, CheckCircle2, Sparkles } from "lucide-react";
+import { FileText, Copy, Download, CheckCircle2, Sparkles, Linkedin } from "lucide-react";
+import LinkedInShareModal from "../components/linkedin/LinkedInShareModal";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 import { useLang } from "@/lib/i18n";
@@ -30,6 +31,7 @@ export default function CoverLetterBuilder() {
   const [generating, setGenerating] = useState(false);
   const [result, setResult] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [showLinkedIn, setShowLinkedIn] = useState(false);
 
   const update = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -181,6 +183,12 @@ Write a complete, ready-to-send cover letter with proper greeting, 3 paragraphs 
                   <Download className="w-3.5 h-3.5" />
                   {t("cl_download_pdf")}
                 </Button>
+                <Button size="sm" className="rounded-full h-8 text-xs gap-1.5 text-white"
+                  style={{ background: "#0A66C2" }}
+                  onClick={() => setShowLinkedIn(true)}>
+                  <Linkedin className="w-3.5 h-3.5" />
+                  {t("li_share_cover")}
+                </Button>
               </div>
             )}
           </div>
@@ -227,6 +235,13 @@ Write a complete, ready-to-send cover letter with proper greeting, 3 paragraphs 
           </div>
         </motion.div>
       </div>
+      <LinkedInShareModal
+        isOpen={showLinkedIn}
+        onClose={() => setShowLinkedIn(false)}
+        content={result}
+        type="cover"
+        metadata={{ jobTitle: form.jobTitle, company: form.company }}
+      />
     </div>
   );
 }

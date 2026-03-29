@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, FileText, BarChart3, Languages, Table2, TrendingUp,
   MessageSquare, Clock, Settings, Zap, ChevronLeft, Lock, RefreshCw,
-  Share2, Activity, PenLine,
+  Share2, Activity, PenLine, CreditCard,
 } from "lucide-react";
 import { useLang } from "@/lib/i18n";
 
@@ -27,6 +27,7 @@ export default function DashboardSidebar({ collapsed, onToggle }) {
     { divider: true },
     { label: t("side_history"),    icon: Clock,            path: "/dashboard/history",           active: true },
     { label: t("side_settings"),   icon: Settings,         path: "/dashboard/settings",          active: true },
+    { label: t("side_pricing"),    icon: CreditCard,       path: "/dashboard/pricing",           active: true },
   ];
 
   return (

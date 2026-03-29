@@ -6,6 +6,7 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { LangProvider } from '@/lib/i18n';
 import CoverLetterBuilder from './pages/CoverLetterBuilder';
+import PricingSettings from './pages/PricingSettings';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 
 import Landing from './pages/Landing';
@@ -57,6 +58,7 @@ const AuthenticatedApp = () => {
         <Route path="cover-letter" element={<CoverLetterBuilder />} />
         <Route path="history" element={<History />} />
         <Route path="settings" element={<SettingsPage />} />
+        <Route path="pricing" element={<PricingSettings />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

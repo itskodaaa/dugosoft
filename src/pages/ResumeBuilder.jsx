@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Sparkles, Copy, Download, Check, PenLine, FileUp } from "lucide-react";
+import { Sparkles, Copy, Download, Check, PenLine, FileUp, Linkedin } from "lucide-react";
+import LinkedInShareModal from "../components/linkedin/LinkedInShareModal";
 import ProcessingBorder from "../components/shared/ProcessingBorder";
 import FileUpload from "../components/shared/FileUpload";
 import InputModeToggle from "../components/shared/InputModeToggle";
@@ -74,6 +75,7 @@ export default function ResumeBuilder() {
   const [generating, setGenerating] = useState(false);
   const [result, setResult] = useState("");
   const [copied, setCopied] = useState(false);
+  const [showLinkedIn, setShowLinkedIn] = useState(false);
 
   const handleChange = (field, value) => setFormData((prev) => ({ ...prev, [field]: value }));
 
@@ -282,6 +284,15 @@ export default function ResumeBuilder() {
                       <Download className="w-3 h-3" />
                       Download DOCX
                     </Button>
+                    <Button
+                      size="sm"
+                      className="rounded-full h-8 text-xs gap-1.5 text-white"
+                      style={{ background: "#0A66C2" }}
+                      onClick={() => setShowLinkedIn(true)}
+                    >
+                      <Linkedin className="w-3 h-3" />
+                      Share to LinkedIn
+                    </Button>
                   </div>
                 </motion.div>
               ) : (
@@ -300,6 +311,13 @@ export default function ResumeBuilder() {
           </ProcessingBorder>
         </motion.div>
       </div>
+      <LinkedInShareModal
+        isOpen={showLinkedIn}
+        onClose={() => setShowLinkedIn(false)}
+        content={result}
+        type="resume"
+        metadata={{ role: formData.targetRole, skills: formData.skills }}
+      />
     </div>
   );
 }

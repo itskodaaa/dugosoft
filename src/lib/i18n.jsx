@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useEffect, useRef } from "react";
+import { toast } from "sonner";
 
 export const LANGUAGES = [
   { code: "en", label: "English", flag: "🇬🇧" },
@@ -7,6 +8,19 @@ export const LANGUAGES = [
   { code: "es", label: "Español", flag: "🇪🇸" },
   { code: "de", label: "Deutsch", flag: "🇩🇪" },
 ];
+
+const SUPPORTED_CODES = LANGUAGES.map((l) => l.code);
+const STORAGE_KEY = "softdugo_lang";
+const USER_PICKED_KEY = "softdugo_lang_user_set";
+
+function detectBrowserLang() {
+  const nav = navigator.languages || [navigator.language || "en"];
+  for (const locale of nav) {
+    const code = locale.split("-")[0].toLowerCase();
+    if (SUPPORTED_CODES.includes(code)) return code;
+  }
+  return "en";
+}
 
 const translations = {
   // Nav
@@ -29,6 +43,7 @@ const translations = {
   side_settings:       { en: "Settings", it: "Impostazioni", fr: "Paramètres", es: "Configuración", de: "Einstellungen" },
   side_financial:      { en: "Financial Analyzer", it: "Analisi finanziaria", fr: "Analyse financière", es: "Análisis financiero", de: "Finanzanalyse" },
   side_chat:           { en: "Chat with Document", it: "Chat con documento", fr: "Chat avec doc", es: "Chat con doc", de: "Dok-Chat" },
+  side_pricing:        { en: "Pricing & Plans", it: "Prezzi e piani", fr: "Tarifs et plans", es: "Precios y planes", de: "Preise & Pläne" },
 
   // Dashboard Home
   dash_welcome:        { en: "Welcome back", it: "Bentornato", fr: "Bon retour", es: "Bienvenido", de: "Willkommen zurück" },
@@ -96,21 +111,55 @@ const translations = {
   cl_download_pdf:     { en: "Download PDF", it: "Scarica PDF", fr: "Télécharger PDF", es: "Descargar PDF", de: "PDF herunterladen" },
   cl_download_docx:    { en: "Download DOCX", it: "Scarica DOCX", fr: "Télécharger DOCX", es: "Descargar DOCX", de: "DOCX herunterladen" },
 
+  // LinkedIn Share
+  li_share_resume:     { en: "Share to LinkedIn", it: "Condividi su LinkedIn", fr: "Partager sur LinkedIn", es: "Compartir en LinkedIn", de: "Auf LinkedIn teilen" },
+  li_share_cover:      { en: "Share to LinkedIn", it: "Condividi su LinkedIn", fr: "Partager sur LinkedIn", es: "Compartir en LinkedIn", de: "Auf LinkedIn teilen" },
+  li_optimize:         { en: "LinkedIn Optimization", it: "Ottimizzazione LinkedIn", fr: "Optimisation LinkedIn", es: "Optimización LinkedIn", de: "LinkedIn-Optimierung" },
+
   // Common
   search_tools:        { en: "Search tools...", it: "Cerca strumenti...", fr: "Rechercher des outils...", es: "Buscar herramientas...", de: "Tools suchen..." },
   copy:                { en: "Copy", it: "Copia", fr: "Copier", es: "Copiar", de: "Kopieren" },
   download:            { en: "Download", it: "Scarica", fr: "Télécharger", es: "Descargar", de: "Herunterladen" },
   processing:          { en: "Processing...", it: "Elaborazione...", fr: "Traitement...", es: "Procesando...", de: "Verarbeitung..." },
+
+  // Auto-detect notification
+  lang_detected:       { en: "Language set to English", it: "Lingua impostata: Italiano", fr: "Langue définie : Français", es: "Idioma establecido: Español", de: "Sprache gesetzt: Deutsch" },
 };
 
 const LangContext = createContext(null);
 
 export function LangProvider({ children }) {
-  const [lang, setLang] = useState(() => localStorage.getItem("softdugo_lang") || "en");
+  const didInit = useRef(false);
+
+  const [lang, setLang] = useState(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) return saved;
+    return detectBrowserLang();
+  });
+
+  // On very first visit (no saved preference), show detection toast
+  useEffect(() => {
+    if (didInit.current) return;
+    didInit.current = true;
+    const userHasPicked = localStorage.getItem(USER_PICKED_KEY);
+    if (!userHasPicked) {
+      const detected = detectBrowserLang();
+      if (detected !== "en") {
+        // Slight delay so toast renders after app mounts
+        setTimeout(() => {
+          const langObj = LANGUAGES.find((l) => l.code === detected);
+          toast.info(`${langObj?.flag ?? ""} ${translations.lang_detected[detected]}`, { duration: 4000 });
+        }, 1200);
+      }
+      localStorage.setItem(STORAGE_KEY, detected);
+      setLang(detected);
+    }
+  }, []);
 
   const switchLang = (code) => {
     setLang(code);
-    localStorage.setItem("softdugo_lang", code);
+    localStorage.setItem(STORAGE_KEY, code);
+    localStorage.setItem(USER_PICKED_KEY, "1"); // Mark as manually set — never override again
   };
 
   const t = (key) => translations[key]?.[lang] ?? translations[key]?.["en"] ?? key;
