@@ -14,6 +14,8 @@ import {
   ChevronLeft,
   Lock,
   RefreshCw,
+  Share2,
+  Activity,
 } from "lucide-react";
 
 const navItems = [
@@ -23,6 +25,8 @@ const navItems = [
   { label: "Translator", icon: Languages, path: "/dashboard/translator", active: true },
   { label: "PDF to Excel", icon: Table2, path: "/dashboard/pdf-to-excel", active: true },
   { label: "File Converter", icon: RefreshCw, path: "/dashboard/file-converter", active: true },
+  { label: "File Sharing", icon: Share2, path: "/dashboard/file-sharing", active: true },
+  { label: "Career Performance", icon: Activity, path: "/dashboard/career-performance", active: true },
   { divider: true },
   { label: "Financial Analyzer", icon: TrendingUp, path: "#", active: false },
   { label: "Chat with Document", icon: MessageSquare, path: "#", active: false },

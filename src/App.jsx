@@ -16,6 +16,8 @@ import PdfToExcel from './pages/PdfToExcel';
 import History from './pages/History';
 import SettingsPage from './pages/SettingsPage';
 import FileConverter from './pages/FileConverter';
+import FileSharing from './pages/FileSharing';
+import CareerPerformance from './pages/CareerPerformance';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -47,6 +49,8 @@ const AuthenticatedApp = () => {
         <Route path="translator" element={<Translator />} />
         <Route path="pdf-to-excel" element={<PdfToExcel />} />
         <Route path="file-converter" element={<FileConverter />} />
+        <Route path="file-sharing" element={<FileSharing />} />
+        <Route path="career-performance" element={<CareerPerformance />} />
         <Route path="history" element={<History />} />
         <Route path="settings" element={<SettingsPage />} />
       </Route>
