@@ -1,42 +1,33 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
-  LayoutDashboard,
-  FileText,
-  BarChart3,
-  Languages,
-  Table2,
-  TrendingUp,
-  MessageSquare,
-  Clock,
-  Settings,
-  Zap,
-  ChevronLeft,
-  Lock,
-  RefreshCw,
-  Share2,
-  Activity,
+  LayoutDashboard, FileText, BarChart3, Languages, Table2, TrendingUp,
+  MessageSquare, Clock, Settings, Zap, ChevronLeft, Lock, RefreshCw,
+  Share2, Activity, PenLine,
 } from "lucide-react";
-
-const navItems = [
-  { label: "Dashboard", icon: LayoutDashboard, path: "/dashboard", active: true },
-  { label: "Resume Builder", icon: FileText, path: "/dashboard/resume-builder", active: true },
-  { label: "ATS Checker", icon: BarChart3, path: "/dashboard/ats-checker", active: true },
-  { label: "Translator", icon: Languages, path: "/dashboard/translator", active: true },
-  { label: "PDF to Excel", icon: Table2, path: "/dashboard/pdf-to-excel", active: true },
-  { label: "File Converter", icon: RefreshCw, path: "/dashboard/file-converter", active: true },
-  { label: "File Sharing", icon: Share2, path: "/dashboard/file-sharing", active: true },
-  { label: "Career Performance", icon: Activity, path: "/dashboard/career-performance", active: true },
-  { divider: true },
-  { label: "Financial Analyzer", icon: TrendingUp, path: "#", active: false },
-  { label: "Chat with Document", icon: MessageSquare, path: "#", active: false },
-  { divider: true },
-  { label: "History", icon: Clock, path: "/dashboard/history", active: true },
-  { label: "Settings", icon: Settings, path: "/dashboard/settings", active: true },
-];
+import { useLang } from "@/lib/i18n";
 
 export default function DashboardSidebar({ collapsed, onToggle }) {
   const location = useLocation();
+  const { t } = useLang();
+
+  const navItems = [
+    { label: t("side_dashboard"),  icon: LayoutDashboard, path: "/dashboard",                   active: true },
+    { label: t("side_resume"),     icon: FileText,         path: "/dashboard/resume-builder",    active: true },
+    { label: t("side_ats"),        icon: BarChart3,        path: "/dashboard/ats-checker",       active: true },
+    { label: t("side_translator"), icon: Languages,        path: "/dashboard/translator",        active: true },
+    { label: t("side_pdf"),        icon: Table2,           path: "/dashboard/pdf-to-excel",      active: true },
+    { label: t("side_converter"),  icon: RefreshCw,        path: "/dashboard/file-converter",   active: true },
+    { label: t("side_sharing"),    icon: Share2,           path: "/dashboard/file-sharing",      active: true },
+    { label: t("side_career"),     icon: Activity,         path: "/dashboard/career-performance",active: true },
+    { label: t("side_cover"),      icon: PenLine,          path: "/dashboard/cover-letter",      active: true },
+    { divider: true },
+    { label: t("side_financial"),  icon: TrendingUp,       path: "#",                            active: false },
+    { label: t("side_chat"),       icon: MessageSquare,    path: "#",                            active: false },
+    { divider: true },
+    { label: t("side_history"),    icon: Clock,            path: "/dashboard/history",           active: true },
+    { label: t("side_settings"),   icon: Settings,         path: "/dashboard/settings",          active: true },
+  ];
 
   return (
     <aside
@@ -93,7 +84,7 @@ export default function DashboardSidebar({ collapsed, onToggle }) {
               } ${collapsed ? "justify-center" : ""}`}
               onClick={isDisabled ? (e) => e.preventDefault() : undefined}
             >
-              <Icon className={`w-4.5 h-4.5 shrink-0 ${isActive ? "text-accent" : ""}`} />
+              <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-accent" : ""}`} />
               {!collapsed && (
                 <>
                   <span className="truncate">{item.label}</span>

@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { BarChart3, AlertTriangle, CheckCircle2, Lightbulb } from "lucide-react";
 import ProcessingBorder from "../components/shared/ProcessingBorder";
+import { useLang } from "@/lib/i18n";
 
 const PLACEHOLDER_RESULT = {
   score: 72,
@@ -20,6 +21,7 @@ const PLACEHOLDER_RESULT = {
 };
 
 export default function ATSChecker() {
+  const { t } = useLang();
   const [resumeText, setResumeText] = useState("");
   const [jobDescription, setJobDescription] = useState("");
   const [processing, setProcessing] = useState(false);
@@ -50,17 +52,17 @@ export default function ATSChecker() {
     <div className="max-w-5xl">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-2xl font-extrabold tracking-tight text-foreground mb-1">
-          ATS Resume Checker
+          {t("ats_title")}
         </h1>
         <p className="text-muted-foreground mb-8">
-          Analyze your resume against a job description for ATS compatibility.
+          {t("ats_subtitle")}
         </p>
       </motion.div>
 
       <div className="grid lg:grid-cols-2 gap-8 mb-8">
         <div>
           <Label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3 block">
-            Your Resume
+            {t("ats_your_resume")}
           </Label>
           <Textarea
             placeholder="Paste your resume text here..."
@@ -71,7 +73,7 @@ export default function ATSChecker() {
         </div>
         <div>
           <Label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3 block">
-            Job Description
+            {t("ats_job_desc")}
           </Label>
           <Textarea
             placeholder="Paste the job description here..."
@@ -90,12 +92,12 @@ export default function ATSChecker() {
         {processing ? (
           <>
             <div className="w-4 h-4 border-2 border-accent-foreground/30 border-t-accent-foreground rounded-full animate-spin" />
-            Analyzing...
+            {t("ats_analyzing")}
           </>
         ) : (
           <>
             <BarChart3 className="w-4 h-4" />
-            Analyze Resume
+            {t("ats_analyze")}
           </>
         )}
       </Button>
@@ -109,7 +111,7 @@ export default function ATSChecker() {
                 {/* Score */}
                 <div className="text-center">
                   <p className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-2">
-                    ATS Compatibility Score
+                    {t("ats_score")}
                   </p>
                   <div className={`text-6xl font-extrabold ${getScoreColor(result.score)} mb-3`}>
                     {result.score}
@@ -131,7 +133,7 @@ export default function ATSChecker() {
                   <div className="p-5 rounded-xl bg-destructive/5 ink-border">
                     <div className="flex items-center gap-2 mb-3">
                       <AlertTriangle className="w-4 h-4 text-destructive" />
-                      <h3 className="text-sm font-semibold text-foreground">Missing Keywords</h3>
+                      <h3 className="text-sm font-semibold text-foreground">{t("ats_missing")}</h3>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {result.missingKeywords.map((kw) => (
@@ -146,7 +148,7 @@ export default function ATSChecker() {
                   <div className="p-5 rounded-xl bg-accent/5 ink-border">
                     <div className="flex items-center gap-2 mb-3">
                       <Lightbulb className="w-4 h-4 text-accent" />
-                      <h3 className="text-sm font-semibold text-foreground">Suggestions</h3>
+                      <h3 className="text-sm font-semibold text-foreground">{t("ats_suggestions")}</h3>
                     </div>
                     <ul className="space-y-2">
                       {result.suggestions.map((s, i) => (

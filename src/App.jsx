@@ -4,6 +4,8 @@ import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
+import { LangProvider } from '@/lib/i18n';
+import CoverLetterBuilder from './pages/CoverLetterBuilder';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 
 import Landing from './pages/Landing';
@@ -18,6 +20,7 @@ import SettingsPage from './pages/SettingsPage';
 import FileConverter from './pages/FileConverter';
 import FileSharing from './pages/FileSharing';
 import CareerPerformance from './pages/CareerPerformance';
+
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -51,6 +54,7 @@ const AuthenticatedApp = () => {
         <Route path="file-converter" element={<FileConverter />} />
         <Route path="file-sharing" element={<FileSharing />} />
         <Route path="career-performance" element={<CareerPerformance />} />
+        <Route path="cover-letter" element={<CoverLetterBuilder />} />
         <Route path="history" element={<History />} />
         <Route path="settings" element={<SettingsPage />} />
       </Route>
@@ -62,12 +66,14 @@ const AuthenticatedApp = () => {
 function App() {
   return (
     <AuthProvider>
+      <LangProvider>
       <QueryClientProvider client={queryClientInstance}>
         <Router>
           <AuthenticatedApp />
         </Router>
         <Toaster />
       </QueryClientProvider>
+      </LangProvider>
     </AuthProvider>
   )
 }
