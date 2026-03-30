@@ -44,6 +44,8 @@ const translations = {
   side_financial:      { en: "Financial Analyzer", it: "Analisi finanziaria", fr: "Analyse financière", es: "Análisis financiero", de: "Finanzanalyse" },
   side_chat:           { en: "Chat with Document", it: "Chat con documento", fr: "Chat avec doc", es: "Chat con doc", de: "Dok-Chat" },
   side_pricing:        { en: "Pricing & Plans", it: "Prezzi e piani", fr: "Tarifs et plans", es: "Precios y planes", de: "Preise & Pläne" },
+  side_mentor:         { en: "Career Mentor", it: "Mentore carriera", fr: "Mentor carrière", es: "Mentor carrera", de: "Karriere-Mentor" },
+  side_merger:         { en: "Merge Docs", it: "Unisci documenti", fr: "Fusionner docs", es: "Unir documentos", de: "Dokumente zusammenführen" },
 
   // Dashboard Home
   dash_welcome:        { en: "Welcome back", it: "Bentornato", fr: "Bon retour", es: "Bienvenido", de: "Willkommen zurück" },

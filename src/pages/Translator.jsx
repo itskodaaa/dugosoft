@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Languages, Copy, Check, Download, Type, FileUp } from "lucide-react";
+import { Languages, Copy, Check, Download, Type, FileUp, AlertCircle } from "lucide-react";
 import ProcessingBorder from "../components/shared/ProcessingBorder";
 import FileUpload from "../components/shared/FileUpload";
 import InputModeToggle from "../components/shared/InputModeToggle";
@@ -76,6 +76,8 @@ const inputModes = [
   { value: "upload", label: "Upload Document", icon: FileUp },
 ];
 
+const FREE_TRANSLATIONS = 3;
+
 export default function Translator() {
   const [inputMode, setInputMode] = useState("paste");
   const [inputText, setInputText] = useState("");
@@ -84,6 +86,7 @@ export default function Translator() {
   const [status, setStatus] = useState("idle");
   const [result, setResult] = useState("");
   const [copied, setCopied] = useState(false);
+  const [translationsUsed, setTranslationsUsed] = useState(0);
 
   const canTranslate = inputMode === "paste" ? inputText.trim().length > 0 : file !== null;
 
@@ -92,11 +95,16 @@ export default function Translator() {
       toast.warning(inputMode === "paste" ? "Please enter some text first" : "Please upload a document first");
       return;
     }
+    if (translationsUsed >= FREE_TRANSLATIONS) {
+      toast.error(`Free plan: ${FREE_TRANSLATIONS} translations used. Upgrade for unlimited.`);
+      return;
+    }
     setStatus("processing");
     setResult("");
     setTimeout(() => {
       setResult(TRANSLATIONS[targetLang] || TRANSLATIONS.english);
       setStatus("complete");
+      setTranslationsUsed((n) => n + 1);
     }, 2000);
   };
 
@@ -119,9 +127,15 @@ export default function Translator() {
         <h1 className="text-2xl font-extrabold tracking-tight text-foreground mb-1">
           Document Translator
         </h1>
-        <p className="text-muted-foreground mb-6">
+        <p className="text-muted-foreground mb-4 text-sm">
           Translate text or full documents between multiple languages with AI accuracy.
         </p>
+        <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 mb-4 text-xs text-amber-700">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          <span><strong>Free plan:</strong> {FREE_TRANSLATIONS - translationsUsed} of {FREE_TRANSLATIONS} translations remaining.
+            {translationsUsed >= FREE_TRANSLATIONS && <> <button className="underline font-semibold ml-1">Upgrade for unlimited</button></>}
+          </span>
+        </div>
       </motion.div>
 
       {/* Mode toggle */}

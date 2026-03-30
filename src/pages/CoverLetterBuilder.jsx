@@ -26,7 +26,8 @@ Sincerely,
 [Your Name]`;
 
 export default function CoverLetterBuilder() {
-  const { t } = useLang();
+  const { t, lang } = useLang();
+  const langName = { en: "English", it: "Italian", fr: "French", es: "Spanish", de: "German" }[lang] || "English";
   const [form, setForm] = useState({ jobTitle: "", company: "", name: "", qualifications: "", experience: "", tone: "Professional" });
   const [generating, setGenerating] = useState(false);
   const [result, setResult] = useState(null);
@@ -42,14 +43,14 @@ export default function CoverLetterBuilder() {
     }
     setGenerating(true);
     setResult(null);
-    const prompt = `Write a ${form.tone.toLowerCase()} professional cover letter for:
+    const prompt = `Write a ${form.tone.toLowerCase()} professional cover letter in ${langName} for:
 - Job Title: ${form.jobTitle}
 - Company: ${form.company}
 - Applicant Name: ${form.name || "the applicant"}
 - Years of Experience: ${form.experience || "several years"}
 - Key Qualifications: ${form.qualifications || "relevant skills and experience"}
 
-Write a complete, ready-to-send cover letter with proper greeting, 3 paragraphs (introduction, experience, closing), and sign-off. Make it specific, compelling, and tailored to the role.`;
+Write a complete, ready-to-send cover letter with proper greeting, 3 paragraphs (introduction, experience, closing), and sign-off. Make it specific, compelling, and tailored to the role. Respond entirely in ${langName}.`;
 
     const text = await base44.integrations.Core.InvokeLLM({ prompt });
     setResult(text);

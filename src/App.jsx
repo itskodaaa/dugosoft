@@ -21,6 +21,8 @@ import SettingsPage from './pages/SettingsPage';
 import FileConverter from './pages/FileConverter';
 import FileSharing from './pages/FileSharing';
 import CareerPerformance from './pages/CareerPerformance';
+import CareerMentor from './pages/CareerMentor';
+import DocumentMerger from './pages/DocumentMerger';
 
 
 const AuthenticatedApp = () => {
@@ -59,6 +61,8 @@ const AuthenticatedApp = () => {
         <Route path="history" element={<History />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="pricing" element={<PricingSettings />} />
+        <Route path="career-mentor" element={<CareerMentor />} />
+        <Route path="document-merger" element={<DocumentMerger />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

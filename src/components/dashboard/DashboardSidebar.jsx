@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, FileText, BarChart3, Languages, Table2, TrendingUp,
   MessageSquare, Clock, Settings, Zap, ChevronLeft, Lock, RefreshCw,
-  Share2, Activity, PenLine, CreditCard,
+  Share2, Activity, PenLine, CreditCard, Bot, Merge,
 } from "lucide-react";
 import { useLang } from "@/lib/i18n";
 
@@ -21,6 +21,8 @@ export default function DashboardSidebar({ collapsed, onToggle }) {
     { label: t("side_sharing"),    icon: Share2,           path: "/dashboard/file-sharing",      active: true },
     { label: t("side_career"),     icon: Activity,         path: "/dashboard/career-performance",active: true },
     { label: t("side_cover"),      icon: PenLine,          path: "/dashboard/cover-letter",      active: true },
+    { label: t("side_merger"),     icon: Merge,            path: "/dashboard/document-merger",   active: true },
+    { label: t("side_mentor"),     icon: Bot,              path: "/dashboard/career-mentor",     active: true },
     { divider: true },
     { label: t("side_financial"),  icon: TrendingUp,       path: "#",                            active: false },
     { label: t("side_chat"),       icon: MessageSquare,    path: "#",                            active: false },

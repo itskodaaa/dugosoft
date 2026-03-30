@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Upload, X, Copy, Mail, CheckCircle2, File, Link2, Clock, Trash2 } from "lucide-react";
+import { Upload, X, Copy, Mail, CheckCircle2, File, Link2, Clock, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,10 +20,15 @@ function generateLink() {
   return `https://softdugo.com/download/${id}`;
 }
 
+// Free plan constants
+const FREE_MAX_FILES = 5;
+const FREE_MAX_SIZE_MB = 25;
+const FREE_MAX_EXPIRY = "3d"; // free plan: links expire in max 3 days
+
 const EXPIRY_OPTIONS = [
-  { label: "1 day", value: "1d" },
-  { label: "3 days", value: "3d" },
-  { label: "7 days", value: "7d" },
+  { label: "1 day", value: "1d", free: true },
+  { label: "3 days", value: "3d", free: true },
+  { label: "7 days", value: "7d", free: false },
 ];
 
 const MOCK_HISTORY = [
@@ -39,13 +44,26 @@ export default function FileSharing() {
   const [recipientEmail, setRecipientEmail] = useState("");
   const [senderEmail, setSenderEmail] = useState("");
   const [message, setMessage] = useState("");
-  const [expiry, setExpiry] = useState("7d");
+  const [expiry, setExpiry] = useState("3d");
   const [creating, setCreating] = useState(false);
   const [result, setResult] = useState(null);
   const [copied, setCopied] = useState(false);
 
   const addFiles = useCallback((newFiles) => {
-    setFiles((prev) => [...prev, ...Array.from(newFiles)]);
+    const arr = Array.from(newFiles);
+    const oversized = arr.filter((f) => f.size > FREE_MAX_SIZE_MB * 1024 * 1024);
+    if (oversized.length > 0) {
+      toast.error(`Free plan: files must be under ${FREE_MAX_SIZE_MB}MB each.`);
+      return;
+    }
+    setFiles((prev) => {
+      const combined = [...prev, ...arr];
+      if (combined.length > FREE_MAX_FILES) {
+        toast.warning(`Free plan: max ${FREE_MAX_FILES} files per transfer. Upgrade for more.`);
+        return combined.slice(0, FREE_MAX_FILES);
+      }
+      return combined;
+    });
   }, []);
 
   const handleDrop = useCallback((e) => {
@@ -90,8 +108,15 @@ export default function FileSharing() {
     <div className="max-w-5xl space-y-8">
       {/* Header banner */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+        {/* Free plan banner */}
+        <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 mb-4 text-xs text-amber-700">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          <span><strong>Free plan:</strong> Up to {FREE_MAX_FILES} files · Max {FREE_MAX_SIZE_MB}MB each · Links expire in max 3 days.
+            <button className="underline ml-1 font-semibold hover:text-amber-900">Upgrade for 7-day links & unlimited files</button>
+          </span>
+        </div>
         <div className="relative rounded-2xl overflow-hidden h-32 mb-8"
-          style={{ background: "linear-gradient(135deg, #f97316 0%, #ea580c 40%, #16a34a 100%)" }}>
+        style={{ background: "linear-gradient(135deg, #f97316 0%, #ea580c 40%, #16a34a 100%)" }}>
           <div className="absolute -top-6 -right-6 w-32 h-32 rounded-full bg-white/10 blur-2xl" />
           <div className="absolute bottom-0 left-20 w-24 h-24 rounded-full bg-green-300/20" />
           <div className="relative z-10 p-7 h-full flex flex-col justify-center">
@@ -228,13 +253,17 @@ export default function FileSharing() {
                   <Label className="text-xs text-muted-foreground mb-2 block">Link Expires In</Label>
                   <div className="flex gap-2">
                     {EXPIRY_OPTIONS.map((opt) => (
-                      <button key={opt.value} onClick={() => setExpiry(opt.value)}
-                        className={`flex-1 py-2 rounded-lg text-xs font-semibold border transition-all ${
+                      <button key={opt.value}
+                        onClick={() => opt.free ? setExpiry(opt.value) : toast.warning("7-day links require a paid plan. Upgrade to unlock.")}
+                        className={`flex-1 py-2 rounded-lg text-xs font-semibold border transition-all relative ${
                           expiry === opt.value
                             ? "border-green-500 bg-green-500/10 text-green-600"
-                            : "border-border text-muted-foreground hover:border-accent/40"
+                            : opt.free
+                            ? "border-border text-muted-foreground hover:border-accent/40"
+                            : "border-border text-muted-foreground/40 cursor-default"
                         }`}>
                         {opt.label}
+                        {!opt.free && <span className="block text-[9px] text-amber-500">Pro</span>}
                       </button>
                     ))}
                   </div>
