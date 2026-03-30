@@ -23,6 +23,7 @@ import FileSharing from './pages/FileSharing';
 import CareerPerformance from './pages/CareerPerformance';
 import CareerMentor from './pages/CareerMentor';
 import DocumentMerger from './pages/DocumentMerger';
+import LinkedInOptimizer from './pages/LinkedInOptimizer';
 
 
 const AuthenticatedApp = () => {
@@ -63,6 +64,7 @@ const AuthenticatedApp = () => {
         <Route path="pricing" element={<PricingSettings />} />
         <Route path="career-mentor" element={<CareerMentor />} />
         <Route path="document-merger" element={<DocumentMerger />} />
+        <Route path="linkedin-optimizer" element={<LinkedInOptimizer />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

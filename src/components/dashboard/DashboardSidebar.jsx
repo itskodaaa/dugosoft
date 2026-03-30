@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, FileText, BarChart3, Languages, Table2, TrendingUp,
   MessageSquare, Clock, Settings, Zap, ChevronLeft, Lock, RefreshCw,
-  Share2, Activity, PenLine, CreditCard, Bot, Merge,
+  Share2, Activity, PenLine, CreditCard, Bot, Merge, Linkedin,
 } from "lucide-react";
 import { useLang } from "@/lib/i18n";
 
@@ -23,6 +23,7 @@ export default function DashboardSidebar({ collapsed, onToggle }) {
     { label: t("side_cover"),      icon: PenLine,          path: "/dashboard/cover-letter",      active: true },
     { label: t("side_merger"),     icon: Merge,            path: "/dashboard/document-merger",   active: true },
     { label: t("side_mentor"),     icon: Bot,              path: "/dashboard/career-mentor",     active: true },
+    { label: "LinkedIn Optimizer", icon: Linkedin,         path: "/dashboard/linkedin-optimizer", active: true },
     { divider: true },
     { label: t("side_financial"),  icon: TrendingUp,       path: "#",                            active: false },
     { label: t("side_chat"),       icon: MessageSquare,    path: "#",                            active: false },
