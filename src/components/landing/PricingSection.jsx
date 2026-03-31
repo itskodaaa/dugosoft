@@ -1,7 +1,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Check, Lock } from "lucide-react";
+import { Check, X, Zap, Star, Crown } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const plans = [
@@ -10,32 +10,66 @@ const plans = [
     price: "$0",
     period: "forever",
     description: "Get started with core features",
+    icon: Zap,
+    color: "text-muted-foreground",
+    highlight: false,
     features: [
-      "3 resume generations / month",
-      "5 ATS checks / month",
-      "Basic translations",
-      "PDF to Excel (limited)",
+      { label: "3 Resume generations / month", included: true },
+      { label: "ATS Checker (basic)", included: true },
+      { label: "1 Cover Letter / month", included: true },
+      { label: "File Sharing (up to 100MB)", included: true },
+      { label: "Translator (500 words)", included: true },
+      { label: "LinkedIn Integration", included: false },
+      { label: "Priority AI model", included: false },
+      { label: "PDF & DOCX export", included: false },
+      { label: "Career Performance analytics", included: false },
     ],
     cta: "Get Started",
-    active: true,
-    highlight: false,
+    ctaStyle: "bg-accent hover:bg-accent/90 text-accent-foreground",
   },
   {
     name: "Pro",
-    price: "—",
-    period: "coming soon",
+    price: "$12",
+    period: "month",
     description: "Unlock the full power of Softdugo",
-    features: [
-      "Unlimited resume generations",
-      "Unlimited ATS checks",
-      "Priority translations",
-      "Advanced PDF extraction",
-      "Financial Analyzer",
-      "Chat with Document",
-    ],
-    cta: "Coming Soon",
-    active: false,
+    icon: Star,
+    color: "text-accent",
     highlight: true,
+    features: [
+      { label: "Unlimited Resume generations", included: true },
+      { label: "ATS Checker (advanced + AI)", included: true },
+      { label: "Unlimited Cover Letters", included: true },
+      { label: "File Sharing (up to 5GB)", included: true },
+      { label: "Translator (unlimited)", included: true },
+      { label: "LinkedIn Integration", included: true },
+      { label: "Priority AI model", included: true },
+      { label: "PDF & DOCX export", included: true },
+      { label: "Career Performance analytics", included: false },
+    ],
+    cta: "Start Pro",
+    ctaStyle: "bg-accent hover:bg-accent/90 text-accent-foreground",
+  },
+  {
+    name: "Business",
+    price: "$29",
+    period: "month",
+    description: "For teams and power users",
+    icon: Crown,
+    color: "text-amber-500",
+    highlight: false,
+    features: [
+      { label: "Everything in Pro", included: true },
+      { label: "Career Performance analytics", included: true },
+      { label: "Unlimited history", included: true },
+      { label: "Team workspace (up to 5 users)", included: true },
+      { label: "API access", included: true },
+      { label: "Priority support", included: true },
+      { label: "Custom branding on exports", included: true },
+      { label: "Bulk processing", included: true },
+      { label: "Dedicated account manager", included: true },
+    ],
+    cta: "Start Business",
+    ctaStyle: "bg-amber-500 hover:bg-amber-500/90 text-white",
   },
 ];
 
@@ -62,51 +96,54 @@ export default function PricingSection() {
           </motion.h2>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto">
-          {plans.map((plan, index) => (
-            <motion.div
-              key={plan.name}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: index * 0.15 }}
-              className={`relative p-8 rounded-xl bg-card ink-border ${
-                plan.highlight ? "ring-2 ring-accent" : ""
-              }`}
-            >
-              {plan.highlight && (
-                <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-accent text-accent-foreground text-xs font-semibold uppercase tracking-widest px-4 py-1 rounded-full">
-                  Recommended
-                </span>
-              )}
-              <h3 className="text-xl font-bold text-foreground mb-1">{plan.name}</h3>
-              <div className="flex items-baseline gap-1 mb-1">
-                <span className="text-4xl font-extrabold text-foreground">{plan.price}</span>
-                <span className="text-sm text-muted-foreground">/ {plan.period}</span>
-              </div>
-              <p className="text-sm text-muted-foreground mb-6">{plan.description}</p>
-              <ul className="space-y-3 mb-8">
-                {plan.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-sm text-foreground">
-                    <Check className="w-4 h-4 text-accent mt-0.5 shrink-0" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              {plan.active ? (
+        <div className="grid md:grid-cols-3 gap-6">
+          {plans.map((plan, index) => {
+            const Icon = plan.icon;
+            return (
+              <motion.div
+                key={plan.name}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+                className={`relative p-7 rounded-2xl bg-card ink-border flex flex-col ${
+                  plan.highlight ? "ring-2 ring-accent shadow-lg shadow-accent/10" : ""
+                }`}
+              >
+                {plan.highlight && (
+                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-accent text-accent-foreground text-xs font-bold uppercase tracking-widest px-4 py-1 rounded-full">
+                    Most Popular
+                  </span>
+                )}
+                <div className="flex items-center gap-2 mb-4">
+                  <Icon className={`w-5 h-5 ${plan.color}`} />
+                  <h3 className="text-lg font-bold text-foreground">{plan.name}</h3>
+                </div>
+                <div className="flex items-baseline gap-1 mb-1">
+                  <span className="text-4xl font-extrabold text-foreground">{plan.price}</span>
+                  <span className="text-sm text-muted-foreground">/ {plan.period}</span>
+                </div>
+                <p className="text-sm text-muted-foreground mb-5">{plan.description}</p>
+                <ul className="space-y-2 flex-1 mb-6">
+                  {plan.features.map((f) => (
+                    <li key={f.label} className="flex items-start gap-2 text-xs">
+                      {f.included ? (
+                        <Check className="w-3.5 h-3.5 text-emerald-500 mt-0.5 shrink-0" />
+                      ) : (
+                        <X className="w-3.5 h-3.5 text-muted-foreground/40 mt-0.5 shrink-0" />
+                      )}
+                      <span className={f.included ? "text-foreground" : "text-muted-foreground/50"}>{f.label}</span>
+                    </li>
+                  ))}
+                </ul>
                 <Link to="/dashboard">
-                  <Button className="w-full bg-accent hover:bg-accent/90 text-accent-foreground rounded-full h-11 font-semibold">
+                  <Button className={`w-full rounded-full h-11 font-semibold ${plan.ctaStyle}`}>
                     {plan.cta}
                   </Button>
                 </Link>
-              ) : (
-                <Button disabled className="w-full rounded-full h-11 font-semibold gap-2">
-                  <Lock className="w-4 h-4" />
-                  {plan.cta}
-                </Button>
-              )}
-            </motion.div>
-          ))}
+              </motion.div>
+            );
+          })}
         </div>
       </div>
     </section>
