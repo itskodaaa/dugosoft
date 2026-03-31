@@ -1,5 +1,5 @@
 import React from "react";
-import { Zap } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export default function Footer() {
   return (
@@ -9,9 +9,7 @@ export default function Footer() {
           {/* Brand */}
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center">
-                <Zap className="w-4 h-4 text-accent-foreground" />
-              </div>
+              <img src="https://media.base44.com/images/public/69c7f271f712e2f213ac7d0b/20bb88239_loogoo.png" alt="Softdugo" className="h-10 w-10 object-contain" />
               <span className="text-lg font-bold tracking-tight text-foreground">softdugo</span>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed">
@@ -25,10 +23,10 @@ export default function Footer() {
               Product
             </h4>
             <ul className="space-y-2 text-sm">
-              <li><a href="#" className="text-foreground hover:text-accent transition-colors">Resume Builder</a></li>
-              <li><a href="#" className="text-foreground hover:text-accent transition-colors">ATS Checker</a></li>
-              <li><a href="#" className="text-foreground hover:text-accent transition-colors">Translator</a></li>
-              <li><a href="#" className="text-foreground hover:text-accent transition-colors">PDF to Excel</a></li>
+              <li><Link to="/dashboard/resume-builder" className="text-foreground hover:text-accent transition-colors">Resume Builder</Link></li>
+              <li><Link to="/dashboard/ats-checker" className="text-foreground hover:text-accent transition-colors">ATS Checker</Link></li>
+              <li><Link to="/dashboard/translator" className="text-foreground hover:text-accent transition-colors">Translator</Link></li>
+              <li><Link to="/dashboard/pdf-to-excel" className="text-foreground hover:text-accent transition-colors">PDF to Excel</Link></li>
             </ul>
           </div>
 
@@ -38,9 +36,9 @@ export default function Footer() {
               Company
             </h4>
             <ul className="space-y-2 text-sm">
-              <li><a href="#" className="text-foreground hover:text-accent transition-colors">About</a></li>
-              <li><a href="#" className="text-foreground hover:text-accent transition-colors">Privacy Policy</a></li>
-              <li><a href="#" className="text-foreground hover:text-accent transition-colors">Contact</a></li>
+              <li><Link to="/about" className="text-foreground hover:text-accent transition-colors">About</Link></li>
+              <li><Link to="/privacy" className="text-foreground hover:text-accent transition-colors">Privacy Policy</Link></li>
+              <li><Link to="/contact" className="text-foreground hover:text-accent transition-colors">Contact</Link></li>
             </ul>
           </div>
 

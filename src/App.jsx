@@ -10,6 +10,9 @@ import PricingSettings from './pages/PricingSettings';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 
 import Landing from './pages/Landing';
+import About from './pages/About';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import Contact from './pages/Contact';
 import DashboardLayout from './components/dashboard/DashboardLayout';
 import DashboardHome from './pages/DashboardHome';
 import ResumeBuilder from './pages/ResumeBuilder';
@@ -49,6 +52,9 @@ const AuthenticatedApp = () => {
   return (
     <Routes>
       <Route path="/" element={<Landing />} />
+      <Route path="/about" element={<About />} />
+      <Route path="/privacy" element={<PrivacyPolicy />} />
+      <Route path="/contact" element={<Contact />} />
       <Route path="/dashboard" element={<DashboardLayout />}>
         <Route index element={<DashboardHome />} />
         <Route path="resume-builder" element={<ResumeBuilder />} />
