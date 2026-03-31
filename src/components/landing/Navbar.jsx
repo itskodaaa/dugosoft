@@ -13,10 +13,7 @@ export default function Navbar() {
     <nav className="fixed top-0 left-0 right-0 z-50 glass">
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center">
-            <Zap className="w-4 h-4 text-accent-foreground" />
-          </div>
-          <span className="text-lg font-bold tracking-tight text-foreground">softdugo</span>
+          <img src="https://media.base44.com/images/public/69c7f271f712e2f213ac7d0b/20bb88239_loogoo.png" alt="Softdugo" className="h-10 w-10 object-contain" />
         </Link>
 
         {/* Desktop */}

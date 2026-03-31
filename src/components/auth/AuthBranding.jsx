@@ -24,9 +24,7 @@ export default function AuthBranding() {
 
       {/* Logo */}
       <div className="flex items-center gap-3 relative z-10">
-        <div className="w-10 h-10 rounded-2xl bg-accent flex items-center justify-center shadow-lg">
-          <Zap className="w-5 h-5 text-white" />
-        </div>
+        <img src="https://media.base44.com/images/public/69c7f271f712e2f213ac7d0b/20bb88239_loogoo.png" alt="Softdugo" className="h-12 w-12 object-contain" />
         <span className="text-white font-bold text-xl tracking-tight">Softdugo</span>
       </div>
 

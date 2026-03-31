@@ -43,16 +43,12 @@ export default function DashboardSidebar({ collapsed, onToggle }) {
       <div className="h-16 flex items-center justify-between px-4 border-b border-border">
         {!collapsed && (
           <Link to="/" className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center">
-              <Zap className="w-3.5 h-3.5 text-accent-foreground" />
-            </div>
+            <img src="https://media.base44.com/images/public/69c7f271f712e2f213ac7d0b/20bb88239_loogoo.png" alt="Softdugo" className="h-9 w-9 object-contain" />
             <span className="text-base font-bold tracking-tight text-foreground">softdugo</span>
           </Link>
         )}
         {collapsed && (
-          <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center mx-auto">
-            <Zap className="w-3.5 h-3.5 text-accent-foreground" />
-          </div>
+          <img src="https://media.base44.com/images/public/69c7f271f712e2f213ac7d0b/20bb88239_loogoo.png" alt="Softdugo" className="h-8 w-8 object-contain mx-auto" />
         )}
         <button
           onClick={onToggle}
