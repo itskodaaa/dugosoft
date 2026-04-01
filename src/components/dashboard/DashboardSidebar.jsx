@@ -4,7 +4,7 @@ import {
   LayoutDashboard, FileText, BarChart3, Languages, Table2, TrendingUp,
   MessageSquare, Clock, Settings, Zap, ChevronLeft, Lock, RefreshCw,
   Share2, Activity, PenLine, CreditCard, Bot, Merge, Linkedin,
-  PieChart, FolderOpen, ScanText, LayoutTemplate,
+  PieChart, FolderOpen, ScanText, LayoutTemplate, Target, Users, Globe,
 } from "lucide-react";
 import { useLang } from "@/lib/i18n";
 
@@ -29,6 +29,9 @@ export default function DashboardSidebar({ collapsed, onToggle }) {
     { label: "OCR & Converter",     icon: ScanText,         path: "/dashboard/ocr-tools",           active: true },
     { label: "My Documents",        icon: FolderOpen,       path: "/dashboard/my-documents",        active: true },
     { label: "Analytics",           icon: PieChart,         path: "/dashboard/analytics",           active: true },
+    { label: "AI Career Matcher",   icon: Target,           path: "/dashboard/career-matcher",      active: true },
+    { label: "CV Vault",            icon: Globe,            path: "/dashboard/cv-vault",             active: true },
+    { label: "Workspaces",          icon: Users,            path: "/dashboard/workspaces",           active: true },
     { divider: true },
     { label: t("side_financial"),  icon: TrendingUp,       path: "#",                            active: false },
     { label: t("side_chat"),       icon: MessageSquare,    path: "#",                            active: false },

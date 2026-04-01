@@ -31,6 +31,9 @@ import Analytics from './pages/Analytics';
 import MyDocuments from './pages/MyDocuments';
 import ResumeBuilderV2 from './pages/ResumeBuilderV2';
 import OCRTools from './pages/OCRTools';
+import CareerMatcher from './pages/CareerMatcher';
+import Workspaces from './pages/Workspaces';
+import CVVault from './pages/CVVault';
 
 
 const AuthenticatedApp = () => {
@@ -79,6 +82,9 @@ const AuthenticatedApp = () => {
         <Route path="my-documents" element={<MyDocuments />} />
         <Route path="resume-builder-v2" element={<ResumeBuilderV2 />} />
         <Route path="ocr-tools" element={<OCRTools />} />
+        <Route path="career-matcher" element={<CareerMatcher />} />
+        <Route path="workspaces" element={<Workspaces />} />
+        <Route path="cv-vault" element={<CVVault />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
