@@ -27,6 +27,10 @@ import CareerPerformance from './pages/CareerPerformance';
 import CareerMentor from './pages/CareerMentor';
 import DocumentMerger from './pages/DocumentMerger';
 import LinkedInOptimizer from './pages/LinkedInOptimizer';
+import Analytics from './pages/Analytics';
+import MyDocuments from './pages/MyDocuments';
+import ResumeBuilderV2 from './pages/ResumeBuilderV2';
+import OCRTools from './pages/OCRTools';
 
 
 const AuthenticatedApp = () => {
@@ -71,6 +75,10 @@ const AuthenticatedApp = () => {
         <Route path="career-mentor" element={<CareerMentor />} />
         <Route path="document-merger" element={<DocumentMerger />} />
         <Route path="linkedin-optimizer" element={<LinkedInOptimizer />} />
+        <Route path="analytics" element={<Analytics />} />
+        <Route path="my-documents" element={<MyDocuments />} />
+        <Route path="resume-builder-v2" element={<ResumeBuilderV2 />} />
+        <Route path="ocr-tools" element={<OCRTools />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
