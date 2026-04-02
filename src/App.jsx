@@ -34,6 +34,8 @@ import OCRTools from './pages/OCRTools';
 import CareerMatcher from './pages/CareerMatcher';
 import Workspaces from './pages/Workspaces';
 import CVVault from './pages/CVVault';
+import ChatWithDocument from './pages/ChatWithDocument';
+import LinkedInImport from './pages/LinkedInImport';
 
 
 const AuthenticatedApp = () => {
@@ -85,6 +87,8 @@ const AuthenticatedApp = () => {
         <Route path="career-matcher" element={<CareerMatcher />} />
         <Route path="workspaces" element={<Workspaces />} />
         <Route path="cv-vault" element={<CVVault />} />
+        <Route path="chat-with-document" element={<ChatWithDocument />} />
+        <Route path="linkedin-import" element={<LinkedInImport />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
