@@ -5,7 +5,7 @@ import {
   MessageSquare, Clock, Settings, ChevronLeft, Lock, RefreshCw,
   Share2, Activity, PenLine, CreditCard, Merge, Linkedin,
   PieChart, FolderOpen, ScanText, LayoutTemplate, Target, Users, Globe,
-  MessageCircle, Bot, Zap
+  MessageCircle, Bot, Zap, Briefcase, Sparkles
 } from "lucide-react";
 
 const NAV_GROUPS = [
@@ -32,6 +32,7 @@ const NAV_GROUPS = [
     items: [
       { label: "Resume Builder",    icon: FileText,        path: "/dashboard/resume-builder-v2" },
       { label: "Cover Letter",      icon: PenLine,         path: "/dashboard/cover-letter" },
+      { label: "Cover Letter AI",   icon: Sparkles,        path: "/dashboard/cover-letter-architect" },
       { label: "ATS Checker",       icon: BarChart3,       path: "/dashboard/ats-checker" },
       { label: "LinkedIn Import",   icon: Linkedin,        path: "/dashboard/linkedin-import" },
       { label: "CV Vault",          icon: Globe,           path: "/dashboard/cv-vault" },
@@ -55,6 +56,7 @@ const NAV_GROUPS = [
   {
     label: "Workspace",
     items: [
+      { label: "Job Tracker",        icon: Briefcase,       path: "/dashboard/job-tracker" },
       { label: "Workspaces",        icon: Users,           path: "/dashboard/workspaces" },
       { label: "Analytics",         icon: PieChart,        path: "/dashboard/analytics" },
       { label: "History",           icon: Clock,           path: "/dashboard/history" },

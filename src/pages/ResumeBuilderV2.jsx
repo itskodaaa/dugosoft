@@ -3,12 +3,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import {
   GripVertical, Plus, Trash2, Download, Eye, Crown, Lock, Check, ChevronDown, ChevronUp,
-  Type, Palette, Layout, Layers
+  Type, Palette, Layout, Layers, Globe2, Sparkles
 } from "lucide-react";
+import { base44 } from "@/api/base44Client";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { toast } from "sonner";
 
 // ─── Templates ────────────────────────────────────────────────────────────────
 const TEMPLATES = [
@@ -24,6 +25,24 @@ const TEMPLATES = [
 
 const INDUSTRIES = ["All", "Tech", "Creative", "Finance", "Marketing", "Healthcare", "Any"];
 const LEVELS = ["All", "Entry-level", "Mid-level", "Senior", "Executive"];
+
+const TARGET_REGIONS = [
+  { id: "none",   flag: "🌐", label: "No Region",    desc: "Standard format" },
+  { id: "us",     flag: "🇺🇸", label: "USA / Global",  desc: "Achievement-focused" },
+  { id: "uk",     flag: "🇬🇧", label: "United Kingdom", desc: "UK ATS standards" },
+  { id: "eu",     flag: "🇪🇺", label: "EU Standard",    desc: "Europass-compatible" },
+  { id: "it",     flag: "🇮🇹", label: "Italy",          desc: "Italian CV norms" },
+  { id: "de",     flag: "🇩🇪", label: "Germany",        desc: "Lebenslauf format" },
+];
+
+function RegionBadge({ region }) {
+  if (!region || region.id === "none") return null;
+  return (
+    <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 font-semibold border border-blue-200">
+      {region.flag} {region.label}
+    </span>
+  );
+}
 
 // ─── Default resume data ──────────────────────────────────────────────────────
 const DEFAULT_RESUME = {
@@ -187,7 +206,61 @@ export default function ResumeBuilderV2() {
   const [levelFilter, setLevelFilter] = useState("All");
   const [resume, setResume] = useState(DEFAULT_RESUME);
   const [activeTab, setActiveTab] = useState("content"); // content | style
+  const [targetRegion, setTargetRegion] = useState(TARGET_REGIONS[0]);
+  const [adapting, setAdapting] = useState(false);
   const isPremiumUser = false;
+
+  const adaptToRegion = async (region) => {
+    setTargetRegion(region);
+    if (region.id === "none") return;
+    setAdapting(true);
+    const result = await base44.integrations.Core.InvokeLLM({
+      prompt: `You are an expert resume coach specializing in international CV standards.
+
+Adapt this resume to match the professional norms for: ${region.label} (${region.desc})
+
+Current Resume Summary: ${resume.summary}
+Current Experience Bullets:
+${resume.sections.find(s => s.id === "experience")?.items.map(i => `- ${i.desc}`).join("\n") || ""}
+
+Rules for ${region.label}:
+${region.id === "uk" ? "- UK ATS: avoid personal pronouns, use 'competency-based' language, include key achievements, no photos" : ""}
+${region.id === "eu" ? "- Europass: structured format, include language skills, focus on competencies and qualifications" : ""}
+${region.id === "it" ? "- Italian CV: formal third-person references acceptable, include date of birth optionally, academic focus, Euro terminology" : ""}
+${region.id === "de" ? "- German Lebenslauf: chronological, formal, precise dates, include nationality, structured headings" : ""}
+${region.id === "us" ? "- US format: achievement-focused, quantified results, ATS-optimized keywords, no photos" : ""}
+
+Return JSON:
+{
+  "summary": "adapted professional summary",
+  "experience_items": [{ "id": "e1", "desc": "adapted bullet" }, { "id": "e2", "desc": "adapted bullet" }]
+}`,
+      response_json_schema: {
+        type: "object",
+        properties: {
+          summary: { type: "string" },
+          experience_items: { type: "array", items: { type: "object", properties: { id: { type: "string" }, desc: { type: "string" } } } }
+        }
+      }
+    });
+
+    setResume(p => ({
+      ...p,
+      summary: result.summary || p.summary,
+      sections: p.sections.map(sec => {
+        if (sec.id !== "experience") return sec;
+        return {
+          ...sec,
+          items: sec.items.map(item => {
+            const adapted = result.experience_items?.find(e => e.id === item.id);
+            return adapted ? { ...item, desc: adapted.desc } : item;
+          })
+        };
+      })
+    }));
+    setAdapting(false);
+    toast.success(`Resume adapted for ${region.label}!`);
+  };
 
   const handleSelectTemplate = (tpl) => {
     if (tpl.premium && !isPremiumUser) {
@@ -267,7 +340,10 @@ export default function ResumeBuilderV2() {
     <div className="max-w-7xl">
       <div className="flex items-center justify-between mb-5">
         <div>
-          <h1 className="text-2xl font-extrabold text-foreground">Resume Editor</h1>
+          <h1 className="text-2xl font-extrabold text-foreground flex items-center gap-2">
+            Resume Editor
+            <RegionBadge region={targetRegion} />
+          </h1>
           <p className="text-xs text-muted-foreground mt-0.5">Template: <span className="font-semibold">{selectedTemplate.name}</span></p>
         </div>
         <div className="flex gap-2">
@@ -285,7 +361,11 @@ export default function ResumeBuilderV2() {
         <div className="lg:col-span-2 space-y-4">
           {/* Tabs */}
           <div className="flex gap-1 bg-muted rounded-lg p-1">
-            {[{ key: "content", label: "Content", icon: Type }, { key: "style", label: "Style", icon: Palette }].map(({ key, label, icon: Icon }) => (
+            {[
+              { key: "content", label: "Content", icon: Type },
+              { key: "style", label: "Style", icon: Palette },
+              { key: "region", label: "Region", icon: Globe2 }
+            ].map(({ key, label, icon: Icon }) => (
               <button key={key} onClick={() => setActiveTab(key)}
                 className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-md text-xs font-semibold transition-all ${activeTab === key ? "bg-card shadow text-foreground" : "text-muted-foreground hover:text-foreground"}`}>
                 <Icon className="w-3.5 h-3.5" />{label}
@@ -327,6 +407,37 @@ export default function ResumeBuilderV2() {
               <button onClick={addSection} className="w-full py-3 rounded-xl border-2 border-dashed border-border hover:border-accent/50 text-xs text-muted-foreground hover:text-accent transition-colors flex items-center justify-center gap-1.5 font-medium">
                 <Plus className="w-3.5 h-3.5" /> Add Section
               </button>
+            </div>
+          )}
+
+          {activeTab === "region" && (
+            <div className="bg-card ink-border rounded-xl p-5 space-y-4">
+              <div className="flex items-center gap-2 mb-1">
+                <Globe2 className="w-4 h-4 text-blue-500" />
+                <p className="text-sm font-bold text-foreground">Target Region</p>
+              </div>
+              <p className="text-xs text-muted-foreground">AI will automatically reformat your resume to match local ATS standards and professional expectations.</p>
+              <div className="space-y-2">
+                {TARGET_REGIONS.map(region => (
+                  <button key={region.id} onClick={() => adaptToRegion(region)}
+                    className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${
+                      targetRegion.id === region.id ? "border-blue-400 bg-blue-50" : "border-border hover:border-blue-300"
+                    }`}>
+                    <span className="text-xl">{region.flag}</span>
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">{region.label}</p>
+                      <p className="text-xs text-muted-foreground">{region.desc}</p>
+                    </div>
+                    {targetRegion.id === region.id && <Check className="w-4 h-4 text-blue-500 ml-auto" />}
+                  </button>
+                ))}
+              </div>
+              {adapting && (
+                <div className="flex items-center gap-2 p-3 rounded-xl bg-blue-50 border border-blue-200">
+                  <div className="w-4 h-4 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin" />
+                  <p className="text-xs font-semibold text-blue-700">AI is adapting your resume for {targetRegion.label}...</p>
+                </div>
+              )}
             </div>
           )}
 

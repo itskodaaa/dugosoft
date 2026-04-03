@@ -36,6 +36,8 @@ import Workspaces from './pages/Workspaces';
 import CVVault from './pages/CVVault';
 import ChatWithDocument from './pages/ChatWithDocument';
 import LinkedInImport from './pages/LinkedInImport';
+import CoverLetterArchitect from './pages/CoverLetterArchitect';
+import JobTracker from './pages/JobTracker';
 
 
 const AuthenticatedApp = () => {
@@ -89,6 +91,8 @@ const AuthenticatedApp = () => {
         <Route path="cv-vault" element={<CVVault />} />
         <Route path="chat-with-document" element={<ChatWithDocument />} />
         <Route path="linkedin-import" element={<LinkedInImport />} />
+        <Route path="cover-letter-architect" element={<CoverLetterArchitect />} />
+        <Route path="job-tracker" element={<JobTracker />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
