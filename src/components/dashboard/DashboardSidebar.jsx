@@ -5,7 +5,7 @@ import {
   MessageSquare, Clock, Settings, ChevronLeft, Lock, RefreshCw,
   Share2, Activity, PenLine, CreditCard, Merge, Linkedin,
   PieChart, FolderOpen, ScanText, LayoutTemplate, Target, Users, Globe,
-  MessageCircle, Bot, Zap, Briefcase, Sparkles
+  MessageCircle, Bot, Zap, Briefcase, Sparkles, Brain
 } from "lucide-react";
 
 const NAV_GROUPS = [
@@ -42,6 +42,7 @@ const NAV_GROUPS = [
     label: "Career AI",
     items: [
       { label: "Career Matcher",    icon: Target,          path: "/dashboard/career-matcher" },
+      { label: "Interview Prep",    icon: Brain,           path: "/dashboard/interview-prep" },
       { label: "Career Mentor",     icon: Bot,             path: "/dashboard/career-mentor" },
       { label: "Career Performance",icon: Activity,        path: "/dashboard/career-performance" },
       { label: "LinkedIn Optimizer",icon: TrendingUp,      path: "/dashboard/linkedin-optimizer" },

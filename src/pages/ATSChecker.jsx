@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { BarChart3, AlertTriangle, CheckCircle2, Lightbulb } from "lucide-react";
+import { BarChart3, AlertTriangle, CheckCircle2, Lightbulb, Share2 } from "lucide-react";
 import ProcessingBorder from "../components/shared/ProcessingBorder";
+import ShareModal from "../components/shared/ShareModal";
+import JobUrlParser from "../components/shared/JobUrlParser";
 import { useLang } from "@/lib/i18n";
 
 const PLACEHOLDER_RESULT = {
@@ -22,10 +23,11 @@ const PLACEHOLDER_RESULT = {
 
 export default function ATSChecker() {
   const { t } = useLang();
-  const [resumeText, setResumeText] = useState("");
+  const [resumeText, setResumeText]     = useState("");
   const [jobDescription, setJobDescription] = useState("");
-  const [processing, setProcessing] = useState(false);
-  const [result, setResult] = useState(null);
+  const [processing, setProcessing]     = useState(false);
+  const [result, setResult]             = useState(null);
+  const [showShare, setShowShare]       = useState(false);
 
   const handleAnalyze = () => {
     setProcessing(true);
@@ -51,13 +53,23 @@ export default function ATSChecker() {
   return (
     <div className="max-w-5xl">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-2xl font-extrabold tracking-tight text-foreground mb-1">
-          {t("ats_title")}
-        </h1>
-        <p className="text-muted-foreground mb-8">
-          {t("ats_subtitle")}
-        </p>
+        <div className="flex items-start justify-between flex-wrap gap-3 mb-1">
+          <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
+            {t("ats_title")}
+          </h1>
+          {result && (
+            <Button variant="outline" size="sm" onClick={() => setShowShare(true)} className="rounded-full h-8 text-xs gap-1.5">
+              <Share2 className="w-3.5 h-3.5" /> Share Results
+            </Button>
+          )}
+        </div>
+        <p className="text-muted-foreground mb-6">{t("ats_subtitle")}</p>
       </motion.div>
+
+      {/* Job URL Parser */}
+      <div className="mb-6">
+        <JobUrlParser onParsed={({ description }) => setJobDescription(description)} />
+      </div>
 
       <div className="grid lg:grid-cols-2 gap-8 mb-8">
         <div>
@@ -76,7 +88,7 @@ export default function ATSChecker() {
             {t("ats_job_desc")}
           </Label>
           <Textarea
-            placeholder="Paste the job description here..."
+            placeholder="Paste the job description here, or use the URL parser above..."
             value={jobDescription}
             onChange={(e) => setJobDescription(e.target.value)}
             className="min-h-[200px] bg-card ink-border resize-none"
@@ -108,7 +120,6 @@ export default function ATSChecker() {
           <div className="p-6">
             {result ? (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
-                {/* Score */}
                 <div className="text-center">
                   <p className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-2">
                     {t("ats_score")}
@@ -129,7 +140,6 @@ export default function ATSChecker() {
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-6">
-                  {/* Missing keywords */}
                   <div className="p-5 rounded-xl bg-destructive/5 ink-border">
                     <div className="flex items-center gap-2 mb-3">
                       <AlertTriangle className="w-4 h-4 text-destructive" />
@@ -144,7 +154,6 @@ export default function ATSChecker() {
                     </div>
                   </div>
 
-                  {/* Suggestions */}
                   <div className="p-5 rounded-xl bg-accent/5 ink-border">
                     <div className="flex items-center gap-2 mb-3">
                       <Lightbulb className="w-4 h-4 text-accent" />
@@ -169,6 +178,14 @@ export default function ATSChecker() {
           </div>
         </ProcessingBorder>
       )}
+
+      <ShareModal
+        open={showShare}
+        onClose={() => setShowShare(false)}
+        title="Share ATS Results"
+        shareText={result ? `My resume scored ${result.score}/100 on the ATS Checker! Check yours at Softdugo.` : ""}
+        emailSubject="My ATS Resume Score"
+      />
     </div>
   );
 }

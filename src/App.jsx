@@ -38,6 +38,7 @@ import ChatWithDocument from './pages/ChatWithDocument';
 import LinkedInImport from './pages/LinkedInImport';
 import CoverLetterArchitect from './pages/CoverLetterArchitect';
 import JobTracker from './pages/JobTracker';
+import InterviewPrep from './pages/InterviewPrep';
 
 
 const AuthenticatedApp = () => {
@@ -93,6 +94,7 @@ const AuthenticatedApp = () => {
         <Route path="linkedin-import" element={<LinkedInImport />} />
         <Route path="cover-letter-architect" element={<CoverLetterArchitect />} />
         <Route path="job-tracker" element={<JobTracker />} />
+        <Route path="interview-prep" element={<InterviewPrep />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
+import JobUrlParser from "../components/shared/JobUrlParser";
 
 const USER_PLAN = "business"; // "free" | "premium" | "business"
 const canUse = USER_PLAN !== "free";
@@ -127,6 +128,12 @@ Return a JSON object with:
         <div className="grid lg:grid-cols-5 gap-6">
           {/* Input Panel */}
           <div className="lg:col-span-2 space-y-5">
+            {/* Job URL Parser */}
+            <JobUrlParser onParsed={({ description, title }) => {
+              setJobText(description);
+              setInputMode("text");
+            }} />
+
             {/* Input mode toggle */}
             <div className="flex gap-1 bg-muted rounded-lg p-1">
               {[{ k: "text", label: "Paste Text" }, { k: "url", label: "Job URL" }].map(({ k, label }) => (
