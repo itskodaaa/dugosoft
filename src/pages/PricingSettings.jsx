@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Crown, Zap, Star, CreditCard, Lock, X, ChevronRight, AlertCircle } from "lucide-react";
+import { CheckCircle2, Crown, Zap, Star, CreditCard, Lock, X, ChevronRight, AlertCircle, Shield, Users, Headphones, Gauge, Package } from "lucide-react";
 import { toast } from "sonner";
 
 const PLANS = [
@@ -54,12 +54,13 @@ const PLANS = [
   {
     id: "business",
     name: "Business",
-    price: 29,
+    price: 49,
     billing: "/ month",
     icon: Crown,
     color: "text-amber-500",
     bg: "bg-amber-500/5",
     border: "border-amber-400/40",
+    badge: "Best for Teams",
     features: [
       { label: "Everything in Pro", included: true },
       { label: "Career Performance analytics", included: true },
@@ -214,6 +215,11 @@ export default function PricingSettings() {
                   <span className="bg-accent text-accent-foreground text-xs font-bold px-3 py-1 rounded-full">Most Popular</span>
                 </div>
               )}
+              {plan.badge && !isActive && plan.id !== "pro" && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                  <span className="bg-amber-500 text-white text-xs font-bold px-3 py-1 rounded-full">{plan.badge}</span>
+                </div>
+              )}
               {isActive && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                   <span className="bg-foreground text-background text-xs font-bold px-3 py-1 rounded-full">Current Plan</span>
@@ -272,6 +278,31 @@ export default function PricingSettings() {
         })}
       </div>
 
+      {/* Trust & Security */}
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            { icon: Shield, label: "256-bit SSL", sub: "Bank-grade encryption" },
+            { icon: Lock, label: "PCI DSS", sub: "Compliant payments" },
+            { icon: Headphones, label: "24/7 Support", sub: "Always here to help" },
+            { icon: Gauge, label: "99.9% Uptime", sub: "SLA guaranteed" },
+          ].map((t, i) => {
+            const Icon = t.icon;
+            return (
+              <div key={i} className="bg-card ink-border rounded-xl p-3 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center shrink-0">
+                  <Icon className="w-4 h-4 text-accent" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-foreground">{t.label}</p>
+                  <p className="text-[10px] text-muted-foreground">{t.sub}</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </motion.div>
+
       {/* Payment Methods */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
         <div className="bg-card ink-border rounded-2xl p-6">
@@ -306,8 +337,17 @@ export default function PricingSettings() {
             <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
               className="border-t border-border pt-4 mt-4 space-y-3">
               <p className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-                <Lock className="w-3.5 h-3.5 text-muted-foreground" /> Add new card (mock)
+                <Lock className="w-3.5 h-3.5 text-muted-foreground" /> Add new card
               </p>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[10px] text-muted-foreground">Powered by</span>
+                <span className="text-[11px] font-black text-[#635BFF]">stripe</span>
+                <div className="flex gap-1">
+                  {["VISA","MC","AMEX"].map(b => (
+                    <span key={b} className="text-[9px] font-black bg-muted px-1.5 py-0.5 rounded text-muted-foreground">{b}</span>
+                  ))}
+                </div>
+              </div>
               <div className="grid grid-cols-1 gap-3">
                 <input
                   placeholder="Card number (e.g. 4242 4242 4242 4242)"

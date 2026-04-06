@@ -17,22 +17,19 @@ export default function DashboardLayout() {
         />
       )}
 
-      {/* Sidebar - hidden on mobile unless open */}
-      <div className={`lg:block ${mobileOpen ? "block" : "hidden"}`}>
+      {/* Sidebar */}
+      <div className={`fixed inset-y-0 left-0 z-40 transition-transform duration-300 lg:translate-x-0 ${mobileOpen ? "translate-x-0" : "-translate-x-full"}`}>
         <DashboardSidebar
           collapsed={collapsed}
           onToggle={() => setCollapsed(!collapsed)}
+          onMobileClose={() => setMobileOpen(false)}
         />
       </div>
 
       {/* Main content */}
-      <div
-        className={`transition-all duration-300 ${
-          collapsed ? "lg:ml-16" : "lg:ml-60"
-        }`}
-      >
+      <div className={`transition-all duration-300 ${collapsed ? "lg:ml-16" : "lg:ml-60"}`}>
         <DashboardHeader onMenuToggle={() => setMobileOpen(!mobileOpen)} />
-        <main className="p-6 lg:p-8">
+        <main className="p-4 sm:p-6 lg:p-8 min-h-[calc(100vh-4rem)]">
           <Outlet />
         </main>
       </div>

@@ -5,7 +5,7 @@ import {
   MessageSquare, Clock, Settings, ChevronLeft, Lock, RefreshCw,
   Share2, Activity, PenLine, CreditCard, Merge, Linkedin,
   PieChart, FolderOpen, ScanText, LayoutTemplate, Target, Users, Globe,
-  MessageCircle, Bot, Zap, Briefcase, Sparkles, Brain
+  MessageCircle, Bot, Zap, Briefcase, Sparkles, Brain, X
 } from "lucide-react";
 
 const NAV_GROUPS = [
@@ -42,6 +42,7 @@ const NAV_GROUPS = [
     label: "Career AI",
     items: [
       { label: "Career Matcher",    icon: Target,          path: "/dashboard/career-matcher" },
+      { label: "Skill Gap Analysis",icon: BarChart3,       path: "/dashboard/skill-gap" },
       { label: "Interview Prep",    icon: Brain,           path: "/dashboard/interview-prep" },
       { label: "Career Mentor",     icon: Bot,             path: "/dashboard/career-mentor" },
       { label: "Career Performance",icon: Activity,        path: "/dashboard/career-performance" },
@@ -72,24 +73,29 @@ const NAV_GROUPS = [
   },
 ];
 
-export default function DashboardSidebar({ collapsed, onToggle }) {
+export default function DashboardSidebar({ collapsed, onToggle, onMobileClose }) {
   const location = useLocation();
 
   return (
-    <aside className={`fixed left-0 top-0 h-full bg-card border-r border-border z-40 flex flex-col transition-all duration-300 ${collapsed ? "w-16" : "w-60"}`}>
+    <aside className={`h-full bg-card border-r border-border flex flex-col transition-all duration-300 ${collapsed ? "w-16" : "w-60"} overflow-hidden`}>
       {/* Logo */}
       <div className="h-16 flex items-center justify-between px-4 border-b border-border shrink-0">
         {!collapsed ? (
-          <Link to="/" className="flex items-center gap-2">
-            <img src="https://media.base44.com/images/public/69c7f271f712e2f213ac7d0b/20bb88239_loogoo.png" alt="Softdugo" className="h-9 w-9 object-contain" />
-            <span className="text-base font-bold tracking-tight text-foreground">softdugo</span>
+          <Link to="/" className="flex items-center gap-2 min-w-0">
+            <img src="https://media.base44.com/images/public/69c7f271f712e2f213ac7d0b/20bb88239_loogoo.png" alt="Softdugo" className="h-9 w-9 object-contain shrink-0" />
+            <span className="text-base font-bold tracking-tight text-foreground truncate">softdugo</span>
           </Link>
         ) : (
           <img src="https://media.base44.com/images/public/69c7f271f712e2f213ac7d0b/20bb88239_loogoo.png" alt="Softdugo" className="h-8 w-8 object-contain mx-auto" />
         )}
-        <button onClick={onToggle} className={`hidden lg:flex items-center justify-center w-6 h-6 rounded-md hover:bg-muted transition-colors ${collapsed ? "mx-auto mt-2" : ""}`}>
-          <ChevronLeft className={`w-4 h-4 text-muted-foreground transition-transform ${collapsed ? "rotate-180" : ""}`} />
-        </button>
+        <div className="flex items-center gap-1">
+          <button onClick={onMobileClose} className="lg:hidden flex items-center justify-center w-6 h-6 rounded-md hover:bg-muted transition-colors">
+            <X className="w-4 h-4 text-muted-foreground" />
+          </button>
+          <button onClick={onToggle} className={`hidden lg:flex items-center justify-center w-6 h-6 rounded-md hover:bg-muted transition-colors`}>
+            <ChevronLeft className={`w-4 h-4 text-muted-foreground transition-transform ${collapsed ? "rotate-180" : ""}`} />
+          </button>
+        </div>
       </div>
 
       {/* Nav */}
@@ -104,7 +110,7 @@ export default function DashboardSidebar({ collapsed, onToggle }) {
               const Icon = item.icon;
               const isActive = location.pathname === item.path || (item.path !== "/dashboard" && location.pathname.startsWith(item.path));
               return (
-                <Link key={item.path} to={item.path}
+                <Link key={item.path} to={item.path} onClick={onMobileClose}
                   className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 mb-0.5 ${
                     isActive ? "bg-accent/10 text-accent" : "text-muted-foreground hover:text-foreground hover:bg-muted"
                   } ${collapsed ? "justify-center" : ""}`}>

@@ -6,7 +6,7 @@ import {
   Linkedin, Globe, ArrowRight, Clock, Zap,
   FolderOpen, RefreshCw, Star, Crown, Share2,
   TrendingUp, CheckCircle2, Sparkles, Bot, Merge,
-  ScanText, PenLine, Briefcase, Users, PieChart, X
+  ScanText, PenLine, Briefcase, Users, PieChart, X, Brain
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -24,6 +24,8 @@ const QUICK_TOOLS = [
   { icon: TrendingUp,    title: "LinkedIn Optimizer",    desc: "Optimize your LinkedIn profile with AI",path: "/dashboard/linkedin-optimizer",  color: "text-sky-500",       bg: "bg-sky-500/10",       gradient: "from-sky-500 to-blue-400" },
   { icon: ScanText,      title: "OCR & Extract",         desc: "Extract text from scanned documents",   path: "/dashboard/ocr-tools",           color: "text-violet-500",    bg: "bg-violet-500/10",    gradient: "from-violet-500 to-purple-400" },
   { icon: Briefcase,     title: "Job Tracker",           desc: "Track your job applications",           path: "/dashboard/job-tracker",         color: "text-teal-500",      bg: "bg-teal-500/10",      gradient: "from-teal-500 to-cyan-400" },
+  { icon: BarChart3,     title: "Skill Gap Analysis",    desc: "Find & bridge skill gaps with courses", path: "/dashboard/skill-gap",           color: "text-purple-500",    bg: "bg-purple-500/10",    gradient: "from-purple-500 to-accent" },
+  { icon: Brain,         title: "Interview Prep",        desc: "AI-powered interview practice",         path: "/dashboard/interview-prep",      color: "text-rose-500",      bg: "bg-rose-500/10",      gradient: "from-rose-500 to-pink-400" },
 ];
 
 const RECENT_ACTIVITY = [
@@ -117,7 +119,7 @@ export default function DashboardHome() {
 
       {/* Stats */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
-        className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
         {STATS.map((s, i) => {
           const Icon = s.icon;
           return (
@@ -182,7 +184,7 @@ export default function DashboardHome() {
           </h2>
           <span className="text-xs text-muted-foreground">{QUICK_TOOLS.length} tools available</span>
         </div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
           {QUICK_TOOLS.map((tool, i) => {
             const Icon = tool.icon;
             return (

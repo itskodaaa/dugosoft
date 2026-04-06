@@ -8,6 +8,7 @@ import { Sparkles, Linkedin, Copy, Check, ChevronDown, ChevronUp, User, Tag, Fil
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 import { useLang } from "@/lib/i18n";
+import SectionShareBar from "@/components/shared/SectionShareBar";
 
 export default function LinkedInOptimizer() {
   const { lang } = useLang();
@@ -181,6 +182,7 @@ Return pure JSON only.`;
                   </div>
                 ))}
               </div>
+              <SectionShareBar text={result.headlines?.join("\n") || ""} label="headlines" />
             </ResultSection>
 
             {/* Skills */}
@@ -197,13 +199,7 @@ Return pure JSON only.`;
                   </span>
                 ))}
               </div>
-              <button
-                onClick={() => copyText(result.skills?.join(", "), "skills")}
-                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-              >
-                {copiedKey === "skills" ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
-                Copy all skills
-              </button>
+              <SectionShareBar text={`My LinkedIn Skills to Add:\n${result.skills?.join(", ")}`} label="skills" />
             </ResultSection>
 
             {/* About */}
@@ -224,6 +220,7 @@ Return pure JSON only.`;
                   {copiedKey === "about" ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
                 </button>
               </div>
+              <SectionShareBar text={result.about || ""} label="About section" />
             </ResultSection>
           </motion.div>
         )}
