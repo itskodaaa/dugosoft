@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Sparkles, Linkedin, Copy, Check, ChevronDown, ChevronUp, User, Tag, FileText } from "lucide-react";
+import { Sparkles, Linkedin, Copy, Check, ChevronDown, ChevronUp, User, Tag, FileText, Share2, ExternalLink } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 import { useLang } from "@/lib/i18n";
@@ -130,6 +130,40 @@ Return pure JSON only.`;
       <AnimatePresence>
         {result && (
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+            {/* Share bar */}
+            <div className="flex items-center justify-between flex-wrap gap-2 p-3 rounded-xl bg-[#0A66C2]/5 border border-[#0A66C2]/20">
+              <p className="text-xs text-muted-foreground font-medium">Optimization complete — share your updated profile</p>
+              <div className="flex gap-2">
+                <a
+                  href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.origin)}`}
+                  target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 h-8 px-3 rounded-full text-xs font-bold text-white transition-all"
+                  style={{ background: "#0A66C2" }}
+                >
+                  <Linkedin className="w-3.5 h-3.5" /> Share on LinkedIn
+                </a>
+                <button
+                  onClick={() => {
+                    const text = `LinkedIn Profile Optimized!\n\nHeadlines:\n${result.headlines?.join("\n")}\n\nSkills: ${result.skills?.join(", ")}`;
+                    const href = `https://mail.google.com/mail/?view=cm&fs=1&su=My+LinkedIn+Profile+Optimization&body=${encodeURIComponent(text)}`;
+                    window.open(href, "_blank");
+                  }}
+                  className="flex items-center gap-1.5 h-8 px-3 rounded-full text-xs font-bold text-white bg-[#EA4335] hover:bg-[#EA4335]/90 transition-all"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" /> Gmail
+                </button>
+                <button
+                  onClick={() => {
+                    const text = `My LinkedIn optimization summary:\n${result.headlines?.[0]}\n\nSkills: ${result.skills?.join(", ")}`;
+                    navigator.clipboard.writeText(text);
+                    toast.success("Optimization summary copied!");
+                  }}
+                  className="flex items-center gap-1.5 h-8 px-3 rounded-full text-xs font-semibold border border-border bg-card hover:bg-muted transition-all text-foreground"
+                >
+                  <Copy className="w-3.5 h-3.5" /> Copy All
+                </button>
+              </div>
+            </div>
             {/* Headlines */}
             <ResultSection
               icon={<User className="w-4 h-4 text-[#0A66C2]" />}

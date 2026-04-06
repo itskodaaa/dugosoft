@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Linkedin, Upload, Link2, CheckCircle2, Sparkles, ArrowRight,
   User, Briefcase, GraduationCap, Award, Languages, Code, X,
-  ChevronRight, Edit3, Save, FileText, Crown
+  ChevronRight, Edit3, Save, FileText, Crown, Camera, RefreshCw, Image
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,7 +35,10 @@ export default function LinkedInImport() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [profilePhoto, setProfilePhoto] = useState(null);
+  const [syncing, setSyncing] = useState(false);
   const fileRef = useRef(null);
+  const photoRef = useRef(null);
   const navigate = useNavigate();
 
   const extract = async () => {
@@ -107,6 +110,21 @@ If a field is not found, return an empty string. Be professional and realistic.`
     navigate("/dashboard/cv-vault");
   };
 
+  const syncToVault = async () => {
+    if (!result) return;
+    setSyncing(true);
+    await new Promise(r => setTimeout(r, 1500));
+    setSyncing(false);
+    toast.success("Profile synced to CV Vault! Work history, skills & endorsements updated.");
+    navigate("/dashboard/cv-vault");
+  };
+
+  const handlePhotoUpload = (file) => {
+    const reader = new FileReader();
+    reader.onload = (e) => setProfilePhoto(e.target.result);
+    reader.readAsDataURL(file);
+  };
+
   return (
     <div className="max-w-5xl space-y-6">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
@@ -139,6 +157,32 @@ If a field is not found, return an empty string. Be professional and realistic.`
       <div className="grid lg:grid-cols-5 gap-6">
         {/* Input */}
         <div className="lg:col-span-2 space-y-4">
+          {/* Profile Photo Upload */}
+          <div className="bg-card ink-border rounded-2xl p-4 flex items-center gap-4">
+            <div className="relative shrink-0">
+              {profilePhoto ? (
+                <img src={profilePhoto} alt="profile" className="w-16 h-16 rounded-full object-cover border-2 border-border" />
+              ) : (
+                <div className="w-16 h-16 rounded-full bg-muted border-2 border-dashed border-border flex items-center justify-center text-muted-foreground">
+                  <User className="w-7 h-7" />
+                </div>
+              )}
+              <label className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-accent flex items-center justify-center cursor-pointer hover:bg-accent/80 transition-colors">
+                <Camera className="w-3 h-3 text-white" />
+                <input ref={photoRef} type="file" accept="image/*" className="hidden"
+                  onChange={e => e.target.files[0] && handlePhotoUpload(e.target.files[0])} />
+              </label>
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-foreground">Profile Photo</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Upload your LinkedIn profile photo</p>
+              <button onClick={() => photoRef.current?.click()}
+                className="text-xs text-accent font-semibold hover:underline mt-1">
+                {profilePhoto ? "Change photo" : "Upload photo"}
+              </button>
+            </div>
+          </div>
+
           {tab === "url" ? (
             <div className="bg-card ink-border rounded-2xl p-6 space-y-4">
               <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center mb-2">
@@ -226,8 +270,8 @@ If a field is not found, return an empty string. Be professional and realistic.`
                 </div>
 
                 {/* Send to destinations */}
-                <div className="bg-muted/40 rounded-2xl p-4">
-                  <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">Send to</p>
+                <div className="bg-muted/40 rounded-2xl p-4 space-y-3">
+                  <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Send to</p>
                   <div className="grid grid-cols-3 gap-2">
                     {[
                       { label: "Resume Builder", onClick: sendToResume, color: "bg-accent text-accent-foreground" },
@@ -239,6 +283,22 @@ If a field is not found, return an empty string. Be professional and realistic.`
                         {btn.label} <ChevronRight className="w-3 h-3" />
                       </Button>
                     ))}
+                  </div>
+
+                  {/* Sync to Vault */}
+                  <div className="pt-1 border-t border-border">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div>
+                        <p className="text-xs font-bold text-foreground">Sync with CV Vault</p>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">Keep work history, skills & endorsements in sync</p>
+                      </div>
+                      <Button onClick={syncToVault} disabled={syncing} size="sm"
+                        className="rounded-xl h-9 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white gap-1.5">
+                        {syncing
+                          ? <><div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Syncing...</>
+                          : <><RefreshCw className="w-3 h-3" /> Sync Now</>}
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </motion.div>

@@ -3,8 +3,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Globe, Plus, Download, Share2, Eye, Trash2, Languages, Crown,
   FileText, CheckCircle2, Sparkles, X, Clock, Copy, GitCompare,
-  Tag, Building2, Briefcase, Stethoscope, Code, TrendingUp, PenLine
+  Tag, Building2, Briefcase, Stethoscope, Code, TrendingUp, PenLine,
+  Camera, RefreshCw
 } from "lucide-react";
+import CVShareModal from "../components/shared/CVShareModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -182,15 +184,20 @@ export default function CVVault() {
   const [previewCV, setPreviewCV]     = useState(null);
   const [comparing, setComparing]     = useState(false);
   const [addingNew, setAddingNew]     = useState(false);
+  const [shareTarget, setShareTarget] = useState(null);
+  const [photoMap, setPhotoMap]       = useState({}); // cvId -> dataURL
 
   const filtered = filterIndustry === "all" ? cvs : cvs.filter(c => c.industry === filterIndustry);
 
   const deleteCV = (id) => { setCvs(p => p.filter(c => c.id !== id)); toast.success("Deleted."); };
 
-  const shareCV = (cv) => {
-    const link = `https://softdugo.com/cv/${Math.random().toString(36).slice(2, 8)}`;
-    navigator.clipboard.writeText(link);
-    toast.success("Share link copied to clipboard!");
+  const handlePhotoUpload = (cvId, file) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setPhotoMap(p => ({ ...p, [cvId]: e.target.result }));
+      toast.success("Profile photo updated!");
+    };
+    reader.readAsDataURL(file);
   };
 
   if (!canUse) {
@@ -259,7 +266,20 @@ export default function CVVault() {
                 className="group bg-card ink-border rounded-2xl p-5 hover:shadow-md transition-all flex flex-col gap-3">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-2xl shrink-0">{cv.flag}</span>
+                    {/* Profile photo */}
+                    <div className="relative shrink-0">
+                      {photoMap[cv.id] ? (
+                        <img src={photoMap[cv.id]} alt="profile" className="w-10 h-10 rounded-full object-cover border-2 border-border" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center border-2 border-dashed border-border text-muted-foreground text-lg">
+                          {cv.flag}
+                        </div>
+                      )}
+                      <label title="Upload photo" className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-accent flex items-center justify-center cursor-pointer hover:bg-accent/80 transition-colors">
+                        <Camera className="w-2.5 h-2.5 text-white" />
+                        <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files[0] && handlePhotoUpload(cv.id, e.target.files[0])} />
+                      </label>
+                    </div>
                     <div className="min-w-0">
                       <p className="text-sm font-bold text-foreground truncate">{cv.title}</p>
                       <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5"><Clock className="w-3 h-3" />{cv.date}</p>
@@ -283,7 +303,7 @@ export default function CVVault() {
                     className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg hover:bg-muted text-xs font-medium text-muted-foreground hover:text-foreground transition-colors">
                     <Eye className="w-3.5 h-3.5" /> View
                   </button>
-                  <button onClick={() => shareCV(cv)} title="Share"
+                  <button onClick={() => setShareTarget(cv)} title="Share"
                     className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg hover:bg-muted text-xs font-medium text-muted-foreground hover:text-foreground transition-colors">
                     <Share2 className="w-3.5 h-3.5" /> Share
                   </button>
@@ -353,6 +373,13 @@ export default function CVVault() {
             onClose={() => setAddingNew(false)}
             onAdd={(cv) => { setCvs(p => [...p, cv]); toast.success("CV version saved!"); }}
           />
+        )}
+      </AnimatePresence>
+
+      {/* Share Modal */}
+      <AnimatePresence>
+        {shareTarget && (
+          <CVShareModal open={!!shareTarget} onClose={() => setShareTarget(null)} cv={shareTarget} />
         )}
       </AnimatePresence>
     </div>
