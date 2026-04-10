@@ -40,6 +40,7 @@ import CoverLetterArchitect from './pages/CoverLetterArchitect';
 import JobTracker from './pages/JobTracker';
 import InterviewPrep from './pages/InterviewPrep';
 import SkillGapAnalysis from './pages/SkillGapAnalysis';
+import AIAssistant from './pages/AIAssistant';
 
 
 const AuthenticatedApp = () => {
@@ -97,6 +98,7 @@ const AuthenticatedApp = () => {
         <Route path="job-tracker" element={<JobTracker />} />
         <Route path="interview-prep" element={<InterviewPrep />} />
         <Route path="skill-gap" element={<SkillGapAnalysis />} />
+        <Route path="ai-assistant" element={<AIAssistant />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

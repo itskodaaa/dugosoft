@@ -5,7 +5,7 @@ import {
   MessageSquare, Clock, Settings, ChevronLeft, Lock, RefreshCw,
   Share2, Activity, PenLine, CreditCard, Merge, Linkedin,
   PieChart, FolderOpen, ScanText, LayoutTemplate, Target, Users, Globe,
-  MessageCircle, Bot, Zap, Briefcase, Sparkles, Brain, X
+  MessageCircle, Bot, Zap, Briefcase, Sparkles, Brain, X, Wand2
 } from "lucide-react";
 
 const NAV_GROUPS = [
@@ -53,6 +53,7 @@ const NAV_GROUPS = [
     label: "Chat",
     items: [
       { label: "Chat with Document",icon: MessageCircle,   path: "/dashboard/chat-with-document" },
+      { label: "AI Assistant",       icon: Wand2,           path: "/dashboard/ai-assistant" },
     ]
   },
   {
