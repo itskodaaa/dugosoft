@@ -1,10 +1,34 @@
 import React, { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Download } from "lucide-react";
 import { motion } from "framer-motion";
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis,
   CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from "recharts";
-import { FileText, Languages, BarChart3, RefreshCw, TrendingUp, Zap, Crown } from "lucide-react";
+import { FileText, Languages, BarChart3, RefreshCw, TrendingUp, Zap, Crown, ArrowUp, ArrowDown } from "lucide-react";
+import { toast } from "sonner";
+
+const INSIGHTS = [
+  { label: "Most used tool",       value: "AI Translator",   trend: null },
+  { label: "Peak usage day",       value: "Tuesday",         trend: null },
+  { label: "Translations growth",  value: "+25%",           trend: "up" },
+  { label: "Resumes this month",   value: "9 built",         trend: "up" },
+];
+
+function exportCSV() {
+  const rows = [
+    ["Month", "Resumes", "Translations", "Conversions", "ATS Checks"],
+    ...MONTHLY_DATA.map(r => [r.month, r.resumes, r.translations, r.conversions, r.ats])
+  ];
+  const csv = rows.map(r => r.join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "dugosoft-analytics.csv"; a.click();
+  URL.revokeObjectURL(url);
+  toast.success("CSV exported!");
+}
 
 const MONTHLY_DATA = [
   { month: "Oct", resumes: 2, translations: 5, conversions: 3, ats: 1 },
@@ -70,15 +94,34 @@ export default function Analytics() {
   return (
     <div className="max-w-6xl space-y-8">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-        <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center justify-between mb-1 flex-wrap gap-3">
           <h1 className="text-2xl font-extrabold tracking-tight text-foreground">Analytics</h1>
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-xs text-amber-700 font-medium">
-            <Crown className="w-3.5 h-3.5" />
-            Free Plan
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-xs text-amber-700 font-medium">
+              <Crown className="w-3.5 h-3.5" />
+              Free Plan
+            </div>
+            <Button size="sm" onClick={exportCSV} variant="outline" className="rounded-full gap-1.5 text-xs h-8">
+              <Download className="w-3.5 h-3.5" /> Export CSV
+            </Button>
           </div>
         </div>
         <p className="text-muted-foreground text-sm">Track your monthly usage and plan limits.</p>
       </motion.div>
+
+      {/* Insights */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {INSIGHTS.map((ins, i) => (
+          <div key={i} className="bg-card ink-border rounded-2xl p-4">
+            <p className="text-xs text-muted-foreground mb-1">{ins.label}</p>
+            <div className="flex items-center gap-1">
+              <p className="text-sm font-bold text-foreground">{ins.value}</p>
+              {ins.trend === "up" && <ArrowUp className="w-3.5 h-3.5 text-green-500" />}
+              {ins.trend === "down" && <ArrowDown className="w-3.5 h-3.5 text-red-500" />}
+            </div>
+          </div>
+        ))}
+      </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

@@ -168,7 +168,7 @@ export default function Landing() {
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-500/10 border border-green-500/20 text-green-600 text-xs font-bold mb-4">
               <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" /> Live Platform Activity
             </div>
-            <h2 className="text-3xl font-black text-foreground mb-3">Softdugo in Action, Right Now</h2>
+            <h2 className="text-3xl font-black text-foreground mb-3">Dugosoft in Action, Right Now</h2>
             <p className="text-muted-foreground max-w-xl mx-auto">Real-time activity across the platform as teams worldwide get work done.</p>
           </motion.div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -281,7 +281,7 @@ export default function Landing() {
             <div className="absolute inset-0 opacity-20" style={{ backgroundImage: "radial-gradient(circle at 30% 50%, rgba(255,255,255,0.2) 0%, transparent 60%), radial-gradient(circle at 70% 50%, rgba(0,0,0,0.2) 0%, transparent 50%)" }} />
             <div className="relative">
               <h2 className="text-3xl sm:text-4xl font-black mb-4">Ready to Transform Your Career?</h2>
-              <p className="text-white/80 text-lg mb-8 max-w-xl mx-auto">Join 50,000+ professionals using Softdugo to convert, optimize, and advance globally.</p>
+              <p className="text-white/80 text-lg mb-8 max-w-xl mx-auto">Join 50,000+ professionals using Dugosoft to convert, optimize, and advance globally.</p>
               <div className="flex flex-wrap gap-4 justify-center">
                 <Link to="/dashboard">
                   <Button size="lg" className="bg-white text-primary hover:bg-white/95 font-bold rounded-full px-10 h-12 gap-2">

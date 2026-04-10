@@ -1,8 +1,9 @@
 import React from "react";
-import { Menu, Search, Bell, Settings } from "lucide-react";
+import { Menu, Search, Settings } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
 import LanguageSwitcher from "@/components/shared/LanguageSwitcher";
+import NotificationPanel from "@/components/shared/NotificationPanel";
 import { useLang } from "@/lib/i18n";
 
 export default function DashboardHeader({ onMenuToggle }) {
@@ -32,10 +33,7 @@ export default function DashboardHeader({ onMenuToggle }) {
           {t("nav_operational")}
         </div>
         <LanguageSwitcher />
-        <button className="w-9 h-9 rounded-xl hover:bg-muted flex items-center justify-center transition-colors relative">
-          <Bell className="w-4 h-4 text-muted-foreground" />
-          <span className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-accent" />
-        </button>
+        <NotificationPanel />
         <Link to="/dashboard/settings">
           <button className="w-9 h-9 rounded-xl hover:bg-muted flex items-center justify-center transition-colors">
             <Settings className="w-4 h-4 text-muted-foreground" />

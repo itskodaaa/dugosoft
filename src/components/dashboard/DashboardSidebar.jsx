@@ -83,7 +83,7 @@ export default function DashboardSidebar({ collapsed, onToggle, onMobileClose })
         {!collapsed ? (
           <Link to="/" className="flex items-center gap-2 min-w-0">
             <img src="https://media.base44.com/images/public/69c7f271f712e2f213ac7d0b/20bb88239_loogoo.png" alt="Softdugo" className="h-9 w-9 object-contain shrink-0" />
-            <span className="text-base font-bold tracking-tight text-foreground truncate">softdugo</span>
+            <span className="text-base font-bold tracking-tight text-foreground truncate">dugosoft</span>
           </Link>
         ) : (
           <img src="https://media.base44.com/images/public/69c7f271f712e2f213ac7d0b/20bb88239_loogoo.png" alt="Softdugo" className="h-8 w-8 object-contain mx-auto" />
