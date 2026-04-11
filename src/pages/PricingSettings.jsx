@@ -54,7 +54,7 @@ const PLANS = [
   {
     id: "business",
     name: "Business",
-    price: 49,
+    price: 29,
     billing: "/ month",
     icon: Crown,
     color: "text-amber-500",

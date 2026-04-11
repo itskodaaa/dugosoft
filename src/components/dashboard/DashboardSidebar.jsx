@@ -4,73 +4,82 @@ import {
   LayoutDashboard, FileText, BarChart3, Languages, Table2, TrendingUp,
   MessageSquare, Clock, Settings, ChevronLeft, Lock, RefreshCw,
   Share2, Activity, PenLine, CreditCard, Merge, Linkedin,
-  PieChart, FolderOpen, ScanText, LayoutTemplate, Target, Users, Globe,
-  MessageCircle, Bot, Zap, Briefcase, Sparkles, Brain, X, Wand2
+  FolderOpen, ScanText, LayoutTemplate, Target, Users, Globe,
+  MessageCircle, Bot, Zap, Briefcase, Sparkles, Brain, X, Wand2, Crown
 } from "lucide-react";
+
+// Pro-gated items (show badge)
+const PRO_PATHS = new Set([
+  "/dashboard/career-matcher",
+  "/dashboard/skill-gap",
+  "/dashboard/interview-prep",
+  "/dashboard/career-mentor",
+  "/dashboard/career-performance",
+  "/dashboard/linkedin-optimizer",
+  "/dashboard/linkedin-import",
+  "/dashboard/cover-letter-architect",
+  "/dashboard/cv-vault",
+  "/dashboard/chat-with-document",
+  "/dashboard/ai-assistant",
+]);
+
+const BUSINESS_PATHS = new Set([
+  "/dashboard/workspaces",
+  "/dashboard/analytics",
+]);
 
 const NAV_GROUPS = [
   {
     label: null,
     items: [
-      { label: "Dashboard",         icon: LayoutDashboard, path: "/dashboard" },
+      { label: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
     ]
   },
   {
-    label: "Documents",
+    label: "Document Utilities",
     items: [
-      { label: "File Converter",    icon: RefreshCw,       path: "/dashboard/file-converter" },
-      { label: "PDF to Excel",      icon: Table2,          path: "/dashboard/pdf-to-excel" },
-      { label: "AI Translator",     icon: Languages,       path: "/dashboard/translator" },
-      { label: "OCR & Extract",     icon: ScanText,        path: "/dashboard/ocr-tools" },
-      { label: "Document Merger",   icon: Merge,           path: "/dashboard/document-merger" },
-      { label: "File Sharing",      icon: Share2,          path: "/dashboard/file-sharing" },
-      { label: "My Documents",      icon: FolderOpen,      path: "/dashboard/my-documents" },
+      { label: "File Converter",   icon: RefreshCw,     path: "/dashboard/file-converter" },
+      { label: "AI Translator",    icon: Languages,     path: "/dashboard/translator" },
+      { label: "OCR & Extract",    icon: ScanText,      path: "/dashboard/ocr-tools" },
+      { label: "Document Merger",  icon: Merge,         path: "/dashboard/document-merger" },
+      { label: "File Sharing",     icon: Share2,        path: "/dashboard/file-sharing" },
+      { label: "My Documents",     icon: FolderOpen,    path: "/dashboard/my-documents" },
     ]
   },
   {
-    label: "Resume",
+    label: "Career Accelerator",
     items: [
-      { label: "Resume Builder",    icon: FileText,        path: "/dashboard/resume-builder-v2" },
-      { label: "Design Editor",      icon: LayoutTemplate,  path: "/dashboard/resume-design" },
-      { label: "Cover Letter",      icon: PenLine,         path: "/dashboard/cover-letter" },
-      { label: "Cover Letter AI",   icon: Sparkles,        path: "/dashboard/cover-letter-architect" },
-      { label: "ATS Checker",       icon: BarChart3,       path: "/dashboard/ats-checker" },
-      { label: "LinkedIn Import",   icon: Linkedin,        path: "/dashboard/linkedin-import" },
-      { label: "CV Vault",          icon: Globe,           path: "/dashboard/cv-vault" },
+      { label: "Resume Builder",   icon: FileText,      path: "/dashboard/resume-builder-v2" },
+      { label: "Design Editor",    icon: LayoutTemplate,path: "/dashboard/resume-design" },
+      { label: "CV Vault",         icon: Globe,         path: "/dashboard/cv-vault" },
+      { label: "LinkedIn Import",  icon: Linkedin,      path: "/dashboard/linkedin-import" },
+      { label: "LinkedIn Optimizer",icon: TrendingUp,   path: "/dashboard/linkedin-optimizer" },
+      { label: "ATS Checker",      icon: BarChart3,     path: "/dashboard/ats-checker" },
+      { label: "Cover Letter",     icon: PenLine,       path: "/dashboard/cover-letter" },
+      { label: "Cover Letter AI",  icon: Sparkles,      path: "/dashboard/cover-letter-architect" },
+      { label: "Career Matcher",   icon: Target,        path: "/dashboard/career-matcher" },
+      { label: "Skill Gap",        icon: BarChart3,     path: "/dashboard/skill-gap" },
+      { label: "Interview Prep",   icon: Brain,         path: "/dashboard/interview-prep" },
+      { label: "Career Mentor",    icon: Bot,           path: "/dashboard/career-mentor" },
+      { label: "Career Performance",icon: Activity,     path: "/dashboard/career-performance" },
     ]
   },
   {
-    label: "Career AI",
+    label: "Collaboration & Chat",
     items: [
-      { label: "Career Matcher",    icon: Target,          path: "/dashboard/career-matcher" },
-      { label: "Skill Gap Analysis",icon: BarChart3,       path: "/dashboard/skill-gap" },
-      { label: "Interview Prep",    icon: Brain,           path: "/dashboard/interview-prep" },
-      { label: "Career Mentor",     icon: Bot,             path: "/dashboard/career-mentor" },
-      { label: "Career Performance",icon: Activity,        path: "/dashboard/career-performance" },
-      { label: "LinkedIn Optimizer",icon: TrendingUp,      path: "/dashboard/linkedin-optimizer" },
-    ]
-  },
-  {
-    label: "Chat",
-    items: [
-      { label: "Chat with Document",icon: MessageCircle,   path: "/dashboard/chat-with-document" },
-      { label: "AI Assistant",       icon: Wand2,           path: "/dashboard/ai-assistant" },
-    ]
-  },
-  {
-    label: "Workspace",
-    items: [
-      { label: "Job Tracker",        icon: Briefcase,       path: "/dashboard/job-tracker" },
-      { label: "Workspaces",        icon: Users,           path: "/dashboard/workspaces" },
-      { label: "Analytics",         icon: PieChart,        path: "/dashboard/analytics" },
-      { label: "History",           icon: Clock,           path: "/dashboard/history" },
+      { label: "Chat with Document",icon: MessageCircle,path: "/dashboard/chat-with-document" },
+      { label: "AI Assistant",     icon: Wand2,         path: "/dashboard/ai-assistant" },
+      { label: "Job Tracker",      icon: Briefcase,     path: "/dashboard/job-tracker" },
+      { label: "Workspaces",       icon: Users,         path: "/dashboard/workspaces" },
     ]
   },
   {
     label: null,
     items: [
-      { label: "Settings",          icon: Settings,        path: "/dashboard/settings" },
-      { label: "Pricing",           icon: CreditCard,      path: "/dashboard/pricing" },
+      { label: "History",   icon: Clock,       path: "/dashboard/history" },
+      { label: "Analytics", icon: Activity,    path: "/dashboard/analytics" },
+      { label: "Settings",  icon: Settings,    path: "/dashboard/settings" },
+      { label: "Pricing",   icon: CreditCard,  path: "/dashboard/pricing" },
     ]
   },
 ];
@@ -111,13 +120,23 @@ export default function DashboardSidebar({ collapsed, onToggle, onMobileClose })
             {group.items.map(item => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path || (item.path !== "/dashboard" && location.pathname.startsWith(item.path));
+              const isPro = PRO_PATHS.has(item.path);
+              const isBusiness = BUSINESS_PATHS.has(item.path);
               return (
                 <Link key={item.path} to={item.path} onClick={onMobileClose}
                   className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 mb-0.5 ${
                     isActive ? "bg-accent/10 text-accent" : "text-muted-foreground hover:text-foreground hover:bg-muted"
                   } ${collapsed ? "justify-center" : ""}`}>
                   <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-accent" : ""}`} />
-                  {!collapsed && <span className="truncate">{item.label}</span>}
+                  {!collapsed && (
+                    <span className="truncate flex-1">{item.label}</span>
+                  )}
+                  {!collapsed && isPro && (
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-accent/15 text-accent">PRO</span>
+                  )}
+                  {!collapsed && isBusiness && (
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-500">BIZ</span>
+                  )}
                 </Link>
               );
             })}
