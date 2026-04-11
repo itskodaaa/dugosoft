@@ -93,11 +93,11 @@ export default function DashboardSidebar({ collapsed, onToggle, onMobileClose })
       <div className="h-16 flex items-center justify-between px-4 border-b border-border shrink-0">
         {!collapsed ? (
           <Link to="/" className="flex items-center gap-2 min-w-0">
-            <img src="https://media.base44.com/images/public/69c7f271f712e2f213ac7d0b/20bb88239_loogoo.png" alt="Softdugo" className="h-9 w-9 object-contain shrink-0" />
+            <img src="https://media.base44.com/images/public/69c7f271f712e2f213ac7d0b/b4b44b553_Gemini_Generated_Image_6abwj06abwj06abw.png" alt="Dugosoft" className="h-9 w-9 object-contain shrink-0" />
             <span className="text-base font-bold tracking-tight text-foreground truncate">dugosoft</span>
           </Link>
         ) : (
-          <img src="https://media.base44.com/images/public/69c7f271f712e2f213ac7d0b/20bb88239_loogoo.png" alt="Softdugo" className="h-8 w-8 object-contain mx-auto" />
+          <img src="https://media.base44.com/images/public/69c7f271f712e2f213ac7d0b/b4b44b553_Gemini_Generated_Image_6abwj06abwj06abw.png" alt="Dugosoft" className="h-8 w-8 object-contain mx-auto" />
         )}
         <div className="flex items-center gap-1">
           <button onClick={onMobileClose} className="lg:hidden flex items-center justify-center w-6 h-6 rounded-md hover:bg-muted transition-colors">

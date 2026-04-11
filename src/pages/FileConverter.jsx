@@ -34,28 +34,20 @@ Section 3: Conclusion
 The conversion process completed with 100% text accuracy.
 Tables, headers, and bullet points have been mapped appropriately.`;
 
-const FREE_CONVERSIONS = 3;
-
 export default function FileConverter() {
   const [file, setFile] = useState(null);
   const [conversion, setConversion] = useState(null);
   const [status, setStatus] = useState("idle");
   const [result, setResult] = useState(null);
-  const [conversionsUsed, setConversionsUsed] = useState(0);
 
   const handleConvert = () => {
     if (!file) { toast.warning("Please upload a file first"); return; }
     if (!conversion) { toast.warning("Please select a conversion type"); return; }
-    if (conversionsUsed >= FREE_CONVERSIONS) {
-      toast.error(`Free plan: ${FREE_CONVERSIONS} conversions used. Upgrade to convert more.`);
-      return;
-    }
     setStatus("processing");
     setResult(null);
     setTimeout(() => {
       setStatus("complete");
       setResult(PREVIEW_TEXT);
-      setConversionsUsed((n) => n + 1);
     }, 2800);
   };
 
@@ -80,12 +72,9 @@ export default function FileConverter() {
           )}
         </div>
         <p className="text-muted-foreground mb-4 text-sm">Convert documents between PDF, Word, and plain text formats.</p>
-        {/* Free plan banner */}
-        <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 mb-6 text-xs text-amber-700">
+        <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2.5 mb-6 text-xs text-emerald-700">
           <AlertCircle className="w-4 h-4 shrink-0" />
-          <span><strong>Free plan:</strong> {FREE_CONVERSIONS - conversionsUsed} of {FREE_CONVERSIONS} conversions remaining.
-            {conversionsUsed >= FREE_CONVERSIONS && <> <button className="underline font-semibold ml-1">Upgrade for unlimited conversions</button></>}
-          </span>
+          <span><strong>Free:</strong> PDF ↔ DOCX and all document conversions are completely free — no limits!</span>
         </div>
       </motion.div>
 

@@ -2,11 +2,17 @@ import React, { createContext, useContext, useState, useEffect, useRef } from "r
 import { toast } from "sonner";
 
 export const LANGUAGES = [
-  { code: "en", label: "English", flag: "🇬🇧" },
-  { code: "it", label: "Italiano", flag: "🇮🇹" },
-  { code: "fr", label: "Français", flag: "🇫🇷" },
-  { code: "es", label: "Español", flag: "🇪🇸" },
-  { code: "de", label: "Deutsch", flag: "🇩🇪" },
+  { code: "en", label: "English",    flag: "🇬🇧" },
+  { code: "it", label: "Italiano",   flag: "🇮🇹" },
+  { code: "fr", label: "Français",   flag: "🇫🇷" },
+  { code: "es", label: "Español",    flag: "🇪🇸" },
+  { code: "de", label: "Deutsch",    flag: "🇩🇪" },
+  { code: "pt", label: "Português",  flag: "🇧🇷" },
+  { code: "ar", label: "العربية",    flag: "🇸🇦" },
+  { code: "zh", label: "中文",        flag: "🇨🇳" },
+  { code: "ru", label: "Русский",    flag: "🇷🇺" },
+  { code: "ja", label: "日本語",      flag: "🇯🇵" },
+  { code: "hi", label: "हिन्दी",      flag: "🇮🇳" },
 ];
 
 const SUPPORTED_CODES = LANGUAGES.map((l) => l.code);
@@ -24,10 +30,10 @@ function detectBrowserLang() {
 
 const translations = {
   // Nav
-  nav_features:        { en: "Features", it: "Funzionalità", fr: "Fonctionnalités", es: "Características", de: "Funktionen" },
-  nav_pricing:         { en: "Pricing", it: "Prezzi", fr: "Tarifs", es: "Precios", de: "Preise" },
-  nav_dashboard:       { en: "Dashboard", it: "Dashboard", fr: "Tableau de bord", es: "Panel", de: "Dashboard" },
-  nav_operational:     { en: "operational", it: "operativo", fr: "opérationnel", es: "operativo", de: "betrieb" },
+  nav_features:        { en: "Features",   it: "Funzionalità", fr: "Fonctionnalités", es: "Características", de: "Funktionen",  pt: "Funcionalidades", ar: "الميزات",     zh: "功能",  ru: "Функции",    ja: "機能",     hi: "विशेषताएं" },
+  nav_pricing:         { en: "Pricing",    it: "Prezzi",       fr: "Tarifs",          es: "Precios",        de: "Preise",       pt: "Preços",         ar: "الأسعار",    zh: "定价", ru: "Цены",       ja: "料金",     hi: "मूल्य निर्धारण" },
+  nav_dashboard:       { en: "Dashboard",  it: "Dashboard",   fr: "Tableau de bord", es: "Panel",          de: "Dashboard",   pt: "Painel",         ar: "لوحة التحكم",zh: "仪表板",ru: "Панель",     ja: "ダッシュボード", hi: "डैशबोर्ड" },
+  nav_operational:     { en: "operational",it: "operativo",   fr: "opérationnel",    es: "operativo",      de: "betrieb",     pt: "operacional",   ar: "تشغيل",     zh: "运行中",ru: "работает",  ja: "稼働中",   hi: "परिचालन" },
 
   // Sidebar
   side_dashboard:      { en: "Dashboard", it: "Dashboard", fr: "Tableau de bord", es: "Panel", de: "Dashboard" },
