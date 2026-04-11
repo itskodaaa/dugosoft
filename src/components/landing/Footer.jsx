@@ -9,8 +9,8 @@ export default function Footer() {
           {/* Brand */}
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <img src="https://media.base44.com/images/public/69c7f271f712e2f213ac7d0b/20bb88239_loogoo.png" alt="Softdugo" className="h-10 w-10 object-contain" />
-              <span className="text-lg font-bold tracking-tight text-foreground">softdugo</span>
+              <img src="https://media.base44.com/images/public/69c7f271f712e2f213ac7d0b/20bb88239_loogoo.png" alt="Dugosoft" className="h-10 w-10 object-contain" />
+              <span className="text-lg font-bold tracking-tight text-foreground">dugosoft</span>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed">
               AI-powered document intelligence for modern workflows.
@@ -56,7 +56,7 @@ export default function Footer() {
 
         <div className="pt-8 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-xs text-muted-foreground">
-            © {new Date().getFullYear()} Softdugo. All rights reserved.
+            © {new Date().getFullYear()} Dugosoft. All rights reserved.
           </p>
           <p className="text-xs text-muted-foreground font-mono">v1.0.0-mvp</p>
         </div>

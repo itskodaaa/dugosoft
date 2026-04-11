@@ -31,6 +31,7 @@ const NAV_GROUPS = [
     label: "Resume",
     items: [
       { label: "Resume Builder",    icon: FileText,        path: "/dashboard/resume-builder-v2" },
+      { label: "Design Editor",      icon: LayoutTemplate,  path: "/dashboard/resume-design" },
       { label: "Cover Letter",      icon: PenLine,         path: "/dashboard/cover-letter" },
       { label: "Cover Letter AI",   icon: Sparkles,        path: "/dashboard/cover-letter-architect" },
       { label: "ATS Checker",       icon: BarChart3,       path: "/dashboard/ats-checker" },

@@ -34,13 +34,13 @@ export default function About() {
           <div className="max-w-4xl mx-auto text-center relative z-10">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
               <div className="flex justify-center mb-6">
-                <img src="https://media.base44.com/images/public/69c7f271f712e2f213ac7d0b/20bb88239_loogoo.png" alt="Softdugo" className="h-20 w-20 object-contain" />
+                <img src="https://media.base44.com/images/public/69c7f271f712e2f213ac7d0b/20bb88239_loogoo.png" alt="Dugosoft" className="h-20 w-20 object-contain" />
               </div>
               <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-foreground mb-6">
                 We're building the future<br />of document intelligence
               </h1>
               <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-                Softdugo is an AI-powered platform that helps professionals create resumes, translate documents, convert files, and extract insights — all in one place. We believe powerful tools should be simple and accessible to everyone.
+                Dugosoft is an AI-powered platform that helps professionals create resumes, translate documents, convert files, and extract insights — all in one place. We believe powerful tools should be simple and accessible to everyone.
               </p>
             </motion.div>
           </div>
@@ -69,9 +69,9 @@ export default function About() {
             <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
               <h2 className="text-3xl font-extrabold text-foreground mb-6">Our Story</h2>
               <div className="space-y-4 text-muted-foreground leading-relaxed">
-                <p>Softdugo was founded in 2024 by a team of engineers and designers who were tired of using five different tools just to update a resume, translate a contract, and share a file with a colleague.</p>
+                <p>Dugosoft was founded in 2024 by a team of engineers and designers who were tired of using five different tools just to update a resume, translate a contract, and share a file with a colleague.</p>
                 <p>We asked ourselves: <span className="text-foreground font-medium">"What if there was one intelligent platform that handled all of this?"</span> So we built it.</p>
-                <p>Starting with a simple resume builder, we quickly expanded into ATS checking, multilingual translation, document merging, and career mentorship powered by AI. Today, tens of thousands of professionals around the world rely on Softdugo every day.</p>
+                <p>Starting with a simple resume builder, we quickly expanded into ATS checking, multilingual translation, document merging, and career mentorship powered by AI. Today, tens of thousands of professionals around the world rely on Dugosoft every day.</p>
                 <p>We're a small but passionate team, backed by belief that AI should work <em>for</em> people — removing busywork so they can focus on what actually matters.</p>
               </div>
             </motion.div>
@@ -128,10 +128,10 @@ export default function About() {
           <div className="max-w-2xl mx-auto text-center">
             <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
               <h2 className="text-3xl font-extrabold text-foreground mb-4">Ready to get started?</h2>
-              <p className="text-muted-foreground mb-8">Join thousands of professionals who use Softdugo every day.</p>
+              <p className="text-muted-foreground mb-8">Join thousands of professionals who use Dugosoft every day.</p>
               <Link to="/dashboard">
                 <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground rounded-full px-10 h-12 font-semibold gap-2">
-                  Try Softdugo Free <ArrowRight className="w-4 h-4" />
+                  Try Dugosoft Free <ArrowRight className="w-4 h-4" />
                 </Button>
               </Link>
             </motion.div>

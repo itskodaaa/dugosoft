@@ -41,6 +41,7 @@ import JobTracker from './pages/JobTracker';
 import InterviewPrep from './pages/InterviewPrep';
 import SkillGapAnalysis from './pages/SkillGapAnalysis';
 import AIAssistant from './pages/AIAssistant';
+import ResumeDesignEditor from './pages/ResumeDesignEditor';
 
 
 const AuthenticatedApp = () => {
@@ -99,6 +100,7 @@ const AuthenticatedApp = () => {
         <Route path="interview-prep" element={<InterviewPrep />} />
         <Route path="skill-gap" element={<SkillGapAnalysis />} />
         <Route path="ai-assistant" element={<AIAssistant />} />
+        <Route path="resume-design" element={<ResumeDesignEditor />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

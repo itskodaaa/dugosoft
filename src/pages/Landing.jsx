@@ -41,7 +41,7 @@ const HOW_IT_WORKS = [
 ];
 
 const TESTIMONIALS = [
-  { name: "Sofia Melo", role: "Product Manager, Lisbon", text: "Softdugo translated my CV into 4 languages in minutes. Got interviews in Germany, France, and the UK!", avatar: "SM", color: "bg-orange-100 text-orange-600" },
+  { name: "Sofia Melo", role: "Product Manager, Lisbon", text: "Dugosoft translated my CV into 4 languages in minutes. Got interviews in Germany, France, and the UK!", avatar: "SM", color: "bg-orange-100 text-orange-600" },
   { name: "James Okafor", role: "Software Engineer, Lagos", text: "The AI Career Matcher is insane. It told me exactly which skills I was missing and even gave me job links.", avatar: "JO", color: "bg-green-100 text-green-600" },
   { name: "Nina Patel", role: "Recruiter, Singapore", text: "We use Workspaces for all our hiring docs. The team collaboration features are exactly what we needed.", avatar: "NP", color: "bg-blue-100 text-blue-600" },
   { name: "Marco Bianchi", role: "Consultant, Milan", text: "The country-adapted CV for Italy was spot on — right format, right tone. Saved me hours of manual work.", avatar: "MB", color: "bg-purple-100 text-purple-600" },
