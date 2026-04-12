@@ -45,12 +45,12 @@ const STATS = [
 
 function ShareToolModal({ tool, onClose }) {
   const url = `${window.location.origin}${tool.path}`;
-  const text = encodeURIComponent(`Check out ${tool.title} on Softdugo!`);
+  const text = encodeURIComponent(`Check out ${tool.title} on Dugosoft! dugosoft.com`);
   const encodedUrl = encodeURIComponent(url);
 
   const actions = [
     { label: "LinkedIn",  color: "bg-[#0A66C2] hover:bg-[#0A66C2]/90", href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}` },
-    { label: "WhatsApp",  color: "bg-[#25D366] hover:bg-[#25D366]/90",  href: `https://wa.me/?text=${text}%20${encodedUrl}` },
+    { label: "WhatsApp",  color: "bg-[#25D366] hover:bg-[#25D366]/90",  href: `https://wa.me/?text=${text.replace(/Softdugo/g,'Dugosoft')}%20${encodedUrl}` },
     { label: "Telegram",  color: "bg-[#26A5E4] hover:bg-[#26A5E4]/90",  href: `https://t.me/share/url?url=${encodedUrl}&text=${text}` },
     { label: "Email",     color: "bg-muted hover:bg-muted/80 text-foreground border", href: `mailto:?subject=Check this out&body=${text}%20${encodedUrl}` },
   ];

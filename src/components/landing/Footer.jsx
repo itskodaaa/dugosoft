@@ -9,8 +9,8 @@ export default function Footer() {
           {/* Brand */}
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <img src="https://media.base44.com/images/public/69c7f271f712e2f213ac7d0b/20bb88239_loogoo.png" alt="Dugosoft" className="h-10 w-10 object-contain" />
-              <span className="text-lg font-bold tracking-tight text-foreground">dugosoft</span>
+              <img src="https://media.base44.com/images/public/69c7f271f712e2f213ac7d0b/3cd00a9ca_Gemini_Generated_Image_6abwj06abwj06abw-removebg-preview.png" alt="Dugosoft" className="h-10 w-10 object-contain" />
+              <span className="text-lg font-extrabold tracking-tight text-foreground">DUGOSOFT</span>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed">
               AI-powered document intelligence for modern workflows.
