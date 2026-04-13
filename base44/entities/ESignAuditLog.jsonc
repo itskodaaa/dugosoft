@@ -1,0 +1,25 @@
+{
+  "name": "ESignAuditLog",
+  "type": "object",
+  "properties": {
+    "document_id": {
+      "type": "string"
+    },
+    "signer_email": {
+      "type": "string"
+    },
+    "action": {
+      "type": "string"
+    },
+    "timestamp": {
+      "type": "string"
+    },
+    "ip_address": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "document_id",
+    "action"
+  ]
+}

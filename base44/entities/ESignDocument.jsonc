@@ -1,0 +1,40 @@
+{
+  "name": "ESignDocument",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "file_url": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "pending",
+        "signed",
+        "expired"
+      ],
+      "default": "draft"
+    },
+    "owner_email": {
+      "type": "string"
+    },
+    "plan": {
+      "type": "string",
+      "enum": [
+        "free",
+        "pro",
+        "business"
+      ],
+      "default": "free"
+    },
+    "expires_at": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "title"
+  ]
+}

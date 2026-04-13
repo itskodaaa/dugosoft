@@ -42,6 +42,10 @@ import InterviewPrep from './pages/InterviewPrep';
 import SkillGapAnalysis from './pages/SkillGapAnalysis';
 import AIAssistant from './pages/AIAssistant';
 import ResumeDesignEditor from './pages/ResumeDesignEditor';
+import ESignDashboard from './pages/ESignDashboard';
+import ESignUpload from './pages/ESignUpload';
+import ESignEditor from './pages/ESignEditor';
+import ESignSign from './pages/ESignSign';
 
 
 const AuthenticatedApp = () => {
@@ -101,7 +105,11 @@ const AuthenticatedApp = () => {
         <Route path="skill-gap" element={<SkillGapAnalysis />} />
         <Route path="ai-assistant" element={<AIAssistant />} />
         <Route path="resume-design" element={<ResumeDesignEditor />} />
+        <Route path="esign" element={<ESignDashboard />} />
+        <Route path="esign/upload" element={<ESignUpload />} />
+        <Route path="esign/editor/:id" element={<ESignEditor />} />
       </Route>
+      <Route path="/sign/:token" element={<ESignSign />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

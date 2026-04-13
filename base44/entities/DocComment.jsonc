@@ -1,0 +1,34 @@
+{
+  "name": "DocComment",
+  "type": "object",
+  "properties": {
+    "doc_name": {
+      "type": "string"
+    },
+    "version": {
+      "type": "number"
+    },
+    "author_email": {
+      "type": "string"
+    },
+    "author_name": {
+      "type": "string"
+    },
+    "text": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "note",
+        "feedback",
+        "action"
+      ],
+      "default": "note"
+    }
+  },
+  "required": [
+    "doc_name",
+    "text"
+  ]
+}

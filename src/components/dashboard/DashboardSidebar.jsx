@@ -5,7 +5,7 @@ import {
   MessageSquare, Clock, Settings, ChevronLeft, Lock, RefreshCw,
   Share2, Activity, PenLine, CreditCard, Merge, Linkedin,
   FolderOpen, ScanText, LayoutTemplate, Target, Users, Globe,
-  MessageCircle, Bot, Zap, Briefcase, Sparkles, Brain, X, Wand2, Crown
+  MessageCircle, Bot, Zap, Briefcase, Sparkles, Brain, X, Wand2, Crown, FileSignature
 } from "lucide-react";
 
 // Pro-gated items (show badge)
@@ -71,6 +71,7 @@ const NAV_GROUPS = [
       { label: "AI Assistant",     icon: Wand2,         path: "/dashboard/ai-assistant" },
       { label: "Job Tracker",      icon: Briefcase,     path: "/dashboard/job-tracker" },
       { label: "Workspaces",       icon: Users,         path: "/dashboard/workspaces" },
+      { label: "E-Signature",      icon: FileSignature, path: "/dashboard/esign" },
     ]
   },
   {
