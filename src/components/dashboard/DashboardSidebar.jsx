@@ -5,7 +5,7 @@ import {
   MessageSquare, Clock, Settings, ChevronLeft, Lock, RefreshCw,
   Share2, Activity, PenLine, CreditCard, Merge, Linkedin,
   FolderOpen, ScanText, LayoutTemplate, Target, Users, Globe,
-  MessageCircle, Bot, Zap, Briefcase, Sparkles, Brain, X, Wand2, Crown, FileSignature
+  MessageCircle, Bot, Zap, Briefcase, Sparkles, Brain, X, Wand2, Crown, FileSignature, Gift
 } from "lucide-react";
 
 // Pro-gated items (show badge)
@@ -82,6 +82,7 @@ const NAV_GROUPS = [
     items: [
       { label: "History",   icon: Clock,       path: "/dashboard/history" },
       { label: "Analytics", icon: Activity,    path: "/dashboard/analytics" },
+      { label: "Referral",  icon: Gift,        path: "/dashboard/referral" },
       { label: "Settings",  icon: Settings,    path: "/dashboard/settings" },
       { label: "Pricing",   icon: CreditCard,  path: "/dashboard/pricing" },
     ]

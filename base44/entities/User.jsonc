@@ -34,12 +34,10 @@
       "default": "none"
     },
     "stripe_customer_id": {
-      "type": "string",
-      "description": "Stripe customer ID for recurring billing"
+      "type": "string"
     },
     "stripe_subscription_id": {
-      "type": "string",
-      "description": "Stripe subscription ID"
+      "type": "string"
     },
     "auth_provider": {
       "type": "string",
@@ -63,8 +61,29 @@
       "default": 0
     },
     "usage_reset_date": {
+      "type": "string"
+    },
+    "user_region": {
       "type": "string",
-      "description": "ISO date when usage counters were last reset"
+      "enum": [
+        "global",
+        "africa"
+      ],
+      "default": "global",
+      "description": "Detected or manually selected pricing region"
+    },
+    "referral_code": {
+      "type": "string",
+      "description": "Unique referral code for this user"
+    },
+    "referred_by": {
+      "type": "string",
+      "description": "Referral code of the user who referred this user"
+    },
+    "referral_credits": {
+      "type": "number",
+      "default": 0,
+      "description": "Days of free Pro earned via referrals"
     }
   }
 }

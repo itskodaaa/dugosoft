@@ -50,6 +50,7 @@ import PDFTools from './pages/PDFTools';
 import AILanguageTools from './pages/AILanguageTools';
 import ResumeTranslator from './pages/ResumeTranslator';
 import EmailVerification from './pages/EmailVerification';
+import Referral from './pages/Referral';
 
 
 const AuthenticatedApp = () => {
@@ -120,6 +121,7 @@ const AuthenticatedApp = () => {
         <Route path="pdf-tools" element={<PDFTools />} />
         <Route path="ai-language" element={<AILanguageTools />} />
         <Route path="resume-translator" element={<ResumeTranslator />} />
+        <Route path="referral" element={<Referral />} />
       </Route>
       <Route path="/sign/:token" element={<ESignSign />} />
       <Route path="*" element={<PageNotFound />} />

@@ -3,11 +3,19 @@ import Stripe from 'npm:stripe@14.21.0';
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY"));
 
-// These price IDs must be created in your Stripe dashboard (recurring monthly prices)
-// Set them as secrets or replace with your actual price IDs
+// Server-side authoritative pricing — use price IDs per region/plan
+// Set these secrets in your dashboard:
+// STRIPE_PRICE_PRO_GLOBAL, STRIPE_PRICE_BUSINESS_GLOBAL
+// STRIPE_PRICE_PRO_AFRICA, STRIPE_PRICE_BUSINESS_AFRICA
 const STRIPE_PRICES = {
-  pro: Deno.env.get("STRIPE_PRICE_PRO") || "price_pro_placeholder",
-  business: Deno.env.get("STRIPE_PRICE_BUSINESS") || "price_business_placeholder",
+  global: {
+    pro:      Deno.env.get("STRIPE_PRICE_PRO_GLOBAL")      || Deno.env.get("STRIPE_PRICE_PRO")      || "price_pro_global",
+    business: Deno.env.get("STRIPE_PRICE_BUSINESS_GLOBAL") || Deno.env.get("STRIPE_PRICE_BUSINESS") || "price_business_global",
+  },
+  africa: {
+    pro:      Deno.env.get("STRIPE_PRICE_PRO_AFRICA")      || "price_pro_africa",
+    business: Deno.env.get("STRIPE_PRICE_BUSINESS_AFRICA") || "price_business_africa",
+  },
 };
 
 Deno.serve(async (req) => {
@@ -15,11 +23,14 @@ Deno.serve(async (req) => {
   const user = await base44.auth.me();
   if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { plan } = await req.json();
-  if (!plan || !STRIPE_PRICES[plan]) {
+  const { plan, region } = await req.json();
+  if (!plan || !["pro", "business"].includes(plan)) {
     return Response.json({ error: "Invalid plan" }, { status: 400 });
   }
 
+  // Backend validates region
+  const userRegion = region && ["global", "africa"].includes(region) ? region : (user.user_region || "global");
+  const priceId = STRIPE_PRICES[userRegion][plan];
   const origin = req.headers.get("origin") || "https://app.dugosoft.com";
 
   // Get or create Stripe customer
@@ -38,13 +49,10 @@ Deno.serve(async (req) => {
     customer: customerId,
     mode: "subscription",
     payment_method_types: ["card"],
-    line_items: [{ price: STRIPE_PRICES[plan], quantity: 1 }],
+    line_items: [{ price: priceId, quantity: 1 }],
     success_url: `${origin}/dashboard/pricing?status=success&plan=${plan}&provider=stripe`,
     cancel_url: `${origin}/dashboard/pricing?status=cancelled`,
-    metadata: { user_id: user.id, plan },
-    payment_method_options: {
-      card: { request_three_d_secure: "automatic" },
-    },
+    metadata: { user_id: user.id, plan, region: userRegion },
   });
 
   return Response.json({ checkout_url: session.url, session_id: session.id });

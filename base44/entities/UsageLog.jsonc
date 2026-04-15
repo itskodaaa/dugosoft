@@ -1,0 +1,36 @@
+{
+  "name": "UsageLog",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "date": {
+      "type": "string",
+      "description": "ISO date string YYYY-MM-DD"
+    },
+    "pdf_count": {
+      "type": "number",
+      "default": 0
+    },
+    "ai_requests": {
+      "type": "number",
+      "default": 0
+    },
+    "ocr_count": {
+      "type": "number",
+      "default": 0
+    },
+    "conversions": {
+      "type": "number",
+      "default": 0
+    },
+    "plan": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "user_id",
+    "date"
+  ]
+}
