@@ -1,9 +1,15 @@
-import React, { useState } from "react";
-import { motion } from "framer-motion";
+import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Crown, Zap, Star, CreditCard, Lock, X, ChevronRight, AlertCircle, Shield, Users, Headphones, Gauge, Package } from "lucide-react";
+import {
+  CheckCircle2, Crown, Zap, Star, Lock, X, ChevronRight,
+  Shield, Headphones, Gauge, CreditCard, AlertCircle, Calendar,
+  ArrowDownLeft, Loader2, Globe
+} from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/lib/AuthContext";
+import { base44 } from "@/api/base44Client";
 
 const PLANS = [
   {
@@ -24,8 +30,8 @@ const PLANS = [
       { label: "LinkedIn Integration", included: false },
       { label: "Priority AI model", included: false },
       { label: "PDF & DOCX export", included: false },
-      { label: "Career Performance analytics", included: false },
-      { label: "Unlimited history", included: false },
+      { label: "Career analytics", included: false },
+      { label: "CV Vault", included: false },
     ],
   },
   {
@@ -47,8 +53,8 @@ const PLANS = [
       { label: "LinkedIn Integration", included: true },
       { label: "Priority AI model", included: true },
       { label: "PDF & DOCX export", included: true },
-      { label: "Career Performance analytics", included: false },
-      { label: "Unlimited history", included: false },
+      { label: "Career analytics", included: false },
+      { label: "CV Vault", included: true },
     ],
   },
   {
@@ -63,133 +69,254 @@ const PLANS = [
     badge: "Best for Teams",
     features: [
       { label: "Everything in Pro", included: true },
-      { label: "Career Performance analytics", included: true },
-      { label: "Unlimited history", included: true },
-      { label: "Team workspace (up to 5 users)", included: true },
+      { label: "Full Analytics dashboard", included: true },
+      { label: "Team workspace (up to 5)", included: true },
       { label: "API access", included: true },
       { label: "Priority support", included: true },
       { label: "Custom branding on exports", included: true },
       { label: "Bulk processing", included: true },
       { label: "Dedicated account manager", included: true },
       { label: "SLA guarantee", included: true },
+      { label: "Unlimited history", included: true },
     ],
   },
 ];
 
-const PAYMENT_METHODS = [
-  { id: "visa", label: "Visa", last4: "4242", expiry: "12/27", brand: "VISA" },
-  { id: "mc", label: "Mastercard", last4: "5100", expiry: "08/26", brand: "MC" },
-];
+// ── Payment Provider Selector ──────────────────────────────────────────────────
+function PaymentModal({ plan, onClose, onSuccess }) {
+  const [provider, setProvider] = useState("flutterwave");
+  const [loading, setLoading] = useState(false);
 
-function PaymentMethodCard({ method, isDefault, onSetDefault, onRemove }) {
+  const handlePay = async () => {
+    setLoading(true);
+    try {
+      if (provider === "flutterwave") {
+        const res = await base44.functions.invoke("createFlutterwavePayment", { plan: plan.id });
+        if (res.data?.payment_link) {
+          window.location.href = res.data.payment_link;
+        } else {
+          toast.error("Failed to create payment link.");
+        }
+      } else {
+        const res = await base44.functions.invoke("createStripeCheckout", { plan: plan.id });
+        if (res.data?.checkout_url) {
+          window.location.href = res.data.checkout_url;
+        } else {
+          toast.error("Failed to create Stripe checkout.");
+        }
+      }
+    } catch (e) {
+      toast.error(e?.response?.data?.error || "Payment failed. Please try again.");
+    }
+    setLoading(false);
+  };
+
   return (
-    <div className={`flex items-center gap-4 p-4 rounded-xl border transition-all ${isDefault ? "border-accent bg-accent/5" : "border-border bg-card"}`}>
-      <div className="w-12 h-8 rounded-md bg-muted flex items-center justify-center">
-        <span className="text-xs font-black text-foreground">{method.brand}</span>
-      </div>
-      <div className="flex-1">
-        <p className="text-sm font-semibold text-foreground">•••• {method.last4}</p>
-        <p className="text-xs text-muted-foreground">Expires {method.expiry}</p>
-      </div>
-      {isDefault ? (
-        <Badge className="text-xs bg-accent/10 text-accent border-accent/20" variant="outline">Default</Badge>
-      ) : (
-        <button onClick={() => onSetDefault(method.id)} className="text-xs text-accent hover:underline font-medium">
-          Set default
-        </button>
-      )}
-      <button onClick={() => onRemove(method.id)} className="w-7 h-7 rounded-lg hover:bg-destructive/10 flex items-center justify-center transition-colors">
-        <X className="w-3.5 h-3.5 text-muted-foreground hover:text-destructive" />
-      </button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={onClose}>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 10 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className="bg-card rounded-2xl border border-border shadow-2xl w-full max-w-md"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between p-5 border-b border-border">
+          <div>
+            <h2 className="font-bold text-foreground text-lg">Upgrade to {plan.name}</h2>
+            <p className="text-sm text-muted-foreground">${plan.price}/month · billed monthly</p>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-lg hover:bg-muted flex items-center justify-center">
+            <X className="w-4 h-4 text-muted-foreground" />
+          </button>
+        </div>
+
+        <div className="p-5 space-y-4">
+          <p className="text-sm font-semibold text-foreground">Select payment method</p>
+
+          {/* Provider selection */}
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={() => setProvider("flutterwave")}
+              className={`p-4 rounded-xl border-2 transition-all text-left ${provider === "flutterwave" ? "border-accent bg-accent/5" : "border-border hover:border-accent/30"}`}
+            >
+              <p className="font-bold text-sm text-foreground">Flutterwave</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Cards, Bank transfer, Mobile money</p>
+              <div className="flex gap-1 mt-2 flex-wrap">
+                {["VISA", "MC", "GTB", "M-Pesa"].map(b => (
+                  <span key={b} className="text-[9px] font-bold bg-muted px-1.5 py-0.5 rounded text-muted-foreground">{b}</span>
+                ))}
+              </div>
+            </button>
+
+            <button
+              onClick={() => setProvider("stripe")}
+              className={`p-4 rounded-xl border-2 transition-all text-left ${provider === "stripe" ? "border-[#635BFF] bg-[#635BFF]/5" : "border-border hover:border-[#635BFF]/30"}`}
+            >
+              <p className="font-bold text-sm" style={{ color: "#635BFF" }}>Stripe</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Cards, Apple Pay, Google Pay</p>
+              <div className="flex gap-1 mt-2 flex-wrap">
+                {["VISA", "MC", "AMEX", "Apple Pay"].map(b => (
+                  <span key={b} className="text-[9px] font-bold bg-muted px-1.5 py-0.5 rounded text-muted-foreground">{b}</span>
+                ))}
+              </div>
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2 p-3 rounded-xl bg-muted/40 text-xs text-muted-foreground">
+            <Shield className="w-3.5 h-3.5 shrink-0 text-green-500" />
+            Payments are processed securely. We never store card details.
+          </div>
+
+          <Button
+            onClick={handlePay}
+            disabled={loading}
+            className={`w-full h-11 rounded-xl font-semibold text-sm gap-2 ${
+              plan.id === "business"
+                ? "bg-amber-500 hover:bg-amber-500/90 text-white"
+                : "bg-accent hover:bg-accent/90 text-accent-foreground"
+            }`}
+          >
+            {loading ? (
+              <><Loader2 className="w-4 h-4 animate-spin" /> Redirecting...</>
+            ) : (
+              <>
+                <CreditCard className="w-4 h-4" />
+                Pay ${plan.price}/month with {provider === "flutterwave" ? "Flutterwave" : "Stripe"}
+              </>
+            )}
+          </Button>
+        </div>
+      </motion.div>
     </div>
   );
 }
 
+// ── Main Page ──────────────────────────────────────────────────────────────────
 export default function PricingSettings() {
-  const [currentPlan, setCurrentPlan] = useState("pro");
+  const { user, setUser } = useAuth();
   const [selectedPlan, setSelectedPlan] = useState(null);
-  const [upgrading, setUpgrading] = useState(false);
-  const [paymentMethods, setPaymentMethods] = useState(PAYMENT_METHODS);
-  const [defaultMethod, setDefaultMethod] = useState("visa");
-  const [showAddCard, setShowAddCard] = useState(false);
-  const [cardForm, setCardForm] = useState({ number: "", expiry: "", cvc: "", name: "" });
+  const [cancelling, setCancelling] = useState(false);
 
-  const handleUpgrade = (planId) => {
-    if (planId === currentPlan) return;
-    setSelectedPlan(planId);
-    setUpgrading(true);
-    setTimeout(() => {
-      setCurrentPlan(planId);
-      setUpgrading(false);
-      setSelectedPlan(null);
-      const plan = PLANS.find((p) => p.id === planId);
-      toast.success(`Successfully ${planId === "free" ? "downgraded to" : "upgraded to"} ${plan.name}!`);
-    }, 1800);
-  };
+  const currentPlanId = user?.plan || "free";
+  const expiresAt = user?.plan_expires_at ? new Date(user.plan_expires_at) : null;
+  const provider = user?.payment_provider || "none";
 
-  const handleAddCard = () => {
-    if (!cardForm.number || !cardForm.expiry || !cardForm.cvc) {
-      toast.error("Please fill in all card fields.");
-      return;
+  // Handle redirect back from payment (verify Flutterwave)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const status = params.get("status");
+    const plan = params.get("plan");
+    const txRef = params.get("tx_ref");
+    const providerParam = params.get("provider");
+
+    if (status === "success" && plan) {
+      if (providerParam === "stripe") {
+        // Stripe webhook handles the update; just refresh user
+        toast.success(`Payment successful! Your ${plan} plan is now active.`);
+        base44.auth.me().then(u => setUser(u));
+      } else if (txRef) {
+        // Need to verify Flutterwave — get transaction_id from URL
+        const txId = params.get("transaction_id");
+        if (txId) {
+          base44.functions.invoke("verifyFlutterwavePayment", { transaction_id: txId, plan })
+            .then(() => {
+              toast.success(`Payment verified! Your ${plan} plan is now active.`);
+              return base44.auth.me();
+            })
+            .then(u => setUser(u))
+            .catch(() => toast.error("Payment verification failed. Contact support."));
+        } else {
+          // Webhook already handled it
+          toast.success(`Payment successful! Your ${plan} plan is being activated.`);
+          setTimeout(() => base44.auth.me().then(u => setUser(u)), 3000);
+        }
+      }
+      // Clean up URL
+      window.history.replaceState({}, "", window.location.pathname);
+    } else if (status === "cancelled") {
+      toast.info("Payment cancelled.");
+      window.history.replaceState({}, "", window.location.pathname);
     }
-    const last4 = cardForm.number.replace(/\s/g, "").slice(-4);
-    const newCard = { id: `card_${Date.now()}`, label: "Visa", last4, expiry: cardForm.expiry, brand: "VISA" };
-    setPaymentMethods((prev) => [...prev, newCard]);
-    setDefaultMethod(newCard.id);
-    setShowAddCard(false);
-    setCardForm({ number: "", expiry: "", cvc: "", name: "" });
-    toast.success("Card added successfully!");
-  };
+  }, []);
 
-  const handleRemoveMethod = (id) => {
-    setPaymentMethods((prev) => prev.filter((m) => m.id !== id));
-    if (defaultMethod === id && paymentMethods.length > 1) {
-      setDefaultMethod(paymentMethods.find((m) => m.id !== id)?.id || "");
+  const handleCancel = async () => {
+    setCancelling(true);
+    try {
+      await base44.functions.invoke("cancelSubscription", {});
+      const u = await base44.auth.me();
+      setUser(u);
+      toast.success("Subscription cancelled. You've been moved to Free.");
+    } catch {
+      toast.error("Failed to cancel subscription.");
     }
-    toast.info("Payment method removed.");
+    setCancelling(false);
   };
 
-  const activePlan = PLANS.find((p) => p.id === currentPlan);
+  const activePlan = PLANS.find(p => p.id === currentPlanId);
+  const ActiveIcon = activePlan.icon;
 
   return (
     <div className="max-w-5xl space-y-8">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-2xl font-extrabold tracking-tight text-foreground mb-1">Pricing & Subscription</h1>
-        <p className="text-muted-foreground mb-8">Manage your plan, billing, and payment methods.</p>
+        <p className="text-muted-foreground text-sm">Manage your plan and billing. Payments processed by Flutterwave & Stripe.</p>
       </motion.div>
 
       {/* Current plan banner */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
         <div className="relative overflow-hidden rounded-2xl p-6 border border-accent/30 bg-gradient-to-r from-accent/10 via-accent/5 to-transparent">
           <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-accent/10 blur-2xl" />
-          <div className="relative flex items-center justify-between flex-wrap gap-4">
+          <div className="relative flex items-start justify-between flex-wrap gap-4">
             <div className="flex items-center gap-4">
-              {React.createElement(activePlan.icon, { className: `w-7 h-7 ${activePlan.color}` })}
+              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${activePlan.bg} border ${activePlan.border}`}>
+                <ActiveIcon className={`w-6 h-6 ${activePlan.color}`} />
+              </div>
               <div>
-                <p className="text-sm text-muted-foreground font-medium">Current plan</p>
+                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Current Plan</p>
                 <h2 className="text-xl font-extrabold text-foreground">{activePlan.name}</h2>
-                <p className="text-sm text-muted-foreground">
-                  {activePlan.price === 0 ? "Free forever" : `$${activePlan.price}/month · Next billing: Apr 29, 2026`}
-                </p>
+                <div className="flex items-center gap-3 flex-wrap mt-0.5">
+                  <p className="text-sm text-muted-foreground">
+                    {activePlan.price === 0 ? "Free forever" : `$${activePlan.price}/month`}
+                  </p>
+                  {expiresAt && (
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Calendar className="w-3 h-3" />
+                      Renews {expiresAt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                    </div>
+                  )}
+                  {provider !== "none" && (
+                    <Badge variant="outline" className="text-[10px] gap-1">
+                      <Globe className="w-2.5 h-2.5" />
+                      via {provider === "flutterwave" ? "Flutterwave" : "Stripe"}
+                    </Badge>
+                  )}
+                </div>
               </div>
             </div>
-            {currentPlan === "free" && (
-              <Button onClick={() => handleUpgrade("pro")} className="bg-accent hover:bg-accent/90 text-accent-foreground rounded-full gap-2 font-semibold">
-                <Crown className="w-4 h-4" />
-                Upgrade to Pro
-              </Button>
-            )}
-            {currentPlan === "pro" && (
-              <Button onClick={() => handleUpgrade("business")} className="bg-amber-500 hover:bg-amber-500/90 text-white rounded-full gap-2 font-semibold">
-                <Crown className="w-4 h-4" />
-                Upgrade to Business
-              </Button>
-            )}
-            {currentPlan === "business" && (
-              <Badge className="bg-amber-500/10 text-amber-500 border-amber-400/30 px-3 py-1" variant="outline">
-                <Crown className="w-3 h-3 mr-1" /> Top plan
-              </Badge>
-            )}
+            <div className="flex items-center gap-2 flex-wrap">
+              {currentPlanId !== "free" && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCancel}
+                  disabled={cancelling}
+                  className="rounded-full gap-1.5 text-xs border-destructive/30 text-destructive hover:bg-destructive/10"
+                >
+                  {cancelling ? <Loader2 className="w-3 h-3 animate-spin" /> : <ArrowDownLeft className="w-3 h-3" />}
+                  Cancel Plan
+                </Button>
+              )}
+              {currentPlanId === "free" && (
+                <Button onClick={() => setSelectedPlan(PLANS[1])} className="bg-accent hover:bg-accent/90 text-accent-foreground rounded-full gap-2 font-semibold">
+                  <Crown className="w-4 h-4" /> Upgrade Now
+                </Button>
+              )}
+              {currentPlanId === "pro" && (
+                <Button onClick={() => setSelectedPlan(PLANS[2])} className="bg-amber-500 hover:bg-amber-500/90 text-white rounded-full gap-2 font-semibold">
+                  <Crown className="w-4 h-4" /> Upgrade to Business
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </motion.div>
@@ -198,8 +325,7 @@ export default function PricingSettings() {
       <div className="grid md:grid-cols-3 gap-5">
         {PLANS.map((plan, i) => {
           const Icon = plan.icon;
-          const isActive = plan.id === currentPlan;
-          const isUpgrading = upgrading && selectedPlan === plan.id;
+          const isActive = plan.id === currentPlanId;
           return (
             <motion.div
               key={plan.id}
@@ -207,33 +333,33 @@ export default function PricingSettings() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.07 + 0.1 }}
               className={`relative rounded-2xl border p-5 flex flex-col transition-all ${
-                isActive ? `${plan.border} ${plan.bg} shadow-lg` : "border-border bg-card hover:border-accent/30"
+                isActive ? `${plan.border} ${plan.bg} shadow-lg` : "border-border bg-card hover:border-accent/30 hover:shadow-md"
               }`}
             >
               {plan.popular && !isActive && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <span className="bg-accent text-accent-foreground text-xs font-bold px-3 py-1 rounded-full">Most Popular</span>
+                  <span className="bg-accent text-accent-foreground text-xs font-bold px-3 py-1 rounded-full whitespace-nowrap">Most Popular</span>
                 </div>
               )}
-              {plan.badge && !isActive && plan.id !== "pro" && (
+              {plan.badge && plan.id === "business" && !isActive && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <span className="bg-amber-500 text-white text-xs font-bold px-3 py-1 rounded-full">{plan.badge}</span>
+                  <span className="bg-amber-500 text-white text-xs font-bold px-3 py-1 rounded-full whitespace-nowrap">{plan.badge}</span>
                 </div>
               )}
               {isActive && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <span className="bg-foreground text-background text-xs font-bold px-3 py-1 rounded-full">Current Plan</span>
+                  <span className="bg-foreground text-background text-xs font-bold px-3 py-1 rounded-full whitespace-nowrap">✓ Current Plan</span>
                 </div>
               )}
 
-              <div className="flex items-center gap-2 mb-4">
+              <div className="flex items-center gap-2 mb-4 mt-2">
                 <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${plan.bg} border ${plan.border}`}>
                   <Icon className={`w-4 h-4 ${plan.color}`} />
                 </div>
                 <h3 className="text-base font-bold text-foreground">{plan.name}</h3>
               </div>
 
-              <div className="mb-4">
+              <div className="mb-5">
                 <span className="text-3xl font-extrabold text-foreground">{plan.price === 0 ? "Free" : `$${plan.price}`}</span>
                 {plan.price > 0 && <span className="text-sm text-muted-foreground ml-1">{plan.billing}</span>}
               </div>
@@ -241,44 +367,45 @@ export default function PricingSettings() {
               <ul className="space-y-2 flex-1 mb-5">
                 {plan.features.map((f, fi) => (
                   <li key={fi} className="flex items-start gap-2 text-xs">
-                    {f.included ? (
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 mt-0.5 shrink-0" />
-                    ) : (
-                      <X className="w-3.5 h-3.5 text-muted-foreground/40 mt-0.5 shrink-0" />
-                    )}
+                    {f.included
+                      ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 mt-0.5 shrink-0" />
+                      : <X className="w-3.5 h-3.5 text-muted-foreground/40 mt-0.5 shrink-0" />}
                     <span className={f.included ? "text-foreground" : "text-muted-foreground/50"}>{f.label}</span>
                   </li>
                 ))}
               </ul>
 
-              <Button
-                onClick={() => handleUpgrade(plan.id)}
-                disabled={isActive || upgrading}
-                variant={isActive ? "outline" : "default"}
-                className={`w-full h-10 rounded-xl text-sm font-semibold ${
-                  isActive
-                    ? "cursor-default"
-                    : plan.id === "business"
-                    ? "bg-amber-500 hover:bg-amber-500/90 text-white border-0"
-                    : "bg-accent hover:bg-accent/90 text-accent-foreground"
-                }`}
-              >
-                {isUpgrading ? (
-                  <div className="w-4 h-4 border-2 border-current/30 border-t-current rounded-full animate-spin" />
-                ) : isActive ? (
-                  "Current Plan"
-                ) : plan.id === "free" ? (
-                  "Downgrade"
-                ) : (
-                  <>Upgrade <ChevronRight className="w-3.5 h-3.5" /></>
-                )}
-              </Button>
+              {isActive ? (
+                <Button disabled variant="outline" className="w-full h-10 rounded-xl text-sm font-semibold cursor-default">
+                  Current Plan
+                </Button>
+              ) : plan.id === "free" ? (
+                <Button
+                  onClick={handleCancel}
+                  disabled={currentPlanId === "free" || cancelling}
+                  variant="outline"
+                  className="w-full h-10 rounded-xl text-sm font-semibold"
+                >
+                  Downgrade to Free
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => setSelectedPlan(plan)}
+                  className={`w-full h-10 rounded-xl text-sm font-semibold gap-1.5 ${
+                    plan.id === "business"
+                      ? "bg-amber-500 hover:bg-amber-500/90 text-white border-0"
+                      : "bg-accent hover:bg-accent/90 text-accent-foreground"
+                  }`}
+                >
+                  Upgrade <ChevronRight className="w-3.5 h-3.5" />
+                </Button>
+              )}
             </motion.div>
           );
         })}
       </div>
 
-      {/* Trust & Security */}
+      {/* Trust badges */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
@@ -303,126 +430,50 @@ export default function PricingSettings() {
         </div>
       </motion.div>
 
-      {/* Payment Methods */}
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
-        <div className="bg-card ink-border rounded-2xl p-6">
-          <div className="flex items-center justify-between mb-5">
-            <div className="flex items-center gap-2">
-              <CreditCard className="w-5 h-5 text-muted-foreground" />
-              <h3 className="text-base font-bold text-foreground">Payment Methods</h3>
+      {/* Provider logos */}
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}>
+        <div className="bg-card ink-border rounded-2xl p-5 flex items-center justify-center gap-8 flex-wrap">
+          <p className="text-xs text-muted-foreground font-medium">Payments powered by</p>
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-orange-500 flex items-center justify-center">
+              <span className="text-[10px] font-black text-white">F</span>
             </div>
-            <Button size="sm" variant="outline" onClick={() => setShowAddCard((v) => !v)} className="rounded-full h-8 text-xs gap-1.5">
-              {showAddCard ? "Cancel" : "+ Add Card"}
-            </Button>
+            <span className="text-sm font-black text-orange-500">Flutterwave</span>
           </div>
-
-          <div className="space-y-3 mb-4">
-            {paymentMethods.length === 0 ? (
-              <div className="text-center py-6 text-sm text-muted-foreground">No payment methods added.</div>
-            ) : (
-              paymentMethods.map((m) => (
-                <PaymentMethodCard
-                  key={m.id}
-                  method={m}
-                  isDefault={m.id === defaultMethod}
-                  onSetDefault={setDefaultMethod}
-                  onRemove={handleRemoveMethod}
-                />
-              ))
-            )}
+          <span className="text-muted-foreground/40 text-xs">+</span>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-black" style={{ color: "#635BFF" }}>stripe</span>
           </div>
-
-          {/* Add card form */}
-          {showAddCard && (
-            <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-              className="border-t border-border pt-4 mt-4 space-y-3">
-              <p className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-                <Lock className="w-3.5 h-3.5 text-muted-foreground" /> Add new card
-              </p>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-[10px] text-muted-foreground">Powered by</span>
-                <span className="text-[11px] font-black text-[#635BFF]">stripe</span>
-                <div className="flex gap-1">
-                  {["VISA","MC","AMEX"].map(b => (
-                    <span key={b} className="text-[9px] font-black bg-muted px-1.5 py-0.5 rounded text-muted-foreground">{b}</span>
-                  ))}
-                </div>
-              </div>
-              <div className="grid grid-cols-1 gap-3">
-                <input
-                  placeholder="Card number (e.g. 4242 4242 4242 4242)"
-                  value={cardForm.number}
-                  onChange={(e) => setCardForm((f) => ({ ...f, number: e.target.value }))}
-                  className="h-10 px-3 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                />
-                <div className="grid grid-cols-2 gap-3">
-                  <input
-                    placeholder="MM/YY"
-                    value={cardForm.expiry}
-                    onChange={(e) => setCardForm((f) => ({ ...f, expiry: e.target.value }))}
-                    className="h-10 px-3 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                  />
-                  <input
-                    placeholder="CVC"
-                    value={cardForm.cvc}
-                    onChange={(e) => setCardForm((f) => ({ ...f, cvc: e.target.value }))}
-                    className="h-10 px-3 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                  />
-                </div>
-                <input
-                  placeholder="Cardholder name"
-                  value={cardForm.name}
-                  onChange={(e) => setCardForm((f) => ({ ...f, name: e.target.value }))}
-                  className="h-10 px-3 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                />
-              </div>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                This is a mock integration — no real payment is processed.
-              </div>
-              <Button onClick={handleAddCard} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground rounded-xl h-10 text-sm font-semibold">
-                Add Card
-              </Button>
-            </motion.div>
-          )}
-
-          <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-4">
-            <Lock className="w-3 h-3" /> Payments are encrypted and secure.
-          </p>
-        </div>
-      </motion.div>
-
-      {/* Billing history mock */}
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
-        <div className="bg-card ink-border rounded-2xl p-6">
-          <h3 className="text-base font-bold text-foreground mb-4">Billing History</h3>
-          <div className="space-y-3">
-            {[
-              { date: "Mar 29, 2026", amount: "$12.00", plan: "Pro", status: "Paid" },
-              { date: "Feb 28, 2026", amount: "$12.00", plan: "Pro", status: "Paid" },
-              { date: "Jan 29, 2026", amount: "$12.00", plan: "Pro", status: "Paid" },
-            ].map((item, i) => (
-              <div key={i} className="flex items-center justify-between py-2 border-b border-border last:border-0">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
-                    <CreditCard className="w-3.5 h-3.5 text-muted-foreground" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{item.plan} Plan</p>
-                    <p className="text-xs text-muted-foreground">{item.date}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-semibold text-foreground">{item.amount}</span>
-                  <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-200 bg-emerald-50">
-                    {item.status}
-                  </Badge>
-                </div>
-              </div>
+          <div className="flex gap-1.5">
+            {["VISA", "MC", "AMEX", "Apple Pay", "Google Pay"].map(b => (
+              <span key={b} className="text-[9px] font-bold bg-muted px-1.5 py-0.5 rounded text-muted-foreground">{b}</span>
             ))}
           </div>
         </div>
       </motion.div>
+
+      {/* FAQ note for Stripe Price IDs */}
+      {currentPlanId === "free" && (
+        <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-xs text-amber-800">
+          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
+          <p>
+            <strong>For developers:</strong> To enable Stripe subscriptions, create monthly recurring prices in your Stripe dashboard and add{" "}
+            <code className="bg-amber-100 px-1 rounded">STRIPE_PRICE_PRO</code> and{" "}
+            <code className="bg-amber-100 px-1 rounded">STRIPE_PRICE_BUSINESS</code> as secrets with the price IDs (e.g. <code className="bg-amber-100 px-1 rounded">price_1Abc...</code>).
+          </p>
+        </div>
+      )}
+
+      {/* Payment Modal */}
+      <AnimatePresence>
+        {selectedPlan && (
+          <PaymentModal
+            plan={selectedPlan}
+            onClose={() => setSelectedPlan(null)}
+            onSuccess={() => setSelectedPlan(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -20,6 +20,27 @@
       ],
       "default": "free"
     },
+    "plan_expires_at": {
+      "type": "string",
+      "description": "ISO datetime when the current paid plan expires"
+    },
+    "payment_provider": {
+      "type": "string",
+      "enum": [
+        "flutterwave",
+        "stripe",
+        "none"
+      ],
+      "default": "none"
+    },
+    "stripe_customer_id": {
+      "type": "string",
+      "description": "Stripe customer ID for recurring billing"
+    },
+    "stripe_subscription_id": {
+      "type": "string",
+      "description": "Stripe subscription ID"
+    },
     "auth_provider": {
       "type": "string",
       "enum": [
