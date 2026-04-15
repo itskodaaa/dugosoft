@@ -6,6 +6,7 @@ import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 import { useParams, useNavigate } from "react-router-dom";
 import SignerModal from "../components/esign/SignerModal";
+import RemindersPanel from "../components/esign/RemindersPanel";
 
 const FIELD_TYPES = [
   { type: "signature", label: "Signature", icon: PenLine, color: "bg-blue-500" },
@@ -146,6 +147,10 @@ export default function ESignEditor() {
           </div>
         </div>
       </div>
+
+      {doc?.status === "pending" && (
+        <RemindersPanel docId={id} docTitle={doc?.title} />
+      )}
 
       {showSignerModal && (
         <SignerModal
