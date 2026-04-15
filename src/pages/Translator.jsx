@@ -4,12 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Languages, Copy, Check, Download, Type, FileUp, AlertCircle } from "lucide-react";
+import { Languages, Copy, Check, Download, Type, FileUp, AlertCircle, ArrowRight } from "lucide-react";
 import ProcessingBorder from "../components/shared/ProcessingBorder";
 import FileUpload from "../components/shared/FileUpload";
 import InputModeToggle from "../components/shared/InputModeToggle";
 import StatusBadge from "../components/shared/StatusBadge";
 import { toast } from "sonner";
+import { Link } from "react-router-dom";
 
 const TRANSLATIONS = {
   italian: `Documento tradotto con intelligenza artificiale — Softdugo Translation Engine v1.0
@@ -137,6 +138,15 @@ export default function Translator() {
           </span>
         </div>
       </motion.div>
+
+      {/* AI Language Tools promo */}
+      <div className="flex items-center gap-3 bg-accent/5 border border-accent/20 rounded-xl px-4 py-3 mb-4 text-sm">
+        <Languages className="w-4 h-4 text-accent shrink-0" />
+        <span className="text-muted-foreground">Need context translation, synonyms, or grammar correction?</span>
+        <Link to="/dashboard/ai-language" className="ml-auto text-accent font-semibold hover:underline flex items-center gap-1 shrink-0">
+          AI Language Tools <ArrowRight className="w-3 h-3" />
+        </Link>
+      </div>
 
       {/* Mode toggle */}
       <div className="mb-6">

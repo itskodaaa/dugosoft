@@ -46,6 +46,8 @@ import ESignDashboard from './pages/ESignDashboard';
 import ESignUpload from './pages/ESignUpload';
 import ESignEditor from './pages/ESignEditor';
 import ESignSign from './pages/ESignSign';
+import PDFTools from './pages/PDFTools';
+import AILanguageTools from './pages/AILanguageTools';
 
 
 const AuthenticatedApp = () => {
@@ -108,6 +110,8 @@ const AuthenticatedApp = () => {
         <Route path="esign" element={<ESignDashboard />} />
         <Route path="esign/upload" element={<ESignUpload />} />
         <Route path="esign/editor/:id" element={<ESignEditor />} />
+        <Route path="pdf-tools" element={<PDFTools />} />
+        <Route path="ai-language" element={<AILanguageTools />} />
       </Route>
       <Route path="/sign/:token" element={<ESignSign />} />
       <Route path="*" element={<PageNotFound />} />

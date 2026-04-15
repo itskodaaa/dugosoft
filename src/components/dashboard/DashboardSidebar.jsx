@@ -40,9 +40,11 @@ const NAV_GROUPS = [
     items: [
       { label: "File Converter",   icon: RefreshCw,     path: "/dashboard/file-converter" },
       { label: "AI Translator",    icon: Languages,     path: "/dashboard/translator" },
+      { label: "AI Language Tools",icon: Languages,     path: "/dashboard/ai-language" },
       { label: "OCR & Extract",    icon: ScanText,      path: "/dashboard/ocr-tools" },
       { label: "Document Merger",  icon: Merge,         path: "/dashboard/document-merger" },
       { label: "File Sharing",     icon: Share2,        path: "/dashboard/file-sharing" },
+      { label: "PDF Tools",        icon: FileText,      path: "/dashboard/pdf-tools" },
       { label: "My Documents",     icon: FolderOpen,    path: "/dashboard/my-documents" },
     ]
   },
