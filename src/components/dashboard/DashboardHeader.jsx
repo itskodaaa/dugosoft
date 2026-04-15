@@ -1,10 +1,10 @@
 import React from "react";
-import { Menu, Search, Settings } from "lucide-react";
+import { Menu, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Link } from "react-router-dom";
 import LanguageSwitcher from "@/components/shared/LanguageSwitcher";
 import NotificationPanel from "@/components/shared/NotificationPanel";
 import { useLang } from "@/lib/i18n";
+import UserProfileDropdown from "@/components/dashboard/UserProfileDropdown";
 
 export default function DashboardHeader({ onMenuToggle }) {
   const { t } = useLang();
@@ -34,14 +34,7 @@ export default function DashboardHeader({ onMenuToggle }) {
         </div>
         <LanguageSwitcher />
         <NotificationPanel />
-        <Link to="/dashboard/settings">
-          <button className="w-9 h-9 rounded-xl hover:bg-muted flex items-center justify-center transition-colors">
-            <Settings className="w-4 h-4 text-muted-foreground" />
-          </button>
-        </Link>
-        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-accent to-blue-600 flex items-center justify-center text-sm font-bold text-white shadow-sm cursor-pointer">
-          S
-        </div>
+        <UserProfileDropdown />
       </div>
     </header>
   );

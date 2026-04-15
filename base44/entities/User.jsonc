@@ -4,24 +4,46 @@
   "properties": {
     "role": {
       "type": "string",
-      "description": "The role of the user in the app",
       "enum": [
-        "admin",
-        "user"
-      ]
+        "user",
+        "student",
+        "admin"
+      ],
+      "default": "user"
     },
-    "subscription": {
+    "plan": {
       "type": "string",
-      "description": "User subscription tier",
       "enum": [
         "free",
         "pro",
         "business"
       ],
       "default": "free"
+    },
+    "auth_provider": {
+      "type": "string",
+      "enum": [
+        "email",
+        "google",
+        "github"
+      ],
+      "default": "email"
+    },
+    "pdf_count": {
+      "type": "number",
+      "default": 0
+    },
+    "ai_requests": {
+      "type": "number",
+      "default": 0
+    },
+    "ocr_count": {
+      "type": "number",
+      "default": 0
+    },
+    "usage_reset_date": {
+      "type": "string",
+      "description": "ISO date when usage counters were last reset"
     }
-  },
-  "required": [
-    "role"
-  ]
+  }
 }

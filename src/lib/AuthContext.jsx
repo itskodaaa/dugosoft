@@ -89,9 +89,20 @@ export const AuthProvider = ({ children }) => {
 
   const checkUserAuth = async () => {
     try {
-      // Now check if the user is authenticated
       setIsLoadingAuth(true);
       const currentUser = await base44.auth.me();
+      // Reset daily usage if it's a new day
+      const lastReset = currentUser.usage_reset_date ? new Date(currentUser.usage_reset_date) : null;
+      const today = new Date();
+      if (!lastReset || lastReset.toDateString() !== today.toDateString()) {
+        await base44.auth.updateMe({
+          pdf_count: 0, ai_requests: 0, ocr_count: 0,
+          usage_reset_date: today.toISOString(),
+        });
+        currentUser.pdf_count = 0;
+        currentUser.ai_requests = 0;
+        currentUser.ocr_count = 0;
+      }
       setUser(currentUser);
       setIsAuthenticated(true);
       setIsLoadingAuth(false);
@@ -130,7 +141,8 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider value={{ 
-      user, 
+      user,
+      setUser,
       isAuthenticated, 
       isLoadingAuth,
       isLoadingPublicSettings,

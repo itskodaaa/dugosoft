@@ -49,10 +49,11 @@ import ESignSign from './pages/ESignSign';
 import PDFTools from './pages/PDFTools';
 import AILanguageTools from './pages/AILanguageTools';
 import ResumeTranslator from './pages/ResumeTranslator';
+import EmailVerification from './pages/EmailVerification';
 
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, user, logout } = useAuth();
 
   if (isLoadingPublicSettings || isLoadingAuth) {
     return (
@@ -69,6 +70,11 @@ const AuthenticatedApp = () => {
       navigateToLogin();
       return null;
     }
+  }
+
+  // Email verification gate — only for dashboard routes
+  if (user && user.email_verified === false && window.location.pathname.startsWith('/dashboard')) {
+    return <EmailVerification user={user} onLogout={() => logout(true)} />;
   }
 
   return (

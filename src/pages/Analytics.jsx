@@ -91,7 +91,17 @@ function LimitBar({ label, icon: Icon, used, limit, color }) {
 }
 
 export default function Analytics() {
+  const { user } = useAuth();
+  const plan = user?.plan || "free";
+
+  const REAL_PLAN_LIMITS = [
+    { label: "PDF Conversions", icon: RefreshCw, used: user?.pdf_count || 0, limit: plan === "free" ? 5 : plan === "pro" ? 100 : null, color: "#f97316" },
+    { label: "AI Requests", icon: Zap, used: user?.ai_requests || 0, limit: plan === "free" ? 10 : plan === "pro" ? 200 : null, color: "#4f8ef7" },
+    { label: "OCR Usage", icon: BarChart3, used: user?.ocr_count || 0, limit: plan === "free" ? 3 : plan === "pro" ? 50 : null, color: "#8b5cf6" },
+  ];
+
   return (
+    <FeatureGate requiredPlan="business" message="Full Analytics is available on the Business plan.">
     <div className="max-w-6xl space-y-8">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
         <div className="flex items-center justify-between mb-1 flex-wrap gap-3">
@@ -133,9 +143,16 @@ export default function Analytics() {
 
       {/* Plan Limits */}
       <div>
-        <h2 className="text-base font-bold text-foreground mb-4">Plan Usage</h2>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {PLAN_LIMITS.map((item, i) => <LimitBar key={i} {...item} />)}
+        <h2 className="text-base font-bold text-foreground mb-4">Today's Usage</h2>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {REAL_PLAN_LIMITS.map((item, i) => (
+            item.limit === null
+              ? <div key={i} className="bg-card ink-border rounded-2xl p-5 flex items-center gap-3">
+                  <item.icon className="w-5 h-5 text-muted-foreground" />
+                  <div><p className="text-sm font-medium text-foreground">{item.label}</p><p className="text-green-600 font-bold text-xs">Unlimited</p></div>
+                </div>
+              : <LimitBar key={i} {...item} />
+          ))}
         </div>
         <div className="mt-4 bg-accent/5 border border-accent/20 rounded-xl px-5 py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -218,5 +235,6 @@ export default function Analytics() {
         </div>
       </div>
     </div>
+    </FeatureGate>
   );
 }

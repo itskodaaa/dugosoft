@@ -1,7 +1,8 @@
 import React, { useState } from "react";
+import FeatureGate from "../components/shared/FeatureGate";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Globe, Plus, Download, Share2, Eye, Trash2, Languages, Crown,
+  Globe, Plus, Download, Share2, Eye, Trash2, Languages,
   FileText, CheckCircle2, Sparkles, X, Clock, Copy, GitCompare,
   Tag, Building2, Briefcase, Stethoscope, Code, TrendingUp, PenLine,
   Camera, RefreshCw
@@ -13,9 +14,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
-
-const USER_PLAN = "premium";
-const canUse = USER_PLAN === "premium" || USER_PLAN === "business";
 
 const INDUSTRY_TAGS = [
   { id: "tech",       label: "Technology",   icon: Code,         color: "bg-blue-100 text-blue-700 border-blue-200" },
@@ -201,20 +199,8 @@ export default function CVVault() {
     reader.readAsDataURL(file);
   };
 
-  if (!canUse) {
-    return (
-      <div className="max-w-2xl mx-auto mt-8">
-        <div className="bg-card ink-border rounded-2xl p-14 text-center">
-          <Crown className="w-14 h-14 text-amber-400 mx-auto mb-4" />
-          <h2 className="text-2xl font-extrabold text-foreground mb-3">Premium Feature</h2>
-          <p className="text-muted-foreground max-w-sm mx-auto mb-6">CV Vault is available on Premium and Business plans.</p>
-          <Button className="bg-accent hover:bg-accent/90 text-accent-foreground rounded-full px-10 font-bold">Upgrade to Premium</Button>
-        </div>
-      </div>
-    );
-  }
-
   return (
+    <FeatureGate requiredPlan="pro" message="CV Vault is available on Pro and Business plans. Upgrade to store unlimited CV versions.">
     <div className="max-w-6xl space-y-6">
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
@@ -389,5 +375,6 @@ export default function CVVault() {
         )}
       </AnimatePresence>
     </div>
+    </FeatureGate>
   );
 }
