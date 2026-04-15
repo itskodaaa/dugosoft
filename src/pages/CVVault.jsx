@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { base44 } from "@/api/base44Client";
+import { Link } from "react-router-dom";
 
 const USER_PLAN = "premium";
 const canUse = USER_PLAN === "premium" || USER_PLAN === "business";
@@ -230,6 +231,11 @@ export default function CVVault() {
                 <GitCompare className="w-3.5 h-3.5" /> Compare Versions
               </Button>
             )}
+            <Link to="/dashboard/resume-translator">
+              <Button variant="outline" className="rounded-full h-9 text-xs gap-1.5">
+                <Languages className="w-3.5 h-3.5" /> Translate Resume
+              </Button>
+            </Link>
             <Button onClick={() => setAddingNew(true)} className="bg-accent hover:bg-accent/90 text-accent-foreground rounded-full h-9 text-xs gap-1.5">
               <Plus className="w-3.5 h-3.5" /> Add Version
             </Button>

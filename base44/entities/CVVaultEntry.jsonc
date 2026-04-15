@@ -1,0 +1,45 @@
+{
+  "name": "CVVaultEntry",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "language": {
+      "type": "string"
+    },
+    "language_code": {
+      "type": "string"
+    },
+    "flag": {
+      "type": "string"
+    },
+    "original_title": {
+      "type": "string"
+    },
+    "job_target": {
+      "type": "string"
+    },
+    "file_url": {
+      "type": "string"
+    },
+    "content": {
+      "type": "string"
+    },
+    "version_type": {
+      "type": "string",
+      "enum": [
+        "original",
+        "translation",
+        "generated"
+      ],
+      "default": "original"
+    },
+    "industry": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "title"
+  ]
+}

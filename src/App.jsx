@@ -48,6 +48,7 @@ import ESignEditor from './pages/ESignEditor';
 import ESignSign from './pages/ESignSign';
 import PDFTools from './pages/PDFTools';
 import AILanguageTools from './pages/AILanguageTools';
+import ResumeTranslator from './pages/ResumeTranslator';
 
 
 const AuthenticatedApp = () => {
@@ -112,6 +113,7 @@ const AuthenticatedApp = () => {
         <Route path="esign/editor/:id" element={<ESignEditor />} />
         <Route path="pdf-tools" element={<PDFTools />} />
         <Route path="ai-language" element={<AILanguageTools />} />
+        <Route path="resume-translator" element={<ResumeTranslator />} />
       </Route>
       <Route path="/sign/:token" element={<ESignSign />} />
       <Route path="*" element={<PageNotFound />} />

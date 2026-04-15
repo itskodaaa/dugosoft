@@ -55,6 +55,7 @@ const NAV_GROUPS = [
       { label: "Design Editor",    icon: LayoutTemplate,path: "/dashboard/resume-design" },
       { label: "CV Vault",         icon: Globe,         path: "/dashboard/cv-vault" },
       { label: "LinkedIn Import",  icon: Linkedin,      path: "/dashboard/linkedin-import" },
+      { label: "Resume Translator",icon: Languages,     path: "/dashboard/resume-translator" },
       { label: "LinkedIn Optimizer",icon: TrendingUp,   path: "/dashboard/linkedin-optimizer" },
       { label: "ATS Checker",      icon: BarChart3,     path: "/dashboard/ats-checker" },
       { label: "Cover Letter",     icon: PenLine,       path: "/dashboard/cover-letter" },
