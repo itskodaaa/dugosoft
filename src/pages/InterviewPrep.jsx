@@ -65,13 +65,35 @@ function QuestionCard({ question, index, total, onNext, onPrev, isLast }) {
   const getFeedback = async () => {
     if (!answer.trim()) { toast.warning("Please write or record your answer first."); return; }
     setLoading(true);
-    const res = await base44.functions.invoke("aiService", {
-      action: "evaluateInterviewAnswer",
-      question: question.question,
-      answer,
-    });
-    if (res.data?.success) setFeedback(res.data.result);
-    else toast.error(res.data?.message || "Failed to get AI feedback.");
+    try {
+      const res = await base44.integrations.Core.InvokeLLM({
+        prompt: `You are an expert interview coach. Evaluate the following interview answer and provide detailed, actionable feedback.
+
+Interview Question: ${question.question}
+Question Type: ${question.type}
+Candidate Answer: ${answer}
+
+Evaluate on: clarity (how clearly ideas are communicated), tone (professional and confident), keyword usage (relevant industry terms), and structure (logical flow). Be honest but constructive.`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            score: { type: "number", description: "Overall score out of 100" },
+            verdict: { type: "string", description: "One-sentence overall assessment" },
+            clarity_score: { type: "number", description: "Clarity score 0-100" },
+            tone_score: { type: "number", description: "Tone score 0-100" },
+            keyword_score: { type: "number", description: "Keyword relevance score 0-100" },
+            strengths: { type: "array", items: { type: "string" } },
+            improvements: { type: "array", items: { type: "string" } },
+            missing_keywords: { type: "array", items: { type: "string" }, description: "Important keywords missing from the answer" },
+            model_answer_snippet: { type: "string", description: "A brief example of how a strong answer would start" },
+            tip: { type: "string" }
+          }
+        }
+      });
+      setFeedback(res);
+    } catch {
+      toast.error("Failed to get AI feedback.");
+    }
     setLoading(false);
   };
 
@@ -135,7 +157,8 @@ function QuestionCard({ question, index, total, onNext, onPrev, isLast }) {
       <AnimatePresence>
         {feedback && (
           <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-            className="bg-card ink-border rounded-2xl p-4 space-y-3">
+            className="bg-card ink-border rounded-2xl p-4 space-y-4">
+            {/* Header */}
             <div className="flex items-center justify-between">
               <p className="text-sm font-bold text-foreground">AI Feedback</p>
               <div className="flex items-center gap-1">
@@ -145,7 +168,26 @@ function QuestionCard({ question, index, total, onNext, onPrev, isLast }) {
                 <span className="text-xs font-bold text-foreground ml-1">{feedback.score}/100</span>
               </div>
             </div>
-            <p className="text-sm text-foreground font-medium">{feedback.verdict}</p>
+            <p className="text-sm text-foreground font-medium italic">{feedback.verdict}</p>
+
+            {/* Dimension scores */}
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { label: "Clarity", value: feedback.clarity_score, color: "bg-blue-500" },
+                { label: "Tone", value: feedback.tone_score, color: "bg-purple-500" },
+                { label: "Keywords", value: feedback.keyword_score, color: "bg-green-500" },
+              ].map(dim => (
+                <div key={dim.label} className="bg-muted/40 rounded-xl p-3 text-center">
+                  <p className="text-lg font-black text-foreground">{dim.value}</p>
+                  <div className="w-full h-1.5 bg-muted rounded-full my-1.5 overflow-hidden">
+                    <div className={`h-full rounded-full ${dim.color}`} style={{ width: `${dim.value}%` }} />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground font-semibold">{dim.label}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Strengths & Improvements */}
             <div className="grid sm:grid-cols-2 gap-3">
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-wider text-green-600 mb-1.5">Strengths</p>
@@ -160,8 +202,29 @@ function QuestionCard({ question, index, total, onNext, onPrev, isLast }) {
                 </ul>
               </div>
             </div>
+
+            {/* Missing keywords */}
+            {feedback.missing_keywords?.length > 0 && (
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">Keywords to Include</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {feedback.missing_keywords.map((k, i) => (
+                    <span key={i} className="text-[10px] bg-amber-100 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full font-semibold">{k}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Model answer snippet */}
+            {feedback.model_answer_snippet && (
+              <div className="bg-accent/5 border border-accent/20 rounded-xl p-3 space-y-1">
+                <p className="text-[10px] font-bold text-accent uppercase tracking-wider">Strong Answer Example</p>
+                <p className="text-xs text-foreground leading-relaxed italic">"{feedback.model_answer_snippet}..."</p>
+              </div>
+            )}
+
             {feedback.tip && (
-              <div className="bg-accent/5 border border-accent/20 rounded-xl p-3 text-xs text-accent font-medium">
+              <div className="bg-muted/40 rounded-xl p-3 text-xs text-muted-foreground font-medium">
                 💡 {feedback.tip}
               </div>
             )}

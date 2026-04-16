@@ -1,0 +1,131 @@
+{
+  "name": "Portfolio",
+  "type": "object",
+  "properties": {
+    "slug": {
+      "type": "string",
+      "description": "Unique URL slug for the public portfolio page"
+    },
+    "name": {
+      "type": "string"
+    },
+    "headline": {
+      "type": "string"
+    },
+    "bio": {
+      "type": "string"
+    },
+    "avatar_url": {
+      "type": "string"
+    },
+    "location": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "linkedin_url": {
+      "type": "string"
+    },
+    "github_url": {
+      "type": "string"
+    },
+    "website_url": {
+      "type": "string"
+    },
+    "skills": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "skill_endorsements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "skill": {
+            "type": "string"
+          },
+          "level": {
+            "type": "string"
+          },
+          "endorsers": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "projects": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "tech_stack": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "url": {
+            "type": "string"
+          },
+          "image_url": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "experience": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "company": {
+            "type": "string"
+          },
+          "period": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "resume_version": {
+      "type": "string"
+    },
+    "is_public": {
+      "type": "boolean",
+      "default": true
+    },
+    "theme": {
+      "type": "string",
+      "enum": [
+        "minimal",
+        "gradient",
+        "dark",
+        "professional"
+      ],
+      "default": "minimal"
+    },
+    "view_count": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": [
+    "name",
+    "slug"
+  ]
+}

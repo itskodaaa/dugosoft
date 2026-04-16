@@ -4,11 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   Briefcase, MapPin, DollarSign, Sparkles, ExternalLink,
-  Loader2, RefreshCw, X, CheckCircle2, Building2, Clock
+  Loader2, RefreshCw, X, CheckCircle2, Building2, Clock, BarChart3
 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { toast } from "sonner";
+import SalaryAnalysisModal from "@/components/salary/SalaryAnalysisModal";
 
 function CoverLetterModal({ job, onClose }) {
   const [loading, setLoading] = useState(true);
@@ -102,6 +103,7 @@ export default function JobRecommendations({ userSkills = [] }) {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedJob, setSelectedJob] = useState(null);
+  const [salaryJob, setSalaryJob] = useState(null);
   const [generated, setGenerated] = useState(false);
 
   const fetchJobs = async () => {
@@ -248,7 +250,7 @@ For each job, provide realistic company names, salary ranges, and a brief descri
               </div>
 
               {/* Actions */}
-              <div className="flex gap-2 mt-auto pt-1">
+              <div className="flex gap-2 mt-auto pt-1 flex-wrap">
                 <Button
                   onClick={() => setSelectedJob(job)}
                   size="sm"
@@ -256,8 +258,13 @@ For each job, provide realistic company names, salary ranges, and a brief descri
                 >
                   <Sparkles className="w-3 h-3" /> Apply with AI
                 </Button>
-                <Button size="sm" variant="outline" className="h-8 rounded-xl text-xs gap-1 px-3">
-                  <ExternalLink className="w-3 h-3" /> View
+                <Button
+                  onClick={() => setSalaryJob(job)}
+                  size="sm"
+                  variant="outline"
+                  className="h-8 rounded-xl text-xs gap-1 px-3 border-green-200 text-green-700 hover:bg-green-50"
+                >
+                  <BarChart3 className="w-3 h-3" /> Salary
                 </Button>
               </div>
             </motion.div>
@@ -268,6 +275,9 @@ For each job, provide realistic company names, salary ranges, and a brief descri
       <AnimatePresence>
         {selectedJob && (
           <CoverLetterModal job={selectedJob} onClose={() => setSelectedJob(null)} />
+        )}
+        {salaryJob && (
+          <SalaryAnalysisModal job={salaryJob} onClose={() => setSalaryJob(null)} />
         )}
       </AnimatePresence>
     </div>

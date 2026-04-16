@@ -66,6 +66,7 @@ const NAV_GROUPS = [
       { label: "Interview Prep",   icon: Brain,         path: "/dashboard/interview-prep" },
       { label: "Career Mentor",    icon: Bot,           path: "/dashboard/career-mentor" },
       { label: "Career Performance",icon: Activity,     path: "/dashboard/career-performance" },
+      { label: "Portfolio",        icon: Globe,         path: "/dashboard/portfolio-builder" },
     ]
   },
   {

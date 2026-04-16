@@ -53,6 +53,8 @@ import EmailVerification from './pages/EmailVerification';
 import Referral from './pages/Referral';
 import AuthPage from './pages/AuthPage';
 import ImportResume from './pages/ImportResume';
+import PortfolioBuilder from './pages/PortfolioBuilder';
+import PublicPortfolio from './pages/PublicPortfolio';
 
 
 const AuthenticatedApp = () => {
@@ -125,7 +127,9 @@ const AuthenticatedApp = () => {
         <Route path="resume-translator" element={<ResumeTranslator />} />
         <Route path="referral" element={<Referral />} />
         <Route path="import-resume" element={<ImportResume />} />
+        <Route path="portfolio-builder" element={<PortfolioBuilder />} />
       </Route>
+      <Route path="/portfolio/:slug" element={<PublicPortfolio />} />
       <Route path="/sign/:token" element={<ESignSign />} />
       <Route path="/auth" element={<AuthPage />} />
       <Route path="*" element={<PageNotFound />} />
