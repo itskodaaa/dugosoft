@@ -1,0 +1,55 @@
+{
+  "name": "FileRecord",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "original_name": {
+      "type": "string"
+    },
+    "file_type": {
+      "type": "string"
+    },
+    "file_size": {
+      "type": "number"
+    },
+    "storage_path": {
+      "type": "string"
+    },
+    "file_url": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "uploaded",
+        "processing",
+        "complete",
+        "failed",
+        "provider_not_configured",
+        "pending_setup"
+      ],
+      "default": "uploaded"
+    },
+    "tool_used": {
+      "type": "string"
+    },
+    "output_url": {
+      "type": "string"
+    },
+    "output_name": {
+      "type": "string"
+    },
+    "error_message": {
+      "type": "string"
+    },
+    "expires_at": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "user_id",
+    "original_name"
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "name": "Payment",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "user_email": {
+      "type": "string"
+    },
+    "gateway": {
+      "type": "string",
+      "enum": [
+        "flutterwave",
+        "stripe"
+      ]
+    },
+    "tx_ref": {
+      "type": "string"
+    },
+    "gateway_tx_id": {
+      "type": "string"
+    },
+    "amount": {
+      "type": "number"
+    },
+    "currency": {
+      "type": "string",
+      "default": "USD"
+    },
+    "plan": {
+      "type": "string"
+    },
+    "region": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "success",
+        "failed",
+        "refunded"
+      ],
+      "default": "pending"
+    },
+    "raw_response": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "user_id",
+    "gateway",
+    "tx_ref",
+    "amount"
+  ]
+}

@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
-const FLW_SECRET = Deno.env.get("FLUTTERWAVE_SECRET_KEY");
+const FLW_SECRET     = Deno.env.get("FLUTTERWAVE_SECRET_KEY");
+const FLW_PUBLIC_KEY = Deno.env.get("FLUTTERWAVE_PUBLIC_KEY");
 
 // Server-side authoritative pricing — never trust frontend amounts
 const REGION_PRICES = {
@@ -21,6 +22,10 @@ Deno.serve(async (req) => {
   const { plan, region } = await req.json();
   if (!plan || !["pro", "business"].includes(plan)) {
     return Response.json({ error: "Invalid plan" }, { status: 400 });
+  }
+
+  if (!FLW_SECRET) {
+    return Response.json({ error: "billing_not_configured", message: "Flutterwave is not configured. Set FLUTTERWAVE_SECRET_KEY in environment secrets." }, { status: 503 });
   }
 
   // Backend validates the region — fall back to user's saved region or global
@@ -64,6 +69,20 @@ Deno.serve(async (req) => {
   if (data.status !== "success") {
     return Response.json({ error: data.message || "Failed to create payment link" }, { status: 500 });
   }
+
+  // Record pending payment
+  await base44.asServiceRole.entities.Payment.create({
+    user_id: user.id,
+    user_email: user.email,
+    gateway: "flutterwave",
+    tx_ref: txRef,
+    amount,
+    currency: "USD",
+    plan,
+    region: userRegion,
+    status: "pending",
+    raw_response: JSON.stringify({ link: data.data.link }),
+  });
 
   return Response.json({ payment_link: data.data.link, tx_ref: txRef, amount, region: userRegion });
 });

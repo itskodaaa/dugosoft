@@ -38,9 +38,9 @@ Deno.serve(async (req) => {
       const session = event.data.object;
       if (session.mode === "subscription" && session.payment_status === "paid") {
         const userId = session.metadata?.user_id;
-        const plan = session.metadata?.plan;
+        const plan   = session.metadata?.plan;
+        const region = session.metadata?.region || "global";
         if (userId && plan) {
-          // Store subscription ID
           const users = await base44.asServiceRole.entities.User.filter({ id: userId });
           if (users.length > 0) {
             await base44.asServiceRole.entities.User.update(users[0].id, {
@@ -49,7 +49,30 @@ Deno.serve(async (req) => {
           }
           const expiresAt = new Date();
           expiresAt.setDate(expiresAt.getDate() + 30);
-          await updateUserPlan(userId, plan, expiresAt.toISOString());
+          const expiresAtStr = expiresAt.toISOString();
+          await updateUserPlan(userId, plan, expiresAtStr);
+
+          // Update pending Payment record
+          const payments = await base44.asServiceRole.entities.Payment.filter({ tx_ref: session.id });
+          if (payments.length > 0) {
+            await base44.asServiceRole.entities.Payment.update(payments[0].id, {
+              status: "success",
+              gateway_tx_id: session.payment_intent || session.subscription,
+              raw_response: JSON.stringify({ session_id: session.id, subscription: session.subscription }),
+            });
+          }
+
+          // Create Subscription record
+          await base44.asServiceRole.entities.Subscription.create({
+            user_id: userId,
+            plan_name: plan,
+            billing_gateway: "stripe",
+            billing_cycle: "monthly",
+            status: "active",
+            started_at: new Date().toISOString(),
+            expires_at: expiresAtStr,
+            gateway_subscription_id: session.subscription,
+          });
         }
       }
       break;

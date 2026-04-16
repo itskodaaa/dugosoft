@@ -1,31 +1,73 @@
 /**
- * Dugosoft AI Service — server-side, unified backend for all AI features.
- * Uses GEMINI_API_KEY (set as secret). Falls back to a structured "not configured" response.
- * Never exposes API keys to the frontend.
+ * Dugosoft AI Service — unified server-side AI backend.
+ * Prefers OPENAI_API_KEY, falls back to GEMINI_API_KEY.
+ * Logs every call to AIRequest and UsageRecord entities.
+ * Returns honest "not_configured" if no key is set.
  */
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
+const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
-const GEMINI_MODEL = "gemini-1.5-flash-latest";
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+const GEMINI_MODEL   = "gemini-1.5-flash-latest";
+const OPENAI_MODEL   = "gpt-4o-mini";
 
-// ── Helper: call Gemini ────────────────────────────────────────────────────────
-async function callGemini(prompt, jsonSchema = null) {
-  if (!GEMINI_API_KEY) {
-    return { _not_configured: true, message: "AI service is not configured. Please set GEMINI_API_KEY in environment secrets." };
+// ── Plan limits (server-side authoritative) ───────────────────────────────────
+const PLAN_LIMITS = {
+  free:     { ai_requests: 10 },
+  pro:      { ai_requests: 200 },
+  business: { ai_requests: Infinity },
+};
+
+function checkAILimit(user) {
+  const plan  = user.plan || "free";
+  const limit = PLAN_LIMITS[plan]?.ai_requests ?? 10;
+  return (user.ai_requests || 0) < limit;
+}
+
+// ── OpenAI caller ─────────────────────────────────────────────────────────────
+async function callOpenAI(prompt, jsonMode = false) {
+  const messages = [{ role: "user", content: prompt }];
+  const body = {
+    model: OPENAI_MODEL,
+    messages,
+    temperature: 0.7,
+    max_tokens: 2048,
+  };
+  if (jsonMode) body.response_format = { type: "json_object" };
+
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${OPENAI_API_KEY}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    if (res.status === 429) throw new Error("AI quota exceeded. Please try again shortly.");
+    throw new Error(`OpenAI error ${res.status}: ${err}`);
   }
 
+  const data = await res.json();
+  const text = data.choices?.[0]?.message?.content || "";
+  if (jsonMode) {
+    try { return JSON.parse(text); } catch { return text; }
+  }
+  return text;
+}
+
+// ── Gemini caller ─────────────────────────────────────────────────────────────
+async function callGemini(prompt, jsonSchema = null) {
+  const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
   const body = {
     contents: [{ parts: [{ text: prompt }] }],
-    generationConfig: {
-      temperature: 0.7,
-      maxOutputTokens: 2048,
-    }
+    generationConfig: { temperature: 0.7, maxOutputTokens: 2048 },
   };
-
   if (jsonSchema) {
     body.generationConfig.responseMimeType = "application/json";
-    body.generationConfig.responseSchema = jsonSchema;
+    body.generationConfig.responseSchema   = jsonSchema;
   }
 
   const res = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
@@ -35,24 +77,46 @@ async function callGemini(prompt, jsonSchema = null) {
   });
 
   if (!res.ok) {
-    const errText = await res.text();
-    if (res.status === 429) {
-      throw new Error("AI quota exceeded. Please try again in a few moments or upgrade your Gemini API plan.");
-    }
-    throw new Error(`Gemini API error ${res.status}: ${errText}`);
+    const err = await res.text();
+    if (res.status === 429) throw new Error("AI quota exceeded. Please try again shortly.");
+    throw new Error(`Gemini error ${res.status}: ${err}`);
   }
 
   const data = await res.json();
   const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-  if (jsonSchema) {
-    try { return JSON.parse(text); } catch { return text; }
-  }
+  if (jsonSchema) { try { return JSON.parse(text); } catch { return text; } }
   return text;
 }
 
-// ── Usage recording ────────────────────────────────────────────────────────────
-async function recordUsage(base44, user, action) {
+// ── Unified AI caller (OpenAI first, Gemini fallback) ─────────────────────────
+async function callAI(prompt, jsonSchema = null) {
+  if (!OPENAI_API_KEY && !GEMINI_API_KEY) {
+    return { _not_configured: true };
+  }
+  if (OPENAI_API_KEY) {
+    return await callOpenAI(prompt, !!jsonSchema);
+  }
+  return await callGemini(prompt, jsonSchema);
+}
+
+// ── Usage recording ───────────────────────────────────────────────────────────
+async function recordUsage(base44, user, action, inputSize, outputSize, success, errorMsg) {
   const today = new Date().toISOString().split("T")[0];
+
+  // 1. Log to AIRequest entity
+  await base44.asServiceRole.entities.AIRequest.create({
+    user_id:      user.id,
+    feature:      "ai_requests",
+    action,
+    input_size:   inputSize || 0,
+    output_size:  outputSize || 0,
+    model:        OPENAI_API_KEY ? OPENAI_MODEL : GEMINI_MODEL,
+    success:      success !== false,
+    error_message: errorMsg || null,
+    plan_at_time: user.plan || "free",
+  });
+
+  // 2. Upsert daily UsageLog (for Analytics page)
   const existing = await base44.asServiceRole.entities.UsageLog.filter({ user_id: user.id, date: today });
   if (existing.length > 0) {
     const log = existing[0];
@@ -62,279 +126,211 @@ async function recordUsage(base44, user, action) {
     });
   } else {
     await base44.asServiceRole.entities.UsageLog.create({
-      user_id: user.id,
-      date: today,
-      ai_requests: 1,
-      pdf_count: 0,
-      ocr_count: 0,
-      conversions: 0,
+      user_id: user.id, date: today,
+      ai_requests: 1, pdf_count: 0, ocr_count: 0, conversions: 0,
       plan: user.plan || "free",
     });
   }
-  // Also increment on user record
+
+  // 3. Upsert daily UsageRecord (new granular entity)
+  const periodStart = today;
+  const periodEnd   = today;
+  const usageRecs   = await base44.asServiceRole.entities.UsageRecord.filter({
+    user_id: user.id, feature: "ai_requests", period_start: periodStart,
+  });
+  if (usageRecs.length > 0) {
+    await base44.asServiceRole.entities.UsageRecord.update(usageRecs[0].id, {
+      count: (usageRecs[0].count || 0) + 1,
+    });
+  } else {
+    await base44.asServiceRole.entities.UsageRecord.create({
+      user_id: user.id, feature: "ai_requests", count: 1,
+      period_type: "daily", period_start: periodStart, period_end: periodEnd,
+      plan_at_time: user.plan || "free",
+    });
+  }
+
+  // 4. Increment on user record (for limit checks)
   await base44.auth.updateMe({ ai_requests: (user.ai_requests || 0) + 1 });
 }
 
-// ── Plan limit check ──────────────────────────────────────────────────────────
-function checkAILimit(user) {
-  const plan = user.plan || "free";
-  const limits = { free: 10, pro: 200, business: Infinity };
-  const used = user.ai_requests || 0;
-  return used < limits[plan];
-}
-
 // ── Prompt builders ───────────────────────────────────────────────────────────
-function buildATSPrompt(resumeText, jobDescription) {
-  return `You are a professional ATS (Applicant Tracking System) analyst and career coach.
-
-Analyze this resume against the job description and provide detailed scoring.
+const prompts = {
+  scoreResumeATS: (p) => `You are an ATS analyst and career coach.
+Analyze this resume vs the job description and return JSON with:
+{ "score": number(0-100), "missingKeywords": string[], "foundKeywords": string[], "suggestions": string[], "assessment": string }
 
 RESUME:
-${resumeText}
+${p.resumeText}
 
 JOB DESCRIPTION:
-${jobDescription}
+${p.jobDescription}
+
+Be specific and base the score on actual content only.`,
+
+  translateText: (p) => `You are a professional translator specializing in business and career documents.
+Translate the following text to ${p.targetLanguage}. Tone: ${p.tone || "professional"}.
+Preserve all formatting, structure, and meaning. Output ONLY the translated text, no notes.
+
+TEXT:
+${p.text}`,
+
+  generateCoverLetter: (p) => `Write a ${p.tone || "professional"} cover letter in ${p.language || "English"} for:
+Job Title: ${p.jobTitle}
+Company: ${p.company}
+Applicant: ${p.name || "the applicant"}
+Experience: ${p.experience || "several years"}
+Qualifications: ${p.qualifications || "relevant experience"}
+
+Write a complete, ready-to-send cover letter (greeting, 3 body paragraphs, sign-off).
+Make it specific and tailored. Do NOT use placeholders like [X]. Respond entirely in ${p.language || "English"}.`,
+
+  generateInterviewQuestions: (p) => `Generate ${p.count || 10} realistic interview questions for:
+Job Title: ${p.jobTitle}
+Company: ${p.company || "a leading company"}
+Industry: ${p.industry || "technology"}
+Level: ${p.level || "mid-level"}
+
+Include behavioral, technical, situational, and role-specific questions.
+For each: the question, what the interviewer is assessing, and a brief answering tip.`,
+
+  optimizeLinkedInSummary: (p) => `Optimize this LinkedIn profile:
+Target Role: ${p.targetRole}
+Current Summary: ${p.currentSummary}
+Skills: ${p.skills}
+Industry: ${p.industry || "technology"}
 
 Provide:
-1. An ATS compatibility score (0-100) based on keyword match, formatting, and relevance
-2. Missing keywords that appear in the job description but not the resume
-3. Keywords found in both
-4. Specific, actionable suggestions to improve the resume for this specific job
-5. A brief overall assessment
+1. Optimized headline (under 220 chars, keyword-rich)
+2. Compelling About section (under 1300 chars, first-person, achievement-focused)
+3. 10 recommended skills
+4. 3 post ideas to boost visibility`,
 
-Be specific, honest, and helpful. Base the score purely on the actual content provided.`;
-}
+  summarizeDocument: (p) => `Summarize this document accurately:
+${p.text}
 
-function buildTranslationPrompt(text, targetLanguage, tone) {
-  return `You are a professional translator with expertise in business and career documents.
+Provide: executive summary (2-3 sentences), key points (bullets), action items/important dates if any, document type.`,
 
-Translate the following text to ${targetLanguage}.
-Tone: ${tone || "professional"}
-Preserve all formatting, structure, and meaning.
-If the text is a resume or cover letter, maintain the professional register appropriate for ${targetLanguage}-speaking job markets.
+  chatWithDocument: (p) => {
+    const hist = p.history?.map(h => `${h.role === "user" ? "User" : "Assistant"}: ${h.content}`).join("\n") || "";
+    return `You are a document assistant. Answer questions about the provided document only.
+DOCUMENT:
+${p.documentText}
+${hist ? `\nCONVERSATION:\n${hist}\n` : ""}
+USER: ${p.question}
+Answer based only on document content. If not in the document, say so clearly.`;
+  },
 
-TEXT TO TRANSLATE:
-${text}
+  generateResume: (p) => `Generate a complete ATS-optimized resume for:
+Name: ${p.name}, Role: ${p.targetRole}, Experience: ${p.yearsExperience} years
+Industry: ${p.industry}, Skills: ${p.skills}
+Current Role: ${p.currentRole || "Not specified"}, Education: ${p.education || "Not specified"}
+Achievements: ${p.achievements || "Not specified"}, Region: ${p.targetRegion || "Global"}
 
-Provide only the translated text, no explanations or notes.`;
-}
+Write: professional summary (3-4 sentences), experience bullets with quantified results, skills section.`,
 
-function buildResumeGenerationPrompt(data) {
-  return `You are an expert resume writer and career coach.
+  tailorResumeToJob: (p) => `Tailor this resume to match the job description. Keep all facts truthful.
+Resume: ${p.resumeText}
+Job: ${p.jobDescription}
+Rewrite summary and experience bullets to align with job requirements.`,
+};
 
-Generate a complete, ATS-optimized professional resume for:
-- Full Name: ${data.name}
-- Target Role: ${data.targetRole}
-- Years of Experience: ${data.yearsExperience}
-- Industry: ${data.industry}
-- Key Skills: ${data.skills}
-- Current/Recent Role: ${data.currentRole || "Not specified"}
-- Education: ${data.education || "Not specified"}
-- Achievements: ${data.achievements || "Not specified"}
-- Target Region: ${data.targetRegion || "Global"}
-
-Write a professional summary (3-4 sentences), suggest experience bullet points with quantified achievements, and a skills section.
-Format clearly. Be specific and avoid generic phrases.`;
-}
-
-function buildCoverLetterPrompt(data) {
-  return `Write a ${data.tone || "professional"} cover letter in ${data.language || "English"} for:
-- Job Title: ${data.jobTitle}
-- Company: ${data.company}
-- Applicant Name: ${data.name || "the applicant"}
-- Years of Experience: ${data.experience || "several years"}
-- Key Qualifications: ${data.qualifications || "relevant skills and experience"}
-
-Write a complete, ready-to-send cover letter with proper greeting, 3 compelling paragraphs (introduction, experience highlight, closing), and sign-off.
-Make it specific, authentic, and tailored to the role. Do not use placeholder text like [X] or [Company].
-Respond entirely in ${data.language || "English"}.`;
-}
-
-function buildInterviewQuestionsPrompt(data) {
-  return `You are an expert career coach and interview specialist.
-
-Generate ${data.count || 10} realistic interview questions for:
-- Job Title: ${data.jobTitle}
-- Company: ${data.company || "a leading company"}
-- Industry: ${data.industry || "technology"}
-- Experience Level: ${data.level || "mid-level"}
-- Focus Areas: ${data.focusAreas || "general competencies"}
-
-Include a mix of: behavioral, technical, situational, and role-specific questions.
-For each question, provide:
-1. The question
-2. What the interviewer is really assessing
-3. A brief tip for answering it well`;
-}
-
-function buildLinkedInOptimizationPrompt(data) {
-  return `You are a LinkedIn optimization expert and personal branding specialist.
-
-Optimize this LinkedIn profile for:
-- Target Role: ${data.targetRole}
-- Current Role/Summary: ${data.currentSummary}
-- Key Skills: ${data.skills}
-- Industry: ${data.industry || "technology"}
-
-Provide:
-1. An optimized headline (under 220 chars, keyword-rich)
-2. A compelling "About" section (1300 chars max, first-person, achievement-focused)
-3. 10 recommended skills to add
-4. 3 suggested post ideas to boost visibility`;
-}
-
-function buildDocumentSummaryPrompt(text) {
-  return `You are a professional document analyst.
-
-Summarize this document concisely and accurately:
-
-${text}
-
-Provide:
-1. Executive summary (2-3 sentences)
-2. Key points (bullet list)
-3. Action items or important dates if any
-4. Document type/category`;
-}
-
-function buildChatWithDocumentPrompt(documentText, question, history) {
-  const historyStr = history?.map(h => `${h.role === "user" ? "User" : "Assistant"}: ${h.content}`).join("\n") || "";
-  return `You are a helpful document assistant. Answer questions about the provided document accurately and concisely.
-
-DOCUMENT CONTENT:
-${documentText}
-
-${historyStr ? `CONVERSATION HISTORY:\n${historyStr}\n` : ""}
-USER QUESTION: ${question}
-
-Answer based only on the document content. If the answer is not in the document, say so clearly.`;
-}
+// JSON schema for ATS scoring
+const ATS_SCHEMA = {
+  type: "object",
+  properties: {
+    score: { type: "number" },
+    missingKeywords: { type: "array", items: { type: "string" } },
+    foundKeywords:   { type: "array", items: { type: "string" } },
+    suggestions:     { type: "array", items: { type: "string" } },
+    assessment:      { type: "string" },
+  },
+};
 
 // ── Main handler ──────────────────────────────────────────────────────────────
 Deno.serve(async (req) => {
   const base44 = createClientFromRequest(req);
-  const user = await base44.auth.me();
+  const user   = await base44.auth.me();
   if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  // Check AI limit before processing
   if (!checkAILimit(user)) {
     return Response.json({
       error: "limit_exceeded",
-      message: `Daily AI request limit reached for your ${user.plan || "free"} plan. Upgrade for more.`,
+      message: `Daily AI limit reached for your ${user.plan || "free"} plan. Upgrade for more.`,
       plan: user.plan || "free",
     }, { status: 429 });
   }
 
   const body = await req.json();
   const { action, ...params } = body;
-
   if (!action) return Response.json({ error: "Missing action" }, { status: 400 });
 
-  let result;
+  // Validate inputs per action
+  const required = {
+    scoreResumeATS:            ["resumeText", "jobDescription"],
+    translateText:             ["text", "targetLanguage"],
+    generateCoverLetter:       ["jobTitle", "company"],
+    generateInterviewQuestions:["jobTitle"],
+    optimizeLinkedInSummary:   [],
+    summarizeDocument:         ["text"],
+    chatWithDocument:          ["documentText", "question"],
+    generateResume:            ["name", "targetRole"],
+    tailorResumeToJob:         ["resumeText", "jobDescription"],
+  };
+
+  const req_fields = required[action];
+  if (!req_fields) return Response.json({ error: `Unknown action: ${action}` }, { status: 400 });
+
+  for (const field of req_fields) {
+    if (!params[field]) return Response.json({ error: `${field} is required` }, { status: 400 });
+  }
 
   try {
+    const promptFn = prompts[action];
+    if (!promptFn) return Response.json({ error: `No prompt for action: ${action}` }, { status: 400 });
+
+    const prompt   = promptFn(params);
+    const inputSize = prompt.length;
+
+    // Choose JSON schema for structured actions
+    const useJsonSchema = action === "scoreResumeATS" ? ATS_SCHEMA : null;
+    const rawResult = await callAI(prompt, useJsonSchema);
+
+    if (rawResult?._not_configured) {
+      return Response.json({
+        error: "ai_not_configured",
+        message: "AI service is not configured. Set OPENAI_API_KEY or GEMINI_API_KEY in environment secrets.",
+      }, { status: 503 });
+    }
+
+    // Shape output per action
+    let result;
     switch (action) {
-      case "scoreResumeATS": {
-        if (!params.resumeText || !params.jobDescription) {
-          return Response.json({ error: "resumeText and jobDescription are required" }, { status: 400 });
-        }
-        const schema = {
-          type: "object",
-          properties: {
-            score: { type: "number" },
-            missingKeywords: { type: "array", items: { type: "string" } },
-            foundKeywords: { type: "array", items: { type: "string" } },
-            suggestions: { type: "array", items: { type: "string" } },
-            assessment: { type: "string" },
-          }
-        };
-        result = await callGemini(buildATSPrompt(params.resumeText, params.jobDescription), schema);
+      case "scoreResumeATS":
+        result = typeof rawResult === "object" ? rawResult : { assessment: rawResult, score: 0, missingKeywords: [], foundKeywords: [], suggestions: [] };
         break;
-      }
-
-      case "translateText": {
-        if (!params.text || !params.targetLanguage) {
-          return Response.json({ error: "text and targetLanguage are required" }, { status: 400 });
-        }
-        result = { translation: await callGemini(buildTranslationPrompt(params.text, params.targetLanguage, params.tone)) };
+      case "translateText":
+        result = { translation: rawResult };
         break;
-      }
-
-      case "generateCoverLetter": {
-        if (!params.jobTitle || !params.company) {
-          return Response.json({ error: "jobTitle and company are required" }, { status: 400 });
-        }
-        result = { letter: await callGemini(buildCoverLetterPrompt(params)) };
+      case "generateCoverLetter":
+        result = { letter: rawResult };
         break;
-      }
-
-      case "generateInterviewQuestions": {
-        if (!params.jobTitle) {
-          return Response.json({ error: "jobTitle is required" }, { status: 400 });
-        }
-        result = { content: await callGemini(buildInterviewQuestionsPrompt(params)) };
+      case "summarizeDocument":
+        result = { summary: rawResult };
         break;
-      }
-
-      case "optimizeLinkedInSummary": {
-        if (!params.currentSummary && !params.skills) {
-          return Response.json({ error: "currentSummary or skills required" }, { status: 400 });
-        }
-        result = { content: await callGemini(buildLinkedInOptimizationPrompt(params)) };
+      case "chatWithDocument":
+        result = { answer: rawResult };
         break;
-      }
-
-      case "summarizeDocument": {
-        if (!params.text) {
-          return Response.json({ error: "text is required" }, { status: 400 });
-        }
-        result = { summary: await callGemini(buildDocumentSummaryPrompt(params.text)) };
-        break;
-      }
-
-      case "chatWithDocument": {
-        if (!params.documentText || !params.question) {
-          return Response.json({ error: "documentText and question are required" }, { status: 400 });
-        }
-        result = { answer: await callGemini(buildChatWithDocumentPrompt(params.documentText, params.question, params.history)) };
-        break;
-      }
-
-      case "generateResume": {
-        if (!params.name || !params.targetRole) {
-          return Response.json({ error: "name and targetRole are required" }, { status: 400 });
-        }
-        result = { content: await callGemini(buildResumeGenerationPrompt(params)) };
-        break;
-      }
-
-      case "tailorResumeToJob": {
-        if (!params.resumeText || !params.jobDescription) {
-          return Response.json({ error: "resumeText and jobDescription are required" }, { status: 400 });
-        }
-        const tailor = `You are an expert resume coach. Tailor this resume to match the job description.
-Resume: ${params.resumeText}
-Job Description: ${params.jobDescription}
-Rewrite the summary and experience bullets to align with the job requirements. Keep facts truthful.`;
-        result = { content: await callGemini(tailor) };
-        break;
-      }
-
       default:
-        return Response.json({ error: `Unknown action: ${action}` }, { status: 400 });
+        result = { content: rawResult };
     }
 
-    // Handle not-configured state
-    if (result?._not_configured) {
-      return Response.json({ error: "ai_not_configured", message: result.message }, { status: 503 });
-    }
-
-    // Record usage
-    await recordUsage(base44, user, action);
-
+    const outputSize = JSON.stringify(result).length;
+    await recordUsage(base44, user, action, inputSize, outputSize, true, null);
     return Response.json({ success: true, result });
 
   } catch (error) {
+    await recordUsage(base44, user, action, 0, 0, false, error.message).catch(() => {});
     return Response.json({ error: "ai_error", message: error.message }, { status: 500 });
   }
 });

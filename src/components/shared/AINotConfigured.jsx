@@ -13,10 +13,10 @@ export default function AINotConfigured({ feature = "This feature" }) {
       </div>
       <h3 className="text-base font-bold text-foreground mb-2">AI Service Not Configured</h3>
       <p className="text-sm text-muted-foreground max-w-xs mb-3">
-        {feature} requires the AI service to be set up. The <code className="bg-muted px-1 rounded text-xs">GEMINI_API_KEY</code> environment secret is missing.
+        {feature} requires the AI service to be set up. Set <code className="bg-muted px-1 rounded text-xs">OPENAI_API_KEY</code> or <code className="bg-muted px-1 rounded text-xs">GEMINI_API_KEY</code> in environment secrets.
       </p>
       <p className="text-xs text-muted-foreground">
-        Dashboard → Settings → Environment Variables → Add <code className="bg-muted px-1 rounded">GEMINI_API_KEY</code>
+        Base44 Dashboard → Settings → Secrets → Add <code className="bg-muted px-1 rounded">OPENAI_API_KEY</code>
       </p>
     </div>
   );

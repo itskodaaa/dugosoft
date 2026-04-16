@@ -1,51 +1,33 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Clock, RotateCcw, FileText, ChevronDown, ChevronUp, Eye, MessageSquare, Send, X } from "lucide-react";
+import {
+  Clock, FileText, ChevronDown, ChevronUp, Eye, MessageSquare,
+  Send, RefreshCw, PenLine, Inbox
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
+import { useAuth } from "@/lib/AuthContext";
+import { Link } from "react-router-dom";
 
-const MOCK_VERSIONS = [
-  {
-    id: 1,
-    docName: "Senior_Dev_Resume_2026.pdf",
-    versions: [
-      { v: 3, date: "2026-04-10 14:32", label: "Added skills section", size: "245 KB" },
-      { v: 2, date: "2026-04-08 09:15", label: "Updated work experience", size: "238 KB" },
-      { v: 1, date: "2026-04-05 17:00", label: "Initial version", size: "210 KB" },
-    ],
-  },
-  {
-    id: 2,
-    docName: "Cover_Letter_Google.pdf",
-    versions: [
-      { v: 2, date: "2026-04-09 11:20", label: "Personalized for Google role", size: "95 KB" },
-      { v: 1, date: "2026-04-07 10:05", label: "Initial version", size: "88 KB" },
-    ],
-  },
-  {
-    id: 3,
-    docName: "Marketing_Contract_FR.docx",
-    versions: [
-      { v: 1, date: "2026-03-29 16:45", label: "Translated to French", size: "188 KB" },
-    ],
-  },
-];
+const TYPE_COLORS = {
+  note:     "bg-blue-100 text-blue-700",
+  feedback: "bg-amber-100 text-amber-700",
+  action:   "bg-purple-100 text-purple-700",
+};
 
-const TYPE_COLORS = { note: "bg-blue-100 text-blue-700", feedback: "bg-amber-100 text-amber-700", action: "bg-purple-100 text-purple-700" };
-
-function CommentThread({ docName, version }) {
+function CommentThread({ docName }) {
   const [comments, setComments] = useState([]);
-  const [text, setText] = useState("");
-  const [type, setType] = useState("note");
-  const [loading, setLoading] = useState(true);
-  const [posting, setPosting] = useState(false);
+  const [text, setText]         = useState("");
+  const [type, setType]         = useState("note");
+  const [loading, setLoading]   = useState(true);
+  const [posting, setPosting]   = useState(false);
 
   useEffect(() => {
-    base44.entities.DocComment.filter({ doc_name: docName, version })
+    base44.entities.DocComment.filter({ doc_name: docName })
       .then(setComments)
       .finally(() => setLoading(false));
-  }, [docName, version]);
+  }, [docName]);
 
   const post = async () => {
     if (!text.trim()) return;
@@ -53,7 +35,7 @@ function CommentThread({ docName, version }) {
     const user = await base44.auth.me();
     const c = await base44.entities.DocComment.create({
       doc_name: docName,
-      version,
+      version: 1,
       author_email: user.email,
       author_name: user.full_name || user.email,
       text: text.trim(),
@@ -66,9 +48,13 @@ function CommentThread({ docName, version }) {
 
   return (
     <div className="mt-3 space-y-3">
-      {loading ? <p className="text-xs text-muted-foreground">Loading comments...</p> : (
+      {loading ? (
+        <p className="text-xs text-muted-foreground">Loading comments...</p>
+      ) : (
         <div className="space-y-2">
-          {comments.length === 0 && <p className="text-xs text-muted-foreground italic">No comments yet. Be the first!</p>}
+          {comments.length === 0 && (
+            <p className="text-xs text-muted-foreground italic">No comments yet.</p>
+          )}
           {comments.map(c => (
             <div key={c.id} className="flex gap-2">
               <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center text-xs font-bold text-accent shrink-0">
@@ -106,11 +92,8 @@ function CommentThread({ docName, version }) {
   );
 }
 
-function DocVersionGroup({ doc }) {
+function ResumeRow({ resume, onComment }) {
   const [open, setOpen] = useState(false);
-  const [commentingVer, setCommentingVer] = useState(null);
-  const latest = doc.versions[0];
-
   return (
     <div className="bg-card ink-border rounded-2xl overflow-hidden">
       <button onClick={() => setOpen(o => !o)}
@@ -119,54 +102,67 @@ function DocVersionGroup({ doc }) {
           <FileText className="w-4 h-4 text-accent" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-foreground truncate">{doc.docName}</p>
+          <p className="font-semibold text-foreground truncate">{resume.title}</p>
           <p className="text-xs text-muted-foreground mt-0.5">
-            {doc.versions.length} version{doc.versions.length !== 1 ? "s" : ""} · Latest: {latest.date}
+            Template: {resume.template_name || resume.template_id || "—"} · {resume.target_region ? `Region: ${resume.target_region}` : "No region"}
           </p>
         </div>
-        <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-accent/10 text-accent shrink-0">v{latest.v}</span>
+        <span className={`text-xs font-bold px-2 py-0.5 rounded-full shrink-0 ${
+          resume.status === "complete" ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"
+        }`}>{resume.status || "draft"}</span>
+        <span className="text-xs text-muted-foreground shrink-0 hidden sm:block">
+          {new Date(resume.updated_date || resume.created_date).toLocaleDateString()}
+        </span>
         {open ? <ChevronUp className="w-4 h-4 text-muted-foreground shrink-0" /> : <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />}
       </button>
-
       <AnimatePresence>
         {open && (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }}
-            className="overflow-hidden border-t border-border">
-            {doc.versions.map((ver, i) => (
-              <div key={ver.v} className={`px-5 py-4 ${i !== doc.versions.length - 1 ? "border-b border-border" : ""}`}>
-                <div className="flex items-center gap-4">
-                  <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center shrink-0 text-xs font-bold text-muted-foreground">v{ver.v}</div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-foreground">{ver.label}</p>
-                    <p className="text-xs text-muted-foreground">{ver.date} · {ver.size}</p>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <button onClick={() => toast.info(`Previewing v${ver.v}…`)}
-                      className="w-8 h-8 rounded-lg hover:bg-muted flex items-center justify-center transition-colors" title="Preview">
-                      <Eye className="w-3.5 h-3.5 text-muted-foreground" />
-                    </button>
-                    <button onClick={() => setCommentingVer(commentingVer === ver.v ? null : ver.v)}
-                      className={`w-8 h-8 rounded-lg hover:bg-muted flex items-center justify-center transition-colors ${commentingVer === ver.v ? "bg-accent/10" : ""}`} title="Comments">
-                      <MessageSquare className={`w-3.5 h-3.5 ${commentingVer === ver.v ? "text-accent" : "text-muted-foreground"}`} />
-                    </button>
-                    {i > 0 && (
-                      <button onClick={() => toast.success(`Reverted to v${ver.v}`)}
-                        className="w-8 h-8 rounded-lg hover:bg-accent/10 flex items-center justify-center transition-colors" title="Revert">
-                        <RotateCcw className="w-3.5 h-3.5 text-accent" />
-                      </button>
-                    )}
-                    {i === 0 && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700">Current</span>}
-                  </div>
-                </div>
-                <AnimatePresence>
-                  {commentingVer === ver.v && (
-                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}>
-                      <CommentThread docName={doc.docName} version={ver.v} />
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            ))}
+            className="overflow-hidden border-t border-border px-5 py-4 space-y-3">
+            <div className="flex gap-2">
+              <Link to="/dashboard/resume-builder-v2">
+                <Button size="sm" variant="outline" className="rounded-full h-8 text-xs gap-1">
+                  <Eye className="w-3 h-3" /> Open Editor
+                </Button>
+              </Link>
+            </div>
+            <CommentThread docName={resume.title} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function CoverLetterRow({ letter }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="bg-card ink-border rounded-2xl overflow-hidden">
+      <button onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center gap-4 px-5 py-4 hover:bg-muted/30 transition-colors text-left">
+        <div className="w-9 h-9 rounded-xl bg-purple-500/10 flex items-center justify-center shrink-0">
+          <PenLine className="w-4 h-4 text-purple-500" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-foreground truncate">{letter.job_title} @ {letter.company}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {letter.applicant_name || "—"} · {letter.tone} · {letter.language}
+          </p>
+        </div>
+        <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700 shrink-0">Saved</span>
+        <span className="text-xs text-muted-foreground shrink-0 hidden sm:block">
+          {new Date(letter.created_date).toLocaleDateString()}
+        </span>
+        {open ? <ChevronUp className="w-4 h-4 text-muted-foreground shrink-0" /> : <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />}
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }}
+            className="overflow-hidden border-t border-border px-5 py-4">
+            <pre className="text-xs text-foreground leading-relaxed whitespace-pre-wrap font-inter max-h-60 overflow-auto bg-muted/30 rounded-xl p-3">
+              {letter.content || "No content saved."}
+            </pre>
+            <CommentThread docName={`${letter.job_title}-${letter.company}`} />
           </motion.div>
         )}
       </AnimatePresence>
@@ -175,19 +171,78 @@ function DocVersionGroup({ doc }) {
 }
 
 export default function History() {
+  const { user } = useAuth();
+  const [resumes,  setResumes]  = useState([]);
+  const [letters,  setLetters]  = useState([]);
+  const [loading,  setLoading]  = useState(true);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    Promise.all([
+      base44.entities.ResumeProject.list("-updated_date", 20),
+      base44.entities.CoverLetter.list("-created_date", 20),
+    ]).then(([r, l]) => {
+      setResumes(r);
+      setLetters(l);
+    }).finally(() => setLoading(false));
+  }, [user?.id]);
+
+  const isEmpty = !loading && resumes.length === 0 && letters.length === 0;
+
   return (
     <div className="max-w-3xl space-y-6">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-2xl font-extrabold tracking-tight text-foreground mb-1">Version History</h1>
-        <p className="text-muted-foreground text-sm">Track changes, view timestamps, revert versions, and leave comments for your team.</p>
+        <h1 className="text-2xl font-extrabold tracking-tight text-foreground mb-1">History</h1>
+        <p className="text-muted-foreground text-sm">Your saved resumes and cover letters.</p>
       </motion.div>
-      <div className="space-y-3">
-        {MOCK_VERSIONS.map((doc, i) => (
-          <motion.div key={doc.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}>
-            <DocVersionGroup doc={doc} />
-          </motion.div>
-        ))}
-      </div>
+
+      {loading && (
+        <div className="flex items-center justify-center py-16">
+          <RefreshCw className="w-5 h-5 text-muted-foreground animate-spin" />
+        </div>
+      )}
+
+      {isEmpty && (
+        <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
+          <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center">
+            <Inbox className="w-6 h-6 text-muted-foreground" />
+          </div>
+          <p className="text-sm font-semibold text-foreground">No history yet</p>
+          <p className="text-xs text-muted-foreground max-w-xs">
+            Build a resume or generate a cover letter — they'll appear here automatically.
+          </p>
+          <div className="flex gap-2 mt-2">
+            <Link to="/dashboard/resume-builder-v2">
+              <Button size="sm" variant="outline" className="rounded-full text-xs">Build Resume</Button>
+            </Link>
+            <Link to="/dashboard/cover-letter">
+              <Button size="sm" variant="outline" className="rounded-full text-xs">Cover Letter</Button>
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {!loading && resumes.length > 0 && (
+        <div className="space-y-3">
+          <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Resumes ({resumes.length})</h2>
+          {resumes.map((r, i) => (
+            <motion.div key={r.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
+              <ResumeRow resume={r} />
+            </motion.div>
+          ))}
+        </div>
+      )}
+
+      {!loading && letters.length > 0 && (
+        <div className="space-y-3">
+          <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Cover Letters ({letters.length})</h2>
+          {letters.map((l, i) => (
+            <motion.div key={l.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
+              <CoverLetterRow letter={l} />
+            </motion.div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

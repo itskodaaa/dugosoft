@@ -1,0 +1,38 @@
+{
+  "name": "AIRequest",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "feature": {
+      "type": "string"
+    },
+    "action": {
+      "type": "string"
+    },
+    "input_size": {
+      "type": "number"
+    },
+    "output_size": {
+      "type": "number"
+    },
+    "model": {
+      "type": "string"
+    },
+    "success": {
+      "type": "boolean",
+      "default": true
+    },
+    "error_message": {
+      "type": "string"
+    },
+    "plan_at_time": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "user_id",
+    "feature"
+  ]
+}

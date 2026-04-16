@@ -78,21 +78,25 @@ function PaymentModal({ plan, region, prices, onClose }) {
     try {
       if (provider === "flutterwave") {
         const res = await base44.functions.invoke("createFlutterwavePayment", { plan: plan.id, region });
-        if (res.data?.payment_link) {
+        if (res.data?.error === "billing_not_configured") {
+          toast.error("Flutterwave is not configured yet. Set FLUTTERWAVE_SECRET_KEY in environment secrets.", { duration: 7000 });
+        } else if (res.data?.payment_link) {
           window.location.href = res.data.payment_link;
         } else {
-          toast.error("Failed to create payment link.");
+          toast.error(res.data?.message || "Failed to create payment link.");
         }
       } else {
         const res = await base44.functions.invoke("createStripeCheckout", { plan: plan.id, region });
-        if (res.data?.checkout_url) {
+        if (res.data?.error === "billing_not_configured") {
+          toast.error("Stripe price IDs are not configured. Set STRIPE_PRICE_PRO_GLOBAL and STRIPE_PRICE_BUSINESS_GLOBAL secrets.", { duration: 7000 });
+        } else if (res.data?.checkout_url) {
           window.location.href = res.data.checkout_url;
         } else {
-          toast.error("Failed to create Stripe checkout.");
+          toast.error(res.data?.message || "Failed to create Stripe checkout.");
         }
       }
     } catch (e) {
-      toast.error(e?.response?.data?.error || "Payment failed. Please try again.");
+      toast.error(e?.response?.data?.message || e?.response?.data?.error || "Payment failed. Please try again.");
     }
     setLoading(false);
   };

@@ -28,6 +28,9 @@
     },
     "last_exported": {
       "type": "string"
+    },
+    "score": {
+      "type": "number"
     }
   },
   "required": [

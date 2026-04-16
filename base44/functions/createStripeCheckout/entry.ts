@@ -45,6 +45,13 @@ Deno.serve(async (req) => {
     await base44.auth.updateMe({ stripe_customer_id: customerId });
   }
 
+  if (!priceId || priceId.startsWith("price_pro") || priceId.startsWith("price_business")) {
+    return Response.json({
+      error: "billing_not_configured",
+      message: "Stripe price IDs are not configured. Set STRIPE_PRICE_PRO_GLOBAL and STRIPE_PRICE_BUSINESS_GLOBAL secrets.",
+    }, { status: 503 });
+  }
+
   const session = await stripe.checkout.sessions.create({
     customer: customerId,
     mode: "subscription",
@@ -53,6 +60,20 @@ Deno.serve(async (req) => {
     success_url: `${origin}/dashboard/pricing?status=success&plan=${plan}&provider=stripe`,
     cancel_url: `${origin}/dashboard/pricing?status=cancelled`,
     metadata: { user_id: user.id, plan, region: userRegion },
+  });
+
+  // Record pending payment
+  await base44.asServiceRole.entities.Payment.create({
+    user_id: user.id,
+    user_email: user.email,
+    gateway: "stripe",
+    tx_ref: session.id,
+    amount: 0, // filled on webhook confirmation
+    currency: "USD",
+    plan,
+    region: userRegion,
+    status: "pending",
+    raw_response: JSON.stringify({ session_id: session.id }),
   });
 
   return Response.json({ checkout_url: session.url, session_id: session.id });

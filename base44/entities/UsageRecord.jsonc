@@ -1,0 +1,47 @@
+{
+  "name": "UsageRecord",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "feature": {
+      "type": "string",
+      "enum": [
+        "ai_requests",
+        "file_conversions",
+        "translations",
+        "ocr_requests",
+        "esign_requests",
+        "resume_exports",
+        "pdf_processing"
+      ]
+    },
+    "count": {
+      "type": "number",
+      "default": 1
+    },
+    "period_type": {
+      "type": "string",
+      "enum": [
+        "daily",
+        "monthly"
+      ],
+      "default": "daily"
+    },
+    "period_start": {
+      "type": "string"
+    },
+    "period_end": {
+      "type": "string"
+    },
+    "plan_at_time": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "user_id",
+    "feature",
+    "period_start"
+  ]
+}
