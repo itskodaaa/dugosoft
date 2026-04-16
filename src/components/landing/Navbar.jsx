@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { Menu, X, ChevronDown, Sparkles, FileText, Languages, Target, Globe2, MessageCircle, BarChart3, Users, Zap } from "lucide-react";
 import LanguageSwitcher from "@/components/shared/LanguageSwitcher";
 import { useLang } from "@/lib/i18n";
+import { base44 } from "@/api/base44Client";
 
 const FEATURES_MENU = [
   { icon: FileText,      label: "Resume Builder",     desc: "ATS-optimized resumes",   path: "/dashboard/resume-builder-v2",  color: "text-accent" },
@@ -20,12 +21,17 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [featuresOpen, setFeaturesOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const { t } = useLang();
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 10);
     window.addEventListener("scroll", handler);
     return () => window.removeEventListener("scroll", handler);
+  }, []);
+
+  useEffect(() => {
+    base44.auth.isAuthenticated().then(setIsLoggedIn);
   }, []);
 
   return (
@@ -87,14 +93,16 @@ export default function Navbar() {
         {/* Desktop CTAs */}
         <div className="hidden md:flex items-center gap-3">
           <LanguageSwitcher />
-          <Link to="/auth">
-            <Button size="sm" variant="outline" className="rounded-full px-5 font-semibold text-sm">
-              Sign In
-            </Button>
-          </Link>
+          {!isLoggedIn && (
+            <Link to="/auth">
+              <Button size="sm" variant="outline" className="rounded-full px-5 font-semibold text-sm">
+                Sign In
+              </Button>
+            </Link>
+          )}
           <Link to="/dashboard">
             <Button size="sm" className="bg-accent hover:bg-accent/90 text-accent-foreground rounded-full px-5 font-semibold text-sm gap-1.5">
-              <Sparkles className="w-3.5 h-3.5" /> {t("nav_dashboard")}
+              <Sparkles className="w-3.5 h-3.5" /> {isLoggedIn ? t("nav_dashboard") : "Get Started"}
             </Button>
           </Link>
         </div>
@@ -128,12 +136,14 @@ export default function Navbar() {
           <Link to="/contact" className="block px-3 py-2.5 text-sm font-medium text-foreground rounded-xl hover:bg-muted" onClick={() => setMobileOpen(false)}>Contact</Link>
           <div className="pt-2 space-y-2">
             <div className="py-1"><LanguageSwitcher /></div>
-            <Link to="/auth" onClick={() => setMobileOpen(false)}>
-              <Button size="sm" variant="outline" className="w-full rounded-full font-semibold">Sign In</Button>
-            </Link>
+            {!isLoggedIn && (
+              <Link to="/auth" onClick={() => setMobileOpen(false)}>
+                <Button size="sm" variant="outline" className="w-full rounded-full font-semibold">Sign In</Button>
+              </Link>
+            )}
             <Link to="/dashboard" onClick={() => setMobileOpen(false)}>
               <Button size="sm" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground rounded-full font-semibold">
-                <Sparkles className="w-3.5 h-3.5 mr-1" /> {t("nav_dashboard")}
+                <Sparkles className="w-3.5 h-3.5 mr-1" /> {isLoggedIn ? t("nav_dashboard") : "Get Started"}
               </Button>
             </Link>
           </div>
