@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
+import { useAI } from "@/lib/useAI";
 
 const QUESTION_TYPES = [
   { id: "behavioral",  label: "Behavioral",   color: "bg-blue-100 text-blue-700" },
@@ -64,25 +65,13 @@ function QuestionCard({ question, index, total, onNext, onPrev, isLast }) {
   const getFeedback = async () => {
     if (!answer.trim()) { toast.warning("Please write or record your answer first."); return; }
     setLoading(true);
-    const res = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are an expert interview coach. Evaluate this interview answer.
-
-Question: ${question.question}
-Candidate's Answer: ${answer}
-
-Provide constructive feedback. Be specific and actionable.`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          score:       { type: "number" },
-          verdict:     { type: "string" },
-          strengths:   { type: "array", items: { type: "string" } },
-          improvements:{ type: "array", items: { type: "string" } },
-          tip:         { type: "string" },
-        }
-      }
+    const res = await base44.functions.invoke("aiService", {
+      action: "evaluateInterviewAnswer",
+      question: question.question,
+      answer,
     });
-    setFeedback(res);
+    if (res.data?.success) setFeedback(res.data.result);
+    else toast.error(res.data?.message || "Failed to get AI feedback.");
     setLoading(false);
   };
 
@@ -197,57 +186,20 @@ Provide constructive feedback. Be specific and actionable.`,
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function InterviewPrep() {
-  const [step, setStep]           = useState("setup"); // setup | practice | done
+  const { call, loading: generating } = useAI();
+  const [step, setStep]           = useState("setup");
   const [jobDesc, setJobDesc]     = useState("");
   const [resume, setResume]       = useState("");
   const [jobTitle, setJobTitle]   = useState("");
-  const [generating, setGen]      = useState(false);
   const [questions, setQuestions] = useState([]);
   const [qIndex, setQIndex]       = useState(0);
 
   const generateQuestions = async () => {
     if (!jobDesc.trim()) { toast.warning("Please paste a job description."); return; }
-    setGen(true);
-    const res = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are an expert interviewer and career coach. Generate 8 tailored interview questions based on:
-
-Job Description:
-${jobDesc}
-
-${resume ? `Candidate Resume:\n${resume}` : ""}
-
-Mix of question types: behavioral (STAR method), technical, situational, culture fit.
-Make questions specific to the role and industry.
-
-Return JSON with:
-- job_title: detected or inferred job title
-- questions: array of 8 objects each with:
-  - question: string
-  - type: "behavioral" | "technical" | "situational" | "culture"
-  - difficulty: "Easy" | "Medium" | "Hard"
-  - hint: short hint on how to structure the answer (1 sentence)`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          job_title: { type: "string" },
-          questions: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                question:   { type: "string" },
-                type:       { type: "string" },
-                difficulty: { type: "string" },
-                hint:       { type: "string" },
-              }
-            }
-          }
-        }
-      }
-    });
-    setJobTitle(res.job_title || "Interview");
-    setQuestions(res.questions || []);
-    setGen(false);
+    const data = await call("generateInterviewQuestionsFromJD", { jobDesc, resume });
+    if (!data) return;
+    setJobTitle(data.job_title || "Interview");
+    setQuestions(data.questions || []);
     setStep("practice");
     setQIndex(0);
   };

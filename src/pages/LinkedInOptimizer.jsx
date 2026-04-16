@@ -5,16 +5,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Sparkles, Linkedin, Copy, Check, ChevronDown, ChevronUp, User, Tag, FileText, Share2, ExternalLink } from "lucide-react";
-import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 import { useLang } from "@/lib/i18n";
+import { useAI } from "@/lib/useAI";
 import SectionShareBar from "@/components/shared/SectionShareBar";
 
 export default function LinkedInOptimizer() {
   const { lang } = useLang();
+  const { call, loading } = useAI();
   const [resumeText, setResumeText] = useState("");
   const [targetRole, setTargetRole] = useState("");
-  const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [copiedKey, setCopiedKey] = useState(null);
   const [expanded, setExpanded] = useState({ headline: true, skills: true, about: true });
@@ -24,34 +24,9 @@ export default function LinkedInOptimizer() {
   const handleAnalyze = async () => {
     if (!resumeText.trim()) { toast.warning("Please paste your resume text first."); return; }
     if (!targetRole.trim()) { toast.warning("Please enter your target job role."); return; }
-    setLoading(true);
     setResult(null);
-
-    const prompt = `You are a LinkedIn profile optimization expert. Analyze the resume below and generate improvements tailored for the role: "${targetRole}".
-
-RESUME:
-${resumeText}
-
-Respond ONLY in ${langName}. Return a JSON object with exactly these keys:
-- "headlines": an array of 3 optimized LinkedIn headline strings (max 220 chars each), keyword-rich for the target role
-- "skills": an array of 15 high-impact LinkedIn skill keywords relevant to the resume and target role
-- "about": a compelling LinkedIn "About" section rewrite (200-300 words), first-person, professional yet personable, ending with a call to action
-
-Return pure JSON only.`;
-
-    const response = await base44.integrations.Core.InvokeLLM({
-      prompt,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          headlines: { type: "array", items: { type: "string" } },
-          skills: { type: "array", items: { type: "string" } },
-          about: { type: "string" },
-        },
-      },
-    });
-    setResult(response);
-    setLoading(false);
+    const data = await call("optimizeLinkedInProfile", { resumeText, targetRole, language: langName });
+    if (data) setResult(data);
   };
 
   const copyText = (text, key) => {

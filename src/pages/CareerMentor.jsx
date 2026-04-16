@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Send, Bot, User, Sparkles, FileText, Briefcase, ChevronDown } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useLang } from "@/lib/i18n";
+import { useAuth } from "@/lib/AuthContext";
 
 const SUGGESTED_QUESTIONS = [
   "How can I prepare for a technical interview at a FAANG company?",
@@ -15,27 +16,20 @@ const SUGGESTED_QUESTIONS = [
   "What are the biggest red flags in a resume I should fix?",
 ];
 
-// Mock stored user data (in real app this comes from entities)
-const MOCK_RESUME_CONTEXT = `Name: John Doe | Role: Senior Software Engineer
-Experience: 5+ years in full-stack development (React, Node.js, AWS)
-Skills: JavaScript, TypeScript, Python, Docker, Kubernetes
-Education: B.S. Computer Science
-Recent role: TechCorp Inc. — led microservices serving 2M users`;
-
-const MOCK_COVER_CONTEXT = `Last cover letter target: Senior PM at Stripe
-Tone: Professional | Qualifications: Product strategy, Agile, Roadmapping`;
-
 export default function CareerMentor() {
   const { t, lang } = useLang();
+  const { user } = useAuth();
   const [messages, setMessages] = useState([
     {
       role: "assistant",
-      content: `👋 Hi! I'm your **Career Mentor**. I've loaded your resume and cover letter context to give you personalized advice.\n\nAsk me anything about interviews, promotions, salary negotiation, career transitions, or how to stand out in your job search.`,
+      content: `👋 Hi! I'm your **Career Mentor**. Ask me anything about interviews, promotions, salary negotiation, career transitions, or how to stand out in your job search.`,
     },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [showContext, setShowContext] = useState(false);
+  const [resumeContext, setResumeContext] = useState("");
+  const [coverLetterContext, setCoverLetterContext] = useState("");
   const bottomRef = useRef(null);
   const textareaRef = useRef(null);
 
@@ -43,29 +37,47 @@ export default function CareerMentor() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
+  // Load real resume/cover letter context from DB
+  useEffect(() => {
+    if (!user?.id) return;
+    base44.entities.ResumeProject.list("-updated_date", 1).then(items => {
+      if (items[0]?.resume_data) {
+        try {
+          const parsed = JSON.parse(items[0].resume_data);
+          const ctx = `Latest resume: "${items[0].title}" | Role: ${parsed.targetRole || ""} | Skills: ${parsed.skills || ""}`;
+          setResumeContext(ctx);
+        } catch { setResumeContext(`Latest resume: "${items[0].title}"`); }
+      }
+    }).catch(() => {});
+    base44.entities.CoverLetter.list("-created_date", 1).then(items => {
+      if (items[0]) {
+        const ctx = `Last cover letter: ${items[0].job_title} @ ${items[0].company} | Tone: ${items[0].tone || "Professional"}`;
+        setCoverLetterContext(ctx);
+      }
+    }).catch(() => {});
+  }, [user?.id]);
+
   const langName = { en: "English", it: "Italian", fr: "French", es: "Spanish", de: "German" }[lang] || "English";
 
   const sendMessage = async (text) => {
     const userText = text || input.trim();
     if (!userText || loading) return;
     setInput("");
+    const history = messages.slice(-8);
     setMessages((prev) => [...prev, { role: "user", content: userText }]);
     setLoading(true);
 
-    const systemContext = `You are a professional Career Mentor AI. You have access to the user's career data:
+    const res = await base44.functions.invoke("aiService", {
+      action: "careerMentorChat",
+      question: userText,
+      history,
+      resumeContext,
+      coverLetterContext,
+      language: langName,
+    });
 
-RESUME CONTEXT:
-${MOCK_RESUME_CONTEXT}
-
-COVER LETTER CONTEXT:
-${MOCK_COVER_CONTEXT}
-
-Use this context to give personalized, specific advice. Always respond in ${langName}. Be concise, actionable, and encouraging. Use markdown formatting (bold, bullet points) for clarity.`;
-
-    const fullPrompt = `${systemContext}\n\nUser question: ${userText}`;
-
-    const response = await base44.integrations.Core.InvokeLLM({ prompt: fullPrompt });
-    setMessages((prev) => [...prev, { role: "assistant", content: response }]);
+    const answer = res.data?.result?.answer || res.data?.message || "Sorry, I couldn't respond. Please try again.";
+    setMessages((prev) => [...prev, { role: "assistant", content: answer }]);
     setLoading(false);
   };
 
@@ -117,14 +129,14 @@ Use this context to give personalized, specific advice. Always respond in ${lang
                     <FileText className="w-3.5 h-3.5 text-accent" />
                     <span className="text-xs font-bold text-accent uppercase tracking-wider">Resume</span>
                   </div>
-                  <p className="text-xs text-muted-foreground leading-relaxed">{MOCK_RESUME_CONTEXT}</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{resumeContext || "No resume saved yet. Build one in Resume Builder."}</p>
                 </div>
                 <div className="bg-violet-500/5 border border-violet-200 rounded-xl p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <Briefcase className="w-3.5 h-3.5 text-violet-500" />
                     <span className="text-xs font-bold text-violet-500 uppercase tracking-wider">Cover Letter</span>
                   </div>
-                  <p className="text-xs text-muted-foreground leading-relaxed">{MOCK_COVER_CONTEXT}</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{coverLetterContext || "No cover letter saved yet."}</p>
                 </div>
               </div>
             </motion.div>

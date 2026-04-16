@@ -57,26 +57,21 @@ export default function ChatWithDocument() {
     const text = msgText || input.trim();
     if (!text || !docText) return;
     const userMsg = { role: "user", content: text };
-    setMessages(p => [...p, userMsg]);
+    const currentMessages = [...messages, userMsg];
+    setMessages(currentMessages);
     setInput("");
     setLoading(true);
 
-    const history = [...messages, userMsg].slice(-10).map(m => `${m.role.toUpperCase()}: ${m.content}`).join("\n");
-    const reply = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are an expert document assistant. You have access to the following document content:
-
----DOCUMENT START---
-${docText.slice(0, 8000)}
----DOCUMENT END---
-
-Conversation so far:
-${history}
-
-LATEST USER QUESTION: ${text}
-
-Answer based strictly on the document content. Be clear, structured, and helpful. Use markdown formatting when helpful.`,
+    const history = messages.slice(-6);
+    const res = await base44.functions.invoke("aiService", {
+      action: "chatWithDocument",
+      documentText: docText,
+      question: text,
+      history,
     });
-    setMessages(p => [...p, { role: "assistant", content: reply }]);
+
+    const answer = res.data?.result?.answer || res.data?.message || "Sorry, I couldn't answer that. Please try again.";
+    setMessages(p => [...p, { role: "assistant", content: answer }]);
     setLoading(false);
   };
 

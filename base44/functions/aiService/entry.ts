@@ -233,6 +233,66 @@ Write: professional summary (3-4 sentences), experience bullets with quantified 
 Resume: ${p.resumeText}
 Job: ${p.jobDescription}
 Rewrite summary and experience bullets to align with job requirements.`,
+
+  optimizeLinkedInProfile: (p) => `You are a LinkedIn profile optimization expert. Analyze the resume below and generate improvements tailored for the role: "${p.targetRole}".
+
+RESUME:
+${p.resumeText}
+
+Respond ONLY in ${p.language || "English"}. Return a JSON object with exactly these keys:
+- "headlines": array of 3 optimized LinkedIn headline strings (max 220 chars each), keyword-rich for the target role
+- "skills": array of 15 high-impact LinkedIn skill keywords relevant to the resume and target role
+- "about": compelling LinkedIn "About" section rewrite (200-300 words), first-person, professional yet personable, ending with a call to action`,
+
+  generateInterviewQuestionsFromJD: (p) => `You are an expert interviewer and career coach. Generate 8 tailored interview questions based on:
+
+Job Description:
+${p.jobDesc}
+
+${p.resume ? `Candidate Resume:\n${p.resume}` : ""}
+
+Mix of question types: behavioral (STAR method), technical, situational, culture fit.
+Make questions specific to the role and industry.
+
+Return JSON with:
+- job_title: detected or inferred job title
+- questions: array of 8 objects each with:
+  - question: string
+  - type: "behavioral" | "technical" | "situational" | "culture"
+  - difficulty: "Easy" | "Medium" | "Hard"
+  - hint: short hint on how to structure the answer (1 sentence)`,
+
+  evaluateInterviewAnswer: (p) => `You are an expert interview coach. Evaluate this interview answer.
+
+Question: ${p.question}
+Candidate's Answer: ${p.answer}
+
+Provide constructive feedback. Be specific and actionable. Return JSON with:
+- score: number 0-100
+- verdict: one-sentence overall assessment
+- strengths: array of 2-3 specific strengths
+- improvements: array of 2-3 specific improvements
+- tip: one actionable tip to improve the answer`,
+
+  chatWithDocument: (p) => {
+    const hist = p.history?.slice(-6).map(h => `${h.role === "user" ? "User" : "Assistant"}: ${h.content}`).join("\n") || "";
+    return `You are an expert document assistant. Answer questions about the provided document only.
+DOCUMENT:
+${(p.documentText || "").slice(0, 8000)}
+${hist ? `\nCONVERSATION:\n${hist}\n` : ""}
+USER: ${p.question}
+Answer based only on document content. If the answer is not in the document, say so clearly. Use markdown formatting for clarity.`;
+  },
+
+  careerMentorChat: (p) => {
+    const hist = p.history?.slice(-8).map(h => `${h.role === "user" ? "User" : "Assistant"}: ${h.content}`).join("\n") || "";
+    return `You are a professional Career Mentor AI. Give personalized, actionable career advice.
+${p.resumeContext ? `\nUSER'S RESUME CONTEXT:\n${p.resumeContext}\n` : ""}
+${p.coverLetterContext ? `\nUSER'S COVER LETTER CONTEXT:\n${p.coverLetterContext}\n` : ""}
+Always respond in ${p.language || "English"}. Be concise, actionable, and encouraging. Use markdown formatting.
+${hist ? `\nCONVERSATION:\n${hist}\n` : ""}
+User question: ${p.question}`;
+  },
 };
 
 // JSON schema for ATS scoring
@@ -267,15 +327,19 @@ Deno.serve(async (req) => {
 
   // Validate inputs per action
   const required = {
-    scoreResumeATS:            ["resumeText", "jobDescription"],
-    translateText:             ["text", "targetLanguage"],
-    generateCoverLetter:       ["jobTitle", "company"],
-    generateInterviewQuestions:["jobTitle"],
-    optimizeLinkedInSummary:   [],
-    summarizeDocument:         ["text"],
-    chatWithDocument:          ["documentText", "question"],
-    generateResume:            ["name", "targetRole"],
-    tailorResumeToJob:         ["resumeText", "jobDescription"],
+    scoreResumeATS:                     ["resumeText", "jobDescription"],
+    translateText:                      ["text", "targetLanguage"],
+    generateCoverLetter:                ["jobTitle", "company"],
+    generateInterviewQuestions:         ["jobTitle"],
+    optimizeLinkedInSummary:            [],
+    summarizeDocument:                  ["text"],
+    chatWithDocument:                   ["documentText", "question"],
+    generateResume:                     ["name", "targetRole"],
+    tailorResumeToJob:                  ["resumeText", "jobDescription"],
+    optimizeLinkedInProfile:            ["resumeText", "targetRole"],
+    generateInterviewQuestionsFromJD:   ["jobDesc"],
+    evaluateInterviewAnswer:            ["question", "answer"],
+    careerMentorChat:                   ["question"],
   };
 
   const req_fields = required[action];
@@ -292,9 +356,13 @@ Deno.serve(async (req) => {
     const prompt   = promptFn(params);
     const inputSize = prompt.length;
 
-    // Choose JSON schema for structured actions
+    // Choose JSON mode for structured actions
+    const jsonActions = new Set([
+      "scoreResumeATS", "optimizeLinkedInProfile",
+      "generateInterviewQuestionsFromJD", "evaluateInterviewAnswer",
+    ]);
     const useJsonSchema = action === "scoreResumeATS" ? ATS_SCHEMA : null;
-    const rawResult = await callAI(prompt, useJsonSchema);
+    const rawResult = await callAI(prompt, jsonActions.has(action) ? (useJsonSchema || true) : null);
 
     if (rawResult?._not_configured) {
       return Response.json({
@@ -319,6 +387,18 @@ Deno.serve(async (req) => {
         result = { summary: rawResult };
         break;
       case "chatWithDocument":
+        result = { answer: rawResult };
+        break;
+      case "optimizeLinkedInProfile":
+        result = typeof rawResult === "object" ? rawResult : { headlines: [], skills: [], about: rawResult };
+        break;
+      case "generateInterviewQuestionsFromJD":
+        result = typeof rawResult === "object" ? rawResult : { job_title: "Interview", questions: [] };
+        break;
+      case "evaluateInterviewAnswer":
+        result = typeof rawResult === "object" ? rawResult : { score: 0, verdict: rawResult, strengths: [], improvements: [], tip: "" };
+        break;
+      case "careerMentorChat":
         result = { answer: rawResult };
         break;
       default:
