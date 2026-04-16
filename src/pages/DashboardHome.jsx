@@ -13,6 +13,8 @@ import { toast } from "sonner";
 import { useAuth } from "@/lib/AuthContext";
 import { usePlan, PLAN_LIMITS } from "@/lib/usePlan";
 import { base44 } from "@/api/base44Client";
+import OnboardingChecklist from "@/components/shared/OnboardingChecklist";
+import UsageMeter from "@/components/dashboard/UsageMeter";
 
 const QUICK_TOOLS = [
   { icon: FileText,      title: "Resume Builder",        desc: "Build ATS-optimized resumes",           path: "/dashboard/resume-builder-v2",   color: "text-accent",        bg: "bg-accent/10",        gradient: "from-accent to-blue-500" },
@@ -138,6 +140,7 @@ export default function DashboardHome() {
 
   return (
     <div className="max-w-7xl space-y-8">
+      <OnboardingChecklist />
       {/* Welcome */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
         <div className="relative overflow-hidden bg-gradient-to-br from-primary/95 via-accent to-blue-600 rounded-2xl p-6 text-white shadow-xl">
@@ -165,9 +168,10 @@ export default function DashboardHome() {
         </div>
       </motion.div>
 
-      {/* Real Stats */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
-        className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+      {/* Usage Meter + Stats grid */}
+      <div className="grid lg:grid-cols-[1fr_280px] gap-4">
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
+          className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 content-start">
         {realStats.map((s, i) => {
           const Icon = s.icon;
           return (
@@ -186,7 +190,9 @@ export default function DashboardHome() {
             </motion.div>
           );
         })}
-      </motion.div>
+        </motion.div>
+        <UsageMeter />
+      </div>
 
       {/* Recent Activity — real records */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>

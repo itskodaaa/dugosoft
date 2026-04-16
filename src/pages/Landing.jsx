@@ -11,6 +11,7 @@ import GlobeVisualization from "../components/landing/GlobeVisualization";
 import PricingSection from "../components/landing/PricingSection";
 import Footer from "../components/landing/Footer";
 import Navbar from "../components/landing/Navbar";
+import ChatSupportWidget from "../components/shared/ChatSupportWidget";
 
 const HERO_WORDS = ["Documents", "Resumes", "Careers", "Teams", "Growth"];
 
@@ -296,6 +297,7 @@ export default function Landing() {
       </section>
 
       <Footer />
+      <ChatSupportWidget />
     </div>
   );
 }

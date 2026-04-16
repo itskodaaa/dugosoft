@@ -51,6 +51,7 @@ import AILanguageTools from './pages/AILanguageTools';
 import ResumeTranslator from './pages/ResumeTranslator';
 import EmailVerification from './pages/EmailVerification';
 import Referral from './pages/Referral';
+import AuthPage from './pages/AuthPage';
 
 
 const AuthenticatedApp = () => {
@@ -124,6 +125,7 @@ const AuthenticatedApp = () => {
         <Route path="referral" element={<Referral />} />
       </Route>
       <Route path="/sign/:token" element={<ESignSign />} />
+      <Route path="/auth" element={<AuthPage />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

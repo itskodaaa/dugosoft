@@ -84,6 +84,19 @@
       "type": "number",
       "default": 0,
       "description": "Days of free Pro earned via referrals"
+    },
+    "onboarding_steps": {
+      "type": "string",
+      "description": "JSON of completed onboarding step IDs"
+    },
+    "onboarding_dismissed": {
+      "type": "boolean",
+      "default": false
+    },
+    "email_verified": {
+      "type": "boolean",
+      "default": false
     }
-  }
+  },
+  "required": []
 }

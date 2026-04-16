@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Outlet } from "react-router-dom";
 import DashboardSidebar from "./DashboardSidebar";
 import DashboardHeader from "./DashboardHeader";
+import ChatSupportWidget from "@/components/shared/ChatSupportWidget";
 
 export default function DashboardLayout() {
   const [collapsed, setCollapsed] = useState(false);
@@ -33,6 +34,7 @@ export default function DashboardLayout() {
           <Outlet />
         </main>
       </div>
+      <ChatSupportWidget />
     </div>
   );
 }

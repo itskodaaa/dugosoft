@@ -8,6 +8,7 @@ import {
   ArrowDownLeft, Loader2, Globe, MapPin
 } from "lucide-react";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/AuthContext";
 import { base44 } from "@/api/base44Client";
 import { useGeoPrice, REGION_PRICES } from "@/lib/useGeoPrice";
@@ -17,51 +18,82 @@ const PLAN_FEATURES = [
   {
     id: "free", name: "Free", icon: Zap, color: "text-muted-foreground",
     bg: "bg-muted/30", border: "border-border",
+    tagline: "Perfect to get started",
     features: [
-      { label: "3 Resume generations / month", ok: true },
-      { label: "ATS Checker (basic)", ok: true },
-      { label: "1 Cover Letter / month", ok: true },
-      { label: "File Sharing (up to 100MB)", ok: true },
-      { label: "Translator (500 words)", ok: true },
-      { label: "LinkedIn Integration", ok: false },
-      { label: "Priority AI model", ok: false },
-      { label: "PDF & DOCX export", ok: false },
-      { label: "Career analytics", ok: false },
-      { label: "CV Vault", ok: false },
+      { label: "3 Resume generations / month", ok: true,  note: "Using our AI builder" },
+      { label: "ATS Checker (basic score)",     ok: true,  note: "Keyword match only" },
+      { label: "1 Cover Letter / month",        ok: true,  note: "AI-generated" },
+      { label: "File Sharing (up to 100MB)",    ok: true,  note: "Shareable links" },
+      { label: "Translator (500 words/month)",  ok: true,  note: "10 languages" },
+      { label: "LinkedIn Optimizer",            ok: false, note: "Pro feature" },
+      { label: "Priority AI model",             ok: false, note: "Pro feature" },
+      { label: "PDF & DOCX export",             ok: false, note: "Pro feature" },
+      { label: "Career Analytics Dashboard",    ok: false, note: "Business feature" },
+      { label: "CV Vault (12+ languages)",      ok: false, note: "Pro feature" },
     ],
   },
   {
     id: "pro", name: "Pro", icon: Star, color: "text-accent",
     bg: "bg-accent/5", border: "border-accent/40", popular: true,
+    tagline: "For serious job seekers",
     features: [
-      { label: "Unlimited Resume generations", ok: true },
-      { label: "ATS Checker (advanced + AI)", ok: true },
-      { label: "Unlimited Cover Letters", ok: true },
-      { label: "File Sharing (up to 5GB)", ok: true },
-      { label: "Translator (unlimited)", ok: true },
-      { label: "LinkedIn Integration", ok: true },
-      { label: "Priority AI model", ok: true },
-      { label: "PDF & DOCX export", ok: true },
-      { label: "Career analytics", ok: false },
-      { label: "CV Vault", ok: true },
+      { label: "Unlimited Resume generations",  ok: true,  note: "All templates" },
+      { label: "ATS Checker (advanced + AI)",   ok: true,  note: "Full AI analysis + tips" },
+      { label: "Unlimited Cover Letters",       ok: true,  note: "Any tone & language" },
+      { label: "File Sharing (up to 5GB)",      ok: true,  note: "Password protection" },
+      { label: "Translator (unlimited words)",  ok: true,  note: "50+ languages" },
+      { label: "LinkedIn Optimizer",            ok: true,  note: "AI headline + about" },
+      { label: "Priority AI model",             ok: true,  note: "Faster, smarter AI" },
+      { label: "PDF & DOCX export",             ok: true,  note: "High-quality exports" },
+      { label: "Career Analytics Dashboard",    ok: false, note: "Business only" },
+      { label: "CV Vault (12+ languages)",      ok: true,  note: "Country-adapted CVs" },
     ],
   },
   {
     id: "business", name: "Business", icon: Crown, color: "text-amber-500",
     bg: "bg-amber-500/5", border: "border-amber-400/40", badge: "Best for Teams",
+    tagline: "For teams & power users",
     features: [
-      { label: "Everything in Pro", ok: true },
-      { label: "Full Analytics dashboard", ok: true },
-      { label: "Team workspace (up to 5)", ok: true },
-      { label: "API access", ok: true },
-      { label: "Priority support", ok: true },
-      { label: "Custom branding on exports", ok: true },
-      { label: "Bulk processing", ok: true },
-      { label: "Dedicated account manager", ok: true },
-      { label: "SLA guarantee", ok: true },
-      { label: "Unlimited history", ok: true },
+      { label: "Everything in Pro",             ok: true,  note: "All Pro features" },
+      { label: "Full Analytics dashboard",      ok: true,  note: "Usage & performance stats" },
+      { label: "Team workspace (up to 5)",      ok: true,  note: "Shared documents" },
+      { label: "API access",                    ok: true,  note: "Build integrations" },
+      { label: "Priority support",              ok: true,  note: "< 4hr response time" },
+      { label: "Custom branding on exports",    ok: true,  note: "Your logo on docs" },
+      { label: "Bulk processing",               ok: true,  note: "Process 100+ files" },
+      { label: "Dedicated account manager",     ok: true,  note: "Personal success manager" },
+      { label: "SLA guarantee",                 ok: true,  note: "99.9% uptime SLA" },
+      { label: "Unlimited history",             ok: true,  note: "Never lose your work" },
     ],
   },
+];
+
+const COMPARISON_ROWS = [
+  { category: "Resumes & Career",  rows: [
+    { label: "Resume generations/month",   free: "3",         pro: "Unlimited",   biz: "Unlimited"  },
+    { label: "ATS scoring",                free: "Basic",     pro: "Advanced AI", biz: "Advanced AI" },
+    { label: "Cover letters/month",        free: "1",         pro: "Unlimited",   biz: "Unlimited"  },
+    { label: "CV Vault (languages)",       free: "✗",         pro: "12+",         biz: "12+"        },
+    { label: "LinkedIn Optimizer",         free: "✗",         pro: "✓",           biz: "✓"          },
+    { label: "Interview Prep",             free: "✗",         pro: "✓",           biz: "✓"          },
+    { label: "Career Mentor AI",           free: "✗",         pro: "✓",           biz: "✓"          },
+  ]},
+  { category: "Documents & Files", rows: [
+    { label: "File Sharing limit",         free: "100 MB",    pro: "5 GB",        biz: "Unlimited"  },
+    { label: "Translation (words/month)",  free: "500",       pro: "Unlimited",   biz: "Unlimited"  },
+    { label: "Languages",                  free: "10",        pro: "50+",         biz: "50+"        },
+    { label: "PDF & DOCX export",          free: "✗",         pro: "✓",           biz: "✓"          },
+    { label: "OCR Scans/month",            free: "3",         pro: "50",          biz: "Unlimited"  },
+    { label: "Custom branding",            free: "✗",         pro: "✗",           biz: "✓"          },
+  ]},
+  { category: "Team & Support",    rows: [
+    { label: "Team workspace seats",       free: "1",         pro: "1",           biz: "5"          },
+    { label: "Analytics dashboard",        free: "✗",         pro: "✗",           biz: "✓"          },
+    { label: "API access",                 free: "✗",         pro: "✗",           biz: "✓"          },
+    { label: "Support level",             free: "Community", pro: "Email",       biz: "Priority"   },
+    { label: "SLA guarantee",             free: "✗",         pro: "✗",           biz: "99.9%"      },
+    { label: "Dedicated account manager", free: "✗",         pro: "✗",           biz: "✓"          },
+  ]},
 ];
 
 // ── Payment Modal ──────────────────────────────────────────────────────────────
@@ -171,10 +203,19 @@ function PaymentModal({ plan, region, prices, onClose }) {
 
 // ── Main Page ──────────────────────────────────────────────────────────────────
 export default function PricingSettings() {
-  const { user, setUser } = useAuth();
+  const { user, setUser, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const { region, prices, detecting, setManualRegion } = useGeoPrice();
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [cancelling, setCancelling] = useState(false);
+
+  const handleSelectPlan = (plan) => {
+    if (!isAuthenticated) {
+      navigate("/auth?next=/dashboard/pricing");
+      return;
+    }
+    setSelectedPlan(plan);
+  };
 
   const currentPlanId = user?.plan || "free";
   const expiresAt = user?.plan_expires_at ? new Date(user.plan_expires_at) : null;
@@ -286,12 +327,12 @@ export default function PricingSettings() {
                 </Button>
               )}
               {currentPlanId === "free" && (
-                <Button onClick={() => setSelectedPlan(PLAN_FEATURES[1])} className="bg-accent hover:bg-accent/90 text-accent-foreground rounded-full gap-2 font-semibold">
+                <Button onClick={() => handleSelectPlan(PLAN_FEATURES[1])} className="bg-accent hover:bg-accent/90 text-accent-foreground rounded-full gap-2 font-semibold">
                   <Crown className="w-4 h-4" /> Upgrade Now
                 </Button>
               )}
               {currentPlanId === "pro" && (
-                <Button onClick={() => setSelectedPlan(PLAN_FEATURES[2])} className="bg-amber-500 hover:bg-amber-500/90 text-white rounded-full gap-2 font-semibold">
+                <Button onClick={() => handleSelectPlan(PLAN_FEATURES[2])} className="bg-amber-500 hover:bg-amber-500/90 text-white rounded-full gap-2 font-semibold">
                   <Crown className="w-4 h-4" /> Upgrade to Business
                 </Button>
               )}
@@ -352,11 +393,14 @@ export default function PricingSettings() {
                 </div>
               )}
 
-              <div className="flex items-center gap-2 mb-4 mt-2">
+              <div className="flex items-center gap-2 mb-2 mt-2">
                 <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${plan.bg} border ${plan.border}`}>
                   <Icon className={`w-4 h-4 ${plan.color}`} />
                 </div>
-                <h3 className="text-base font-bold text-foreground">{plan.name}</h3>
+                <div>
+                  <h3 className="text-base font-bold text-foreground leading-tight">{plan.name}</h3>
+                  <p className="text-[10px] text-muted-foreground">{plan.tagline}</p>
+                </div>
               </div>
 
               <div className="mb-1">
@@ -378,11 +422,14 @@ export default function PricingSettings() {
 
               <ul className="space-y-2 flex-1 mb-5">
                 {plan.features.map((f, fi) => (
-                  <li key={fi} className="flex items-start gap-2 text-xs">
+                  <li key={fi} className="flex items-start gap-2 text-xs group/item">
                     {f.ok
                       ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 mt-0.5 shrink-0" />
                       : <X className="w-3.5 h-3.5 text-muted-foreground/40 mt-0.5 shrink-0" />}
-                    <span className={f.ok ? "text-foreground" : "text-muted-foreground/50"}>{f.label}</span>
+                    <div className="flex-1">
+                      <span className={f.ok ? "text-foreground" : "text-muted-foreground/50"}>{f.label}</span>
+                      {f.note && <span className="ml-1 text-[9px] text-muted-foreground/60">— {f.note}</span>}
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -397,7 +444,7 @@ export default function PricingSettings() {
                   Downgrade to Free
                 </Button>
               ) : (
-                <Button onClick={() => setSelectedPlan(plan)}
+                <Button onClick={() => handleSelectPlan(plan)}
                   className={`w-full h-10 rounded-xl text-sm font-semibold gap-1.5 ${
                     plan.id === "business" ? "bg-amber-500 hover:bg-amber-500/90 text-white border-0" : "bg-accent hover:bg-accent/90 text-accent-foreground"
                   }`}>
@@ -407,6 +454,38 @@ export default function PricingSettings() {
             </motion.div>
           );
         })}
+      </div>
+
+      {/* Full Feature Comparison Table */}
+      <div className="space-y-4">
+        <h2 className="text-lg font-extrabold text-foreground">Full Feature Comparison</h2>
+        {COMPARISON_ROWS.map((section) => (
+          <div key={section.category} className="bg-card ink-border rounded-2xl overflow-hidden">
+            <div className="px-5 py-3 bg-muted/30 border-b border-border">
+              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{section.category}</p>
+            </div>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="text-left px-5 py-2.5 text-xs font-semibold text-muted-foreground w-1/2">Feature</th>
+                  <th className="text-center px-3 py-2.5 text-xs font-semibold text-muted-foreground">Free</th>
+                  <th className="text-center px-3 py-2.5 text-xs font-bold text-accent bg-accent/5">Pro</th>
+                  <th className="text-center px-3 py-2.5 text-xs font-bold text-amber-600 bg-amber-500/5">Business</th>
+                </tr>
+              </thead>
+              <tbody>
+                {section.rows.map((row, ri) => (
+                  <tr key={ri} className={`border-b border-border/50 last:border-0 ${ri % 2 === 0 ? "" : "bg-muted/10"}`}>
+                    <td className="px-5 py-2.5 text-xs font-medium text-foreground">{row.label}</td>
+                    <td className="text-center px-3 py-2.5 text-xs text-muted-foreground">{row.free}</td>
+                    <td className="text-center px-3 py-2.5 text-xs font-semibold text-accent bg-accent/5">{row.pro}</td>
+                    <td className="text-center px-3 py-2.5 text-xs font-semibold text-amber-600 bg-amber-500/5">{row.biz}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ))}
       </div>
 
       {/* Trust badges */}
