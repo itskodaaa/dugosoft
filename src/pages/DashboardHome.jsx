@@ -16,6 +16,7 @@ import { base44 } from "@/api/base44Client";
 import OnboardingChecklist from "@/components/shared/OnboardingChecklist";
 import UsageMeter from "@/components/dashboard/UsageMeter";
 import JobRecommendations from "@/components/dashboard/JobRecommendations";
+import CareerHealthModule from "@/components/dashboard/CareerHealthModule";
 
 const QUICK_TOOLS = [
   { icon: FileText,      title: "Resume Builder",        desc: "Build ATS-optimized resumes",           path: "/dashboard/resume-builder-v2",   color: "text-accent",        bg: "bg-accent/10",        gradient: "from-accent to-blue-500" },
@@ -275,10 +276,15 @@ export default function DashboardHome() {
         </div>
       </motion.div>
 
-      {/* Job Recommendations */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
-        <JobRecommendations />
-      </motion.div>
+      {/* Career Health + Job Recommendations */}
+      <div className="grid lg:grid-cols-[320px_1fr] gap-6 items-start">
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.22 }}>
+          <CareerHealthModule />
+        </motion.div>
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
+          <JobRecommendations />
+        </motion.div>
+      </div>
 
       {/* Upgrade banner */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>

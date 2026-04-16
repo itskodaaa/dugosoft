@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Target, Upload, Link2, FileText, Sparkles, CheckCircle2, AlertCircle,
-  TrendingUp, Plus, ExternalLink, MapPin, Building2, Clock, Crown, Zap, Star
+  TrendingUp, Plus, ExternalLink, MapPin, Building2, Clock, Crown, Zap, Star,
+  RefreshCw, ChevronDown, Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -39,7 +40,60 @@ export default function CareerMatcher() {
   const [jobUrl, setJobUrl] = useState("");
   const [resume, setResume] = useState(MOCK_RESUME);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [result, setResult] = useState(null);
+  const [allJobs, setAllJobs] = useState([]);
+  const [visibleCount, setVisibleCount] = useState(5);
+
+  const buildPrompt = (jd, seedOffset = 0) => `You are an expert ATS and career coach. Given the job description and resume below, provide a detailed analysis.
+
+JOB DESCRIPTION:
+${jd}
+
+RESUME:
+${resume}
+
+${seedOffset > 0 ? `IMPORTANT: Generate DIFFERENT job openings than before. Use different companies, locations, and boards. Seed variation: ${seedOffset}` : ""}
+
+Return a JSON object with:
+- ats_score: number 0-100
+- fit_rating: "Excellent" | "Good" | "Fair" | "Poor"
+- matched_skills: array of strings
+- missing_skills: array of strings
+- suggested_bullets: array of 4-5 specific bullet points
+- strengths: array of 3 strengths
+- weaknesses: array of 2-3 gaps
+- job_title_guess: string
+- suggested_jobs: array of 8 objects with { title, company, location, url, board, match_pct } — use varied global companies (LinkedIn, Indeed, Glassdoor, Otta, RemoteOK, Wellfound, EuroJobs, We Work Remotely). Every call should produce DIFFERENT companies and locations.`;
+
+  const SCHEMA = {
+    type: "object",
+    properties: {
+      ats_score: { type: "number" },
+      fit_rating: { type: "string" },
+      matched_skills: { type: "array", items: { type: "string" } },
+      missing_skills: { type: "array", items: { type: "string" } },
+      suggested_bullets: { type: "array", items: { type: "string" } },
+      strengths: { type: "array", items: { type: "string" } },
+      weaknesses: { type: "array", items: { type: "string" } },
+      job_title_guess: { type: "string" },
+      suggested_jobs: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            title: { type: "string" },
+            company: { type: "string" },
+            location: { type: "string" },
+            url: { type: "string" },
+            board: { type: "string" },
+            match_pct: { type: "number" }
+          }
+        }
+      }
+    }
+  };
 
   const analyze = async () => {
     if (!canUse) { toast.warning("AI Career Matcher is available on Premium and Business plans."); return; }
@@ -48,55 +102,59 @@ export default function CareerMatcher() {
     if (!resume.trim()) { toast.warning("Please enter your resume summary."); return; }
     setLoading(true);
     setResult(null);
+    setAllJobs([]);
+    setVisibleCount(5);
     const res = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are an expert ATS and career coach. Given the job description and resume below, provide a detailed analysis.
-
-JOB DESCRIPTION:
-${jd}
-
-RESUME:
-${resume}
-
-Return a JSON object with:
-- ats_score: number 0-100
-- fit_rating: "Excellent" | "Good" | "Fair" | "Poor"
-- matched_skills: array of strings (skills from resume that match JD)
-- missing_skills: array of strings (skills in JD not in resume)
-- suggested_bullets: array of 4-5 specific bullet points the user should add to their resume to improve chances
-- strengths: array of 3 strengths the user brings for this role
-- weaknesses: array of 2-3 gaps to address
-- job_title_guess: string — the job title being applied to
-- suggested_jobs: array of 5 objects: { title: string, company: string, location: string, url: string, board: string, match_pct: number } — real-looking job openings from global job boards (LinkedIn, Indeed, Glassdoor, Otta, RemoteOK, Wellfound, etc.) that would match this resume. Use realistic company names, locations (worldwide), and deep-link job search URLs.`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          ats_score: { type: "number" },
-          fit_rating: { type: "string" },
-          matched_skills: { type: "array", items: { type: "string" } },
-          missing_skills: { type: "array", items: { type: "string" } },
-          suggested_bullets: { type: "array", items: { type: "string" } },
-          strengths: { type: "array", items: { type: "string" } },
-          weaknesses: { type: "array", items: { type: "string" } },
-          job_title_guess: { type: "string" },
-          suggested_jobs: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                title: { type: "string" },
-                company: { type: "string" },
-                location: { type: "string" },
-                url: { type: "string" },
-                board: { type: "string" },
-                match_pct: { type: "number" }
-              }
-            }
-          }
-        }
-      }
+      prompt: buildPrompt(jd),
+      response_json_schema: SCHEMA,
     });
     setResult(res);
+    setAllJobs(res.suggested_jobs || []);
     setLoading(false);
+  };
+
+  const refreshJobs = async () => {
+    if (!result) return;
+    setRefreshing(true);
+    const jd = inputMode === "url" ? jobUrl : jobText;
+    const seed = Date.now();
+    try {
+      const res = await base44.integrations.Core.InvokeLLM({
+        prompt: buildPrompt(jd, seed),
+        response_json_schema: SCHEMA,
+      });
+      setAllJobs(res.suggested_jobs || []);
+      setVisibleCount(5);
+      toast.success("Loaded fresh job openings!");
+    } catch {
+      toast.error("Failed to refresh jobs.");
+    }
+    setRefreshing(false);
+  };
+
+  const loadMoreJobs = async () => {
+    const jd = inputMode === "url" ? jobUrl : jobText;
+    if (visibleCount < allJobs.length) {
+      setVisibleCount(v => Math.min(v + 5, allJobs.length));
+      return;
+    }
+    // Fetch more from AI
+    setLoadingMore(true);
+    try {
+      const res = await base44.integrations.Core.InvokeLLM({
+        prompt: buildPrompt(jd, allJobs.length + Date.now()),
+        response_json_schema: SCHEMA,
+      });
+      const newJobs = (res.suggested_jobs || []).filter(j =>
+        !allJobs.some(existing => existing.company === j.company && existing.title === j.title)
+      );
+      setAllJobs(prev => [...prev, ...newJobs]);
+      setVisibleCount(v => v + 5);
+      toast.success(`Loaded ${newJobs.length} more job openings!`);
+    } catch {
+      toast.error("Failed to load more jobs.");
+    }
+    setLoadingMore(false);
   };
 
   return (
@@ -264,13 +322,26 @@ Return a JSON object with:
 
                   {/* Job Openings */}
                   <div className="bg-card ink-border rounded-2xl p-5">
-                    <div className="flex items-center gap-2 mb-4">
-                      <TrendingUp className="w-4 h-4 text-accent" />
-                      <span className="text-sm font-bold text-foreground">Matching Job Openings — Worldwide</span>
+                    <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+                      <div className="flex items-center gap-2">
+                        <TrendingUp className="w-4 h-4 text-accent" />
+                        <span className="text-sm font-bold text-foreground">Matching Job Openings — Worldwide</span>
+                        <span className="text-xs text-muted-foreground">({allJobs.length} found)</span>
+                      </div>
+                      <Button onClick={refreshJobs} disabled={refreshing} variant="outline" size="sm"
+                        className="gap-1.5 rounded-full text-xs h-8">
+                        {refreshing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                        New Results
+                      </Button>
                     </div>
                     <div className="space-y-3">
-                      {result.suggested_jobs?.map((job, i) => (
-                        <div key={i} className="flex items-center gap-4 p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors">
+                      {allJobs.slice(0, visibleCount).map((job, i) => (
+                        <motion.div key={`${job.company}-${i}`}
+                          initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
+                          className="flex items-center gap-4 p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors">
+                          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent/20 to-blue-500/20 flex items-center justify-center text-xs font-black text-accent shrink-0">
+                            {job.company?.[0] || "C"}
+                          </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
                               <p className="text-sm font-semibold text-foreground">{job.title}</p>
@@ -286,9 +357,19 @@ Return a JSON object with:
                             className="shrink-0 flex items-center gap-1 text-xs font-semibold text-accent border border-accent/30 px-3 py-1.5 rounded-full hover:bg-accent/10 transition-colors">
                             Apply <ExternalLink className="w-3 h-3" />
                           </a>
-                        </div>
+                        </motion.div>
                       ))}
                     </div>
+
+                    {/* Load More */}
+                    <div className="mt-4 flex justify-center">
+                      <Button onClick={loadMoreJobs} disabled={loadingMore} variant="outline" size="sm"
+                        className="gap-2 rounded-full text-xs">
+                        {loadingMore ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                        {loadingMore ? "Loading more..." : "Load More Jobs"}
+                      </Button>
+                    </div>
+
                     {/* Job boards list */}
                     <div className="mt-5 pt-4 border-t border-border">
                       <p className="text-xs text-muted-foreground mb-3">Search more on global job boards:</p>
