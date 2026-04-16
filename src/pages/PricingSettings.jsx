@@ -374,7 +374,7 @@ export default function PricingSettings() {
                   </span>
                 </div>
               )}
-              {plan.id !== "free" && <div className="mb-3" />
+              {plan.id !== "free" && <div className="mb-3" />}
 
               <ul className="space-y-2 flex-1 mb-5">
                 {plan.features.map((f, fi) => (
