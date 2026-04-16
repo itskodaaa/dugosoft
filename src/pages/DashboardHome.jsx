@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -10,6 +10,9 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { useAuth } from "@/lib/AuthContext";
+import { usePlan, PLAN_LIMITS } from "@/lib/usePlan";
+import { base44 } from "@/api/base44Client";
 
 const QUICK_TOOLS = [
   { icon: FileText,      title: "Resume Builder",        desc: "Build ATS-optimized resumes",           path: "/dashboard/resume-builder-v2",   color: "text-accent",        bg: "bg-accent/10",        gradient: "from-accent to-blue-500" },
@@ -87,7 +90,51 @@ function ShareToolModal({ tool, onClose }) {
 }
 
 export default function DashboardHome() {
+  const { user } = useAuth();
+  const { plan, limits } = usePlan();
   const [shareTarget, setShareTarget] = useState(null);
+  const [recentResumes, setRecentResumes] = useState([]);
+  const [recentLetters, setRecentLetters] = useState([]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    base44.entities.ResumeProject.list("-updated_date", 3).then(setRecentResumes).catch(() => {});
+    base44.entities.CoverLetter.list("-created_date", 2).then(setRecentLetters).catch(() => {});
+  }, [user?.id]);
+
+  const planLabel = { free: "Free Plan", pro: "Pro Plan", business: "Business" }[plan] || "Free Plan";
+  const firstName = user?.full_name?.split(" ")[0] || "there";
+  const initial = (user?.full_name || user?.email || "U")[0].toUpperCase();
+
+  // Real stats from user entity
+  const realStats = [
+    { label: "AI Requests Today", value: user?.ai_requests || 0, icon: Zap, color: "text-accent", bg: "bg-accent/10",
+      trend: `${limits?.ai_requests === Infinity ? "∞" : limits?.ai_requests || 10} limit` },
+    { label: "PDFs Processed", value: user?.pdf_count || 0, icon: FileText, color: "text-orange-500", bg: "bg-orange-500/10",
+      trend: `${limits?.pdf_count === Infinity ? "∞" : limits?.pdf_count || 5} limit` },
+    { label: "OCR Requests", value: user?.ocr_count || 0, icon: ScanText, color: "text-purple-500", bg: "bg-purple-500/10",
+      trend: `${limits?.ocr_count === Infinity ? "∞" : limits?.ocr_count || 3} limit` },
+    { label: "Resumes Saved", value: recentResumes.length, icon: FileText, color: "text-green-500", bg: "bg-green-500/10",
+      trend: "in your library" },
+  ];
+
+  // Build recent activity from real DB records
+  const recentActivity = [
+    ...recentResumes.map(r => ({
+      icon: FileText, color: "text-accent bg-accent/10",
+      title: r.title || "Untitled Resume",
+      action: "Continue editing", path: "/dashboard/resume-builder-v2",
+      time: new Date(r.updated_date || r.created_date).toLocaleDateString(),
+      status: r.status === "complete" ? "Complete" : "Draft",
+    })),
+    ...recentLetters.map(r => ({
+      icon: PenLine, color: "text-purple-500 bg-purple-500/10",
+      title: `${r.job_title} @ ${r.company}`,
+      action: "View letter", path: "/dashboard/cover-letter",
+      time: new Date(r.created_date).toLocaleDateString(),
+      status: "Saved",
+    })),
+  ].slice(0, 5);
 
   return (
     <div className="max-w-7xl space-y-8">
@@ -96,38 +143,39 @@ export default function DashboardHome() {
         <div className="relative overflow-hidden bg-gradient-to-br from-primary/95 via-accent to-blue-600 rounded-2xl p-6 text-white shadow-xl">
           <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "radial-gradient(circle at 80% 30%, white 0%, transparent 60%)" }} />
           <div className="absolute -right-8 -top-8 w-40 h-40 rounded-full bg-white/5 border border-white/10" />
-          <div className="absolute -right-2 top-10 w-20 h-20 rounded-full bg-white/5 border border-white/10" />
           <div className="relative flex items-center justify-between flex-wrap gap-4">
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-sm font-bold">S</div>
+                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-sm font-bold">{initial}</div>
                 <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/15 border border-white/20 text-xs font-semibold">
-                  <Crown className="w-3 h-3 text-amber-300" /> Free Plan
+                  <Crown className="w-3 h-3 text-amber-300" /> {planLabel}
                 </div>
               </div>
-              <h1 className="text-2xl font-extrabold tracking-tight">Welcome back 👋</h1>
+              <h1 className="text-2xl font-extrabold tracking-tight">Welcome back, {firstName} 👋</h1>
               <p className="text-white/75 text-sm mt-1">Pick up where you left off or start something new.</p>
             </div>
-            <Link to="/dashboard/pricing">
-              <Button className="bg-white text-primary hover:bg-white/90 font-bold rounded-full px-5 h-9 text-sm gap-2 shadow-lg">
-                <Star className="w-3.5 h-3.5 text-amber-500" /> Upgrade to Pro
-              </Button>
-            </Link>
+            {plan === "free" && (
+              <Link to="/dashboard/pricing">
+                <Button className="bg-white text-primary hover:bg-white/90 font-bold rounded-full px-5 h-9 text-sm gap-2 shadow-lg">
+                  <Star className="w-3.5 h-3.5 text-amber-500" /> Upgrade to Pro
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
       </motion.div>
 
-      {/* Stats */}
+      {/* Real Stats */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
         className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-        {STATS.map((s, i) => {
+        {realStats.map((s, i) => {
           const Icon = s.icon;
           return (
             <motion.div key={i} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 + i * 0.04 }}
               className="bg-card ink-border rounded-2xl p-4 flex flex-col gap-2 hover:shadow-md transition-all">
               <div className="flex items-center justify-between">
                 <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${s.bg}`}>
-                  <Icon className={`w-4.5 h-4.5 ${s.color}`} />
+                  <Icon className={`w-4 h-4 ${s.color}`} />
                 </div>
                 <span className="text-[10px] font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{s.trend}</span>
               </div>
@@ -140,7 +188,7 @@ export default function DashboardHome() {
         })}
       </motion.div>
 
-      {/* Recent Activity */}
+      {/* Recent Activity — real records */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-base font-bold text-foreground flex items-center gap-2">
@@ -149,7 +197,11 @@ export default function DashboardHome() {
           <Link to="/dashboard/history" className="text-xs text-accent font-semibold hover:underline">View all</Link>
         </div>
         <div className="bg-card ink-border rounded-2xl overflow-hidden divide-y divide-border">
-          {RECENT_ACTIVITY.map((item, i) => {
+          {recentActivity.length === 0 ? (
+            <div className="py-10 text-center text-sm text-muted-foreground">
+              No activity yet. Start by building a resume or generating a cover letter!
+            </div>
+          ) : recentActivity.map((item, i) => {
             const Icon = item.icon;
             return (
               <motion.div key={i} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 + i * 0.04 }}

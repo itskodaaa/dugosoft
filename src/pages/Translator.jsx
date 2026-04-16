@@ -4,109 +4,67 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Languages, Copy, Check, Download, Type, FileUp, AlertCircle, ArrowRight } from "lucide-react";
+import { Languages, Copy, Check, Download, Type, FileUp, ArrowRight } from "lucide-react";
 import ProcessingBorder from "../components/shared/ProcessingBorder";
 import FileUpload from "../components/shared/FileUpload";
 import InputModeToggle from "../components/shared/InputModeToggle";
 import StatusBadge from "../components/shared/StatusBadge";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
+import { useAI } from "@/lib/useAI";
 
-const TRANSLATIONS = {
-  italian: `Documento tradotto con intelligenza artificiale — Softdugo Translation Engine v1.0
-
-Questo è un documento tradotto automaticamente dall'intelligenza artificiale. L'accuratezza della traduzione dipende dalla complessità del testo originale e dal dominio linguistico.
-
-Paragrafo 1:
-Il sistema di traduzione analizza il contesto semantico per garantire coerenza e precisione. Le frasi tecniche e i termini specializzati vengono gestiti con la massima cura.
-
-Paragrafo 2:
-La traduzione mantiene la struttura originale del documento, incluse le formattazioni di titoli, elenchi e paragrafi. Il documento è ora pronto per essere scaricato o copiato.`,
-
-  french: `Document traduit par intelligence artificielle — Softdugo Translation Engine v1.0
-
-Ceci est un document traduit automatiquement par l'intelligence artificielle. La précision dépend de la complexité du texte original et du domaine linguistique.
-
-Paragraphe 1:
-Le système d'analyse sémantique garantit cohérence et précision dans la traduction. Les termes techniques et spécialisés sont traités avec le plus grand soin.
-
-Paragraphe 2:
-La traduction conserve la structure originale du document, y compris les titres, listes et paragraphes. Le document est maintenant prêt à être téléchargé ou copié.`,
-
-  spanish: `Documento traducido con inteligencia artificial — Softdugo Translation Engine v1.0
-
-Este es un documento traducido automáticamente por inteligencia artificial. La precisión depende de la complejidad del texto original y del dominio lingüístico.
-
-Párrafo 1:
-El sistema analiza el contexto semántico para garantizar coherencia y precisión. Los términos técnicos y especializados se gestionan con el mayor cuidado.
-
-Párrafo 2:
-La traducción mantiene la estructura original del documento, incluidos títulos, listas y párrafos. El documento ya está listo para ser descargado o copiado.`,
-
-  german: `Mit KI übersetztes Dokument — Softdugo Translation Engine v1.0
-
-Dies ist ein automatisch von künstlicher Intelligenz übersetztes Dokument. Die Genauigkeit hängt von der Komplexität des Originaltextes und der Fachdomäne ab.
-
-Absatz 1:
-Das System analysiert den semantischen Kontext, um Konsistenz und Präzision sicherzustellen. Fachbegriffe werden mit größter Sorgfalt behandelt.
-
-Absatz 2:
-Die Übersetzung behält die ursprüngliche Dokumentstruktur bei, einschließlich Überschriften, Listen und Absätzen. Das Dokument kann jetzt heruntergeladen oder kopiert werden.`,
-
-  english: `AI-translated document — Softdugo Translation Engine v1.0
-
-This is a document automatically translated by artificial intelligence. Accuracy depends on the complexity of the original text and the linguistic domain.
-
-Paragraph 1:
-The system analyzes semantic context to ensure consistency and precision. Technical and specialized terms are handled with the utmost care.
-
-Paragraph 2:
-The translation preserves the original document structure, including headings, lists, and paragraphs. The document is now ready to be downloaded or copied.`,
-};
-
-const languages = [
-  { value: "english", label: "🇬🇧 English" },
-  { value: "italian", label: "🇮🇹 Italian" },
-  { value: "french", label: "🇫🇷 French" },
-  { value: "spanish", label: "🇪🇸 Spanish" },
-  { value: "german", label: "🇩🇪 German" },
+const LANGUAGES = [
+  { value: "English",    label: "🇬🇧 English" },
+  { value: "Italian",    label: "🇮🇹 Italian" },
+  { value: "French",     label: "🇫🇷 French" },
+  { value: "Spanish",    label: "🇪🇸 Spanish" },
+  { value: "German",     label: "🇩🇪 German" },
+  { value: "Portuguese", label: "🇧🇷 Portuguese" },
+  { value: "Arabic",     label: "🇸🇦 Arabic" },
+  { value: "Chinese",    label: "🇨🇳 Chinese" },
+  { value: "Dutch",      label: "🇳🇱 Dutch" },
+  { value: "Russian",    label: "🇷🇺 Russian" },
+  { value: "Japanese",   label: "🇯🇵 Japanese" },
+  { value: "Korean",     label: "🇰🇷 Korean" },
 ];
 
-const inputModes = [
-  { value: "paste", label: "Paste Text", icon: Type },
+const INPUT_MODES = [
+  { value: "paste",  label: "Paste Text",      icon: Type },
   { value: "upload", label: "Upload Document", icon: FileUp },
 ];
 
-const FREE_TRANSLATIONS = 3;
-
 export default function Translator() {
+  const { call, loading } = useAI();
   const [inputMode, setInputMode] = useState("paste");
   const [inputText, setInputText] = useState("");
   const [file, setFile] = useState(null);
-  const [targetLang, setTargetLang] = useState("italian");
+  const [targetLang, setTargetLang] = useState("Italian");
   const [status, setStatus] = useState("idle");
   const [result, setResult] = useState("");
   const [copied, setCopied] = useState(false);
-  const [translationsUsed, setTranslationsUsed] = useState(0);
 
-  const canTranslate = inputMode === "paste" ? inputText.trim().length > 0 : file !== null;
+  const canTranslate = inputMode === "paste" ? inputText.trim().length > 10 : file !== null;
 
-  const handleTranslate = () => {
+  const handleTranslate = async () => {
     if (!canTranslate) {
-      toast.warning(inputMode === "paste" ? "Please enter some text first" : "Please upload a document first");
-      return;
-    }
-    if (translationsUsed >= FREE_TRANSLATIONS) {
-      toast.error(`Free plan: ${FREE_TRANSLATIONS} translations used. Upgrade for unlimited.`);
+      toast.warning(inputMode === "paste" ? "Please enter some text to translate" : "Please upload a document first");
       return;
     }
     setStatus("processing");
     setResult("");
-    setTimeout(() => {
-      setResult(TRANSLATIONS[targetLang] || TRANSLATIONS.english);
+
+    const data = await call("translateText", {
+      text: inputText,
+      targetLanguage: targetLang,
+      tone: "professional",
+    });
+
+    if (data?.translation) {
+      setResult(data.translation);
       setStatus("complete");
-      setTranslationsUsed((n) => n + 1);
-    }, 2000);
+    } else {
+      setStatus("idle");
+    }
   };
 
   const handleCopy = () => {
@@ -116,10 +74,14 @@ export default function Translator() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleModeChange = (mode) => {
-    setInputMode(mode);
-    setResult("");
-    setStatus("idle");
+  const handleDownload = () => {
+    const blob = new Blob([result], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `translation-${targetLang.toLowerCase()}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -129,18 +91,15 @@ export default function Translator() {
           Document Translator
         </h1>
         <p className="text-muted-foreground mb-4 text-sm">
-          Translate text or full documents between multiple languages with AI accuracy.
+          Translate text or full documents between 12+ languages using real AI.
         </p>
-        <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 mb-4 text-xs text-amber-700">
-          <AlertCircle className="w-4 h-4 shrink-0" />
-          <span><strong>Free plan:</strong> {FREE_TRANSLATIONS - translationsUsed} of {FREE_TRANSLATIONS} translations remaining.
-            {translationsUsed >= FREE_TRANSLATIONS && <> <button className="underline font-semibold ml-1">Upgrade for unlimited</button></>}
-          </span>
+        <div className="flex items-center gap-2 bg-accent/5 border border-accent/20 rounded-xl px-4 py-2.5 mb-4 text-xs text-accent">
+          <Languages className="w-4 h-4 shrink-0" />
+          <span>Powered by Gemini AI. Preserves professional tone and document structure.</span>
         </div>
       </motion.div>
 
-      {/* AI Language Tools promo */}
-      <div className="flex items-center gap-3 bg-accent/5 border border-accent/20 rounded-xl px-4 py-3 mb-4 text-sm">
+      <div className="flex items-center gap-3 bg-muted/40 border border-border rounded-xl px-4 py-3 mb-4 text-sm">
         <Languages className="w-4 h-4 text-accent shrink-0" />
         <span className="text-muted-foreground">Need context translation, synonyms, or grammar correction?</span>
         <Link to="/dashboard/ai-language" className="ml-auto text-accent font-semibold hover:underline flex items-center gap-1 shrink-0">
@@ -148,25 +107,18 @@ export default function Translator() {
         </Link>
       </div>
 
-      {/* Mode toggle */}
       <div className="mb-6">
-        <InputModeToggle modes={inputModes} active={inputMode} onChange={handleModeChange} />
+        <InputModeToggle modes={INPUT_MODES} active={inputMode} onChange={(m) => { setInputMode(m); setResult(""); setStatus("idle"); }} />
       </div>
 
       <div className="grid lg:grid-cols-2 gap-8">
-        {/* Input pane */}
-        <motion.div
-          key={inputMode}
-          initial={{ opacity: 0, x: -10 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.25 }}
-        >
+        {/* Input */}
+        <motion.div key={inputMode} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.25 }}>
           <div className="space-y-4">
             <div>
               <Label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3 block">
                 {inputMode === "paste" ? "Source Text" : "Upload Document"}
               </Label>
-
               <AnimatePresence mode="wait">
                 {inputMode === "paste" ? (
                   <motion.div key="paste" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
@@ -185,18 +137,22 @@ export default function Translator() {
                 ) : (
                   <motion.div key="upload" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                     <FileUpload
-                      accept=".pdf,.docx,.doc"
-                      acceptLabel="PDF, DOCX — up to 10MB"
+                      accept=".pdf,.docx,.doc,.txt"
+                      acceptLabel="PDF, DOCX, TXT — up to 10MB"
                       file={file}
                       onFile={setFile}
                       onRemove={() => { setFile(null); setResult(""); setStatus("idle"); }}
                     />
+                    {file && (
+                      <p className="text-xs text-muted-foreground mt-2 bg-amber-50 border border-amber-200 rounded-lg p-2">
+                        Note: File content extraction is coming soon. Please paste the text content directly for now.
+                      </p>
+                    )}
                   </motion.div>
                 )}
               </AnimatePresence>
             </div>
 
-            {/* Language selector + action */}
             <div>
               <Label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2 block">
                 Translate to
@@ -208,86 +164,60 @@ export default function Translator() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {languages.map((lang) => (
-                        <SelectItem key={lang.value} value={lang.value}>
-                          {lang.label}
-                        </SelectItem>
+                      {LANGUAGES.map((lang) => (
+                        <SelectItem key={lang.value} value={lang.value}>{lang.label}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <Button
                   onClick={handleTranslate}
-                  disabled={status === "processing"}
+                  disabled={loading || !canTranslate}
                   className="bg-accent hover:bg-accent/90 text-accent-foreground rounded-full h-11 px-6 font-semibold gap-2 shrink-0"
                 >
-                  {status === "processing" ? (
-                    <div className="w-4 h-4 border-2 border-accent-foreground/30 border-t-accent-foreground rounded-full animate-spin" />
-                  ) : (
-                    <>
-                      <Languages className="w-4 h-4" />
-                      Translate
-                    </>
-                  )}
+                  {loading
+                    ? <div className="w-4 h-4 border-2 border-accent-foreground/30 border-t-accent-foreground rounded-full animate-spin" />
+                    : <><Languages className="w-4 h-4" /> Translate</>}
                 </Button>
               </div>
             </div>
           </div>
         </motion.div>
 
-        {/* Output pane */}
+        {/* Output */}
         <div>
           <div className="flex items-center justify-between mb-3">
             <Label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
               Translation Output
             </Label>
-            <div className="flex items-center gap-2">
-              {status !== "idle" && <StatusBadge status={status} />}
-            </div>
+            {status !== "idle" && <StatusBadge status={status} />}
           </div>
 
-          <ProcessingBorder processing={status === "processing"}>
+          <ProcessingBorder processing={loading}>
             <div className="p-5 min-h-[280px]">
               <AnimatePresence mode="wait">
                 {result ? (
                   <motion.div key="result" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                     <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap mb-5">{result}</p>
                     <div className="flex flex-wrap gap-2 pt-4 border-t border-border">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={handleCopy}
-                        className="rounded-full h-8 text-xs gap-1.5"
-                      >
+                      <Button size="sm" variant="outline" onClick={handleCopy} className="rounded-full h-8 text-xs gap-1.5">
                         {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                        {copied ? "Copied" : "Copy Text"}
+                        {copied ? "Copied" : "Copy"}
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="rounded-full h-8 text-xs gap-1.5"
-                        onClick={() => toast.success("Download started (simulated)")}
-                      >
-                        <Download className="w-3 h-3" />
-                        Download Translated File
+                      <Button size="sm" variant="outline" onClick={handleDownload} className="rounded-full h-8 text-xs gap-1.5">
+                        <Download className="w-3 h-3" /> Download
                       </Button>
                     </div>
                   </motion.div>
                 ) : (
-                  <motion.div
-                    key="empty"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="flex items-center justify-center h-[240px] text-center"
-                  >
+                  <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                    className="flex items-center justify-center h-[240px] text-center">
                     <div>
                       <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center mx-auto mb-3">
                         <Languages className="w-5 h-5 text-muted-foreground" />
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        {status === "processing"
-                          ? "Translating your document..."
-                          : "Your translation will appear here."}
+                        {loading ? "Translating with AI..." : "Your translation will appear here."}
                       </p>
                     </div>
                   </motion.div>

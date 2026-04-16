@@ -1,0 +1,36 @@
+{
+  "name": "CoverLetter",
+  "type": "object",
+  "properties": {
+    "job_title": {
+      "type": "string"
+    },
+    "company": {
+      "type": "string"
+    },
+    "applicant_name": {
+      "type": "string"
+    },
+    "tone": {
+      "type": "string",
+      "default": "Professional"
+    },
+    "language": {
+      "type": "string",
+      "default": "English"
+    },
+    "content": {
+      "type": "string"
+    },
+    "qualifications": {
+      "type": "string"
+    },
+    "experience": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "job_title",
+    "company"
+  ]
+}

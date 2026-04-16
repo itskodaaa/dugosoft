@@ -1,0 +1,36 @@
+{
+  "name": "ResumeProject",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "template_id": {
+      "type": "string"
+    },
+    "template_name": {
+      "type": "string"
+    },
+    "target_region": {
+      "type": "string"
+    },
+    "resume_data": {
+      "type": "string",
+      "description": "JSON-serialized resume content"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "complete"
+      ],
+      "default": "draft"
+    },
+    "last_exported": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "title"
+  ]
+}

@@ -3,13 +3,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import {
   GripVertical, Plus, Trash2, Download, Eye, Crown, Lock, Check, ChevronDown, ChevronUp,
-  Type, Palette, Layout, Layers, Globe2, Sparkles
+  Type, Palette, Globe2, Save, CheckCircle2, Loader2
 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { useAuth } from "@/lib/AuthContext";
 
 // ─── Templates ────────────────────────────────────────────────────────────────
 const TEMPLATES = [
@@ -200,15 +201,18 @@ function ResumePreview({ data, template }) {
 
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 export default function ResumeBuilderV2() {
+  const { user } = useAuth();
   const [step, setStep] = useState("template"); // template | editor
   const [selectedTemplate, setSelectedTemplate] = useState(TEMPLATES[0]);
   const [industryFilter, setIndustryFilter] = useState("All");
   const [levelFilter, setLevelFilter] = useState("All");
-  const [resume, setResume] = useState(DEFAULT_RESUME);
+  const [resume, setResume] = useState({ ...DEFAULT_RESUME, name: user?.full_name || DEFAULT_RESUME.name, email: user?.email || DEFAULT_RESUME.email });
   const [activeTab, setActiveTab] = useState("content"); // content | style
   const [targetRegion, setTargetRegion] = useState(TARGET_REGIONS[0]);
   const [adapting, setAdapting] = useState(false);
-  const isPremiumUser = false;
+  const [saving, setSaving] = useState(false);
+  const [savedId, setSavedId] = useState(null);
+  const isPremiumUser = user?.plan === "pro" || user?.plan === "business";
 
   const adaptToRegion = async (region) => {
     setTargetRegion(region);
@@ -288,6 +292,53 @@ Return JSON:
     setResume(p => ({ ...p, sections: items }));
   };
 
+  const handleSaveDraft = async () => {
+    setSaving(true);
+    const title = `${resume.name || "Resume"} — ${selectedTemplate.name}`;
+    const data = {
+      title,
+      template_id: selectedTemplate.id,
+      template_name: selectedTemplate.name,
+      target_region: targetRegion.id !== "none" ? targetRegion.label : null,
+      resume_data: JSON.stringify(resume),
+      status: "draft",
+    };
+    if (savedId) {
+      await base44.entities.ResumeProject.update(savedId, data);
+    } else {
+      const record = await base44.entities.ResumeProject.create(data);
+      setSavedId(record.id);
+    }
+    setSaving(false);
+    toast.success("Resume draft saved!");
+  };
+
+  const handleExport = () => {
+    // Generate printable text version
+    const lines = [
+      resume.name,
+      resume.title,
+      [resume.email, resume.phone, resume.location, resume.linkedin].filter(Boolean).join(" | "),
+      "",
+      resume.summary,
+      "",
+      ...resume.sections.filter(s => s.visible).flatMap(sec => [
+        sec.label.toUpperCase(),
+        ...sec.items.map(item => `${item.title}${item.company ? ` — ${item.company}` : ""}${item.period ? ` (${item.period})` : ""}${item.desc ? `\n${item.desc}` : ""}`),
+        "",
+      ]),
+    ];
+    const text = lines.join("\n");
+    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `resume-${resume.name?.replace(/\s+/g, "-") || "download"}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Resume exported as text file. For PDF, use browser Print → Save as PDF.");
+  };
+
   const filteredTemplates = TEMPLATES.filter(t =>
     (industryFilter === "All" || t.industry === industryFilter) &&
     (levelFilter === "All" || t.level === levelFilter)
@@ -348,10 +399,13 @@ Return JSON:
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setStep("template")} className="rounded-full h-9 text-xs">← Templates</Button>
-          <Button onClick={() => toast.success("Progress saved!")} variant="outline" className="rounded-full h-9 text-xs">Save Draft</Button>
-          <Button onClick={() => { if(!isPremiumUser && selectedTemplate.premium){ toast.warning("Upgrade to export premium templates."); return; } toast.success("Downloading PDF..."); }}
+          <Button onClick={handleSaveDraft} disabled={saving} variant="outline" className="rounded-full h-9 text-xs gap-1.5">
+            {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : savedId ? <CheckCircle2 className="w-3.5 h-3.5 text-success" /> : <Save className="w-3.5 h-3.5" />}
+            {savedId ? "Saved" : "Save Draft"}
+          </Button>
+          <Button onClick={handleExport}
             className="bg-accent hover:bg-accent/90 text-accent-foreground rounded-full h-9 text-xs gap-1.5">
-            <Download className="w-3.5 h-3.5" /> Export PDF
+            <Download className="w-3.5 h-3.5" /> Export
           </Button>
         </div>
       </div>

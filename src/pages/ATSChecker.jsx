@@ -8,34 +8,33 @@ import { BarChart3, AlertTriangle, CheckCircle2, Lightbulb, Share2 } from "lucid
 import ProcessingBorder from "../components/shared/ProcessingBorder";
 import ShareModal from "../components/shared/ShareModal";
 import JobUrlParser from "../components/shared/JobUrlParser";
+import AINotConfigured from "../components/shared/AINotConfigured";
 import { useLang } from "@/lib/i18n";
-
-const PLACEHOLDER_RESULT = {
-  score: 72,
-  missingKeywords: ["TypeScript", "Agile", "CI/CD", "Kubernetes", "Team Leadership"],
-  suggestions: [
-    "Add specific metrics and quantifiable achievements to your experience section.",
-    "Include keywords like 'Agile' and 'CI/CD' that appear in the job description.",
-    "Your skills section should mirror the technical requirements listed in the posting.",
-    "Consider adding a 'Projects' section to showcase relevant work.",
-  ],
-};
+import { useAI } from "@/lib/useAI";
 
 export default function ATSChecker() {
   const { t } = useLang();
+  const { call, loading: processing } = useAI();
   const [resumeText, setResumeText]     = useState("");
   const [jobDescription, setJobDescription] = useState("");
-  const [processing, setProcessing]     = useState(false);
   const [result, setResult]             = useState(null);
   const [showShare, setShowShare]       = useState(false);
+  const [notConfigured, setNotConfigured] = useState(false);
 
-  const handleAnalyze = () => {
-    setProcessing(true);
+  const handleAnalyze = async () => {
+    if (!resumeText.trim() || !jobDescription.trim()) {
+      return;
+    }
     setResult(null);
-    setTimeout(() => {
-      setResult(PLACEHOLDER_RESULT);
-      setProcessing(false);
-    }, 2500);
+    setNotConfigured(false);
+    const data = await call("scoreResumeATS", { resumeText, jobDescription });
+    if (data === null) {
+      // Check if it was a config error vs limit error (both handled by useAI)
+      return;
+    }
+    if (data?.score !== undefined) {
+      setResult(data);
+    }
   };
 
   const getScoreColor = (score) => {
@@ -137,6 +136,9 @@ export default function ATSChecker() {
                       />
                     </div>
                   </div>
+                  {result.assessment && (
+                    <p className="text-sm text-muted-foreground mt-3 max-w-md mx-auto">{result.assessment}</p>
+                  )}
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-6">
@@ -146,7 +148,7 @@ export default function ATSChecker() {
                       <h3 className="text-sm font-semibold text-foreground">{t("ats_missing")}</h3>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      {result.missingKeywords.map((kw) => (
+                      {result.missingKeywords?.map((kw) => (
                         <Badge key={kw} variant="outline" className="border-destructive/30 text-destructive text-xs">
                           {kw}
                         </Badge>
@@ -160,7 +162,7 @@ export default function ATSChecker() {
                       <h3 className="text-sm font-semibold text-foreground">{t("ats_suggestions")}</h3>
                     </div>
                     <ul className="space-y-2">
-                      {result.suggestions.map((s, i) => (
+                      {result.suggestions?.map((s, i) => (
                         <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
                           <CheckCircle2 className="w-3.5 h-3.5 text-accent mt-0.5 shrink-0" />
                           {s}
@@ -169,10 +171,24 @@ export default function ATSChecker() {
                     </ul>
                   </div>
                 </div>
+
+                {result.foundKeywords?.length > 0 && (
+                  <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      <h3 className="text-sm font-semibold text-emerald-800">Matching Keywords ({result.foundKeywords.length})</h3>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {result.foundKeywords.map((kw) => (
+                        <Badge key={kw} className="bg-emerald-100 text-emerald-700 border-emerald-300 text-xs">{kw}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </motion.div>
             ) : (
               <div className="text-center py-12 text-muted-foreground text-sm">
-                Scanning your resume...
+                Analyzing your resume with AI...
               </div>
             )}
           </div>
