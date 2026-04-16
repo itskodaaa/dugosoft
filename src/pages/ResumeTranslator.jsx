@@ -1,13 +1,16 @@
 import React, { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Languages, Sparkles, Save, Eye, Copy, Check, ArrowRight,
-  FileText, Loader2, ChevronDown, Globe, Briefcase
+  Languages, Sparkles, Save, Copy, Check, ArrowRight,
+  FileText, Loader2, Globe, Download, GitCompare
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { jsPDF } from "jspdf";
+import DiffView from "@/components/resume-translator/DiffView";
+import AIGradePanel from "@/components/resume-translator/AIGradePanel";
 
 const LANGUAGES = [
   { code: "en", name: "English",    flag: "🇬🇧", tone: "Clear, ATS-optimised, action-verb driven" },
@@ -45,6 +48,7 @@ export default function ResumeTranslator() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showDiff, setShowDiff] = useState(false);
 
   const sourceContent = source === "vault"
     ? INITIAL_CVS.find(c => c.id === selectedCVId)?.content || ""
@@ -132,6 +136,28 @@ Return ONLY the translated resume content, formatted cleanly.`,
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
     toast.success("Copied to clipboard");
+  };
+
+  const handleExportPDF = () => {
+    if (!translated) return;
+    const doc = new jsPDF({ unit: "mm", format: "a4" });
+    const margin = 15;
+    const pageW = doc.internal.pageSize.getWidth();
+    const maxW = pageW - margin * 2;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+
+    const lines = doc.splitTextToSize(translated, maxW);
+    let y = margin;
+    lines.forEach((line) => {
+      if (y > 280) { doc.addPage(); y = margin; }
+      doc.text(line, margin, y);
+      y += 5.5;
+    });
+
+    doc.save(`resume_${targetLang.code}_${Date.now()}.pdf`);
+    toast.success("PDF downloaded!");
   };
 
   return (
@@ -244,18 +270,13 @@ Return ONLY the translated resume content, formatted cleanly.`,
 
         {/* RIGHT — Output */}
         <div className="space-y-4">
-          <div className="bg-card ink-border rounded-2xl p-5 space-y-3 min-h-[400px] flex flex-col">
+          <div className="bg-card ink-border rounded-2xl p-5 space-y-3 min-h-[360px] flex flex-col">
             <div className="flex items-center justify-between">
               <p className="text-sm font-bold text-foreground flex items-center gap-2">
                 <Globe className="w-4 h-4 text-accent" /> Translation Output
                 {translated && <span className="text-xs font-normal text-muted-foreground">— {targetLang.flag} {targetLang.name}</span>}
               </p>
-              {translated && (
-                <button onClick={handleCopy}
-                  className="w-8 h-8 rounded-lg hover:bg-muted flex items-center justify-center transition-colors">
-                  {copied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5 text-muted-foreground" />}
-                </button>
-              )}
+
             </div>
 
             {translating && (
@@ -279,8 +300,25 @@ Return ONLY the translated resume content, formatted cleanly.`,
 
             {!translating && translated && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 space-y-3">
-                <div className="bg-muted/30 rounded-xl p-4 max-h-[420px] overflow-auto border border-border">
+                <div className="bg-muted/30 rounded-xl p-4 max-h-[320px] overflow-auto border border-border">
                   <pre className="text-xs font-mono text-foreground leading-relaxed whitespace-pre-wrap">{translated}</pre>
+                </div>
+
+                {/* Action buttons */}
+                <div className="flex gap-2 flex-wrap">
+                  <Button size="sm" variant="outline" onClick={handleCopy}
+                    className="rounded-full h-8 text-xs gap-1.5 flex-1">
+                    {copied ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+                    {copied ? "Copied!" : "Copy"}
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={handleExportPDF}
+                    className="rounded-full h-8 text-xs gap-1.5 flex-1">
+                    <Download className="w-3 h-3" /> Export PDF
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => setShowDiff(true)}
+                    className="rounded-full h-8 text-xs gap-1.5 flex-1">
+                    <GitCompare className="w-3 h-3" /> Diff View
+                  </Button>
                 </div>
 
                 {/* Save to Vault */}
@@ -302,16 +340,33 @@ Return ONLY the translated resume content, formatted cleanly.`,
                         : <><Save className="w-4 h-4" /> Save to CV Vault</>}
                     </Button>
                   )}
-                  <p className="text-[11px] text-muted-foreground text-center">
-                    Saves as a new version — original is never overwritten.
-                    Endpoint: <code className="bg-muted px-1 rounded font-mono">/api/save-resume</code>
-                  </p>
                 </div>
               </motion.div>
             )}
           </div>
+
+          {/* AI Grade Panel — show after translation */}
+          {translated && (
+            <AIGradePanel
+              resumeText={translated}
+              targetLang={targetLang}
+              jobTarget={jobTarget}
+            />
+          )}
         </div>
       </div>
+
+      {/* Diff View Modal */}
+      <AnimatePresence>
+        {showDiff && (
+          <DiffView
+            original={sourceContent}
+            translated={translated}
+            targetLang={targetLang}
+            onClose={() => setShowDiff(false)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
