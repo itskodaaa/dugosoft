@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Languages, Sparkles, Save, Eye, Copy, Check, ArrowRight,
@@ -31,9 +31,13 @@ const INITIAL_CVS = [
 
 export default function ResumeTranslator() {
   const navigate = useNavigate();
-  const [source, setSource] = useState("vault"); // "vault" | "paste"
+  const [source, setSource] = useState("vault"); // "vault" | "paste" | "upload"
   const [selectedCVId, setSelectedCVId] = useState(INITIAL_CVS[0].id);
   const [pasteContent, setPasteContent] = useState("");
+  const [uploadedContent, setUploadedContent] = useState("");
+  const [uploadedFileName, setUploadedFileName] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = React.useRef(null);
   const [targetLang, setTargetLang] = useState(LANGUAGES[1]); // French default
   const [jobTarget, setJobTarget] = useState("");
   const [translating, setTranslating] = useState(false);
@@ -44,7 +48,21 @@ export default function ResumeTranslator() {
 
   const sourceContent = source === "vault"
     ? INITIAL_CVS.find(c => c.id === selectedCVId)?.content || ""
+    : source === "upload"
+    ? uploadedContent
     : pasteContent;
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    setUploadedContent("");
+    setUploadedFileName(file.name);
+    const text = await file.text();
+    setUploadedContent(text);
+    setUploading(false);
+    toast.success(`Loaded: ${file.name}`);
+  };
 
   const handleTranslate = async () => {
     if (!sourceContent.trim()) { toast.error("Please provide resume content."); return; }
@@ -135,7 +153,7 @@ Return ONLY the translated resume content, formatted cleanly.`,
 
             {/* Source toggle */}
             <div className="flex rounded-xl bg-muted p-1 gap-1">
-              {[{ id: "vault", label: "From CV Vault" }, { id: "paste", label: "Paste Text" }].map(opt => (
+              {[{ id: "vault", label: "CV Vault" }, { id: "paste", label: "Paste Text" }, { id: "upload", label: "Upload File" }].map(opt => (
                 <button key={opt.id} onClick={() => setSource(opt.id)}
                   className={`flex-1 h-8 rounded-lg text-xs font-semibold transition-all ${source === opt.id ? "bg-card shadow text-foreground" : "text-muted-foreground hover:text-foreground"}`}>
                   {opt.label}
@@ -158,12 +176,33 @@ Return ONLY the translated resume content, formatted cleanly.`,
                   </div>
                 )}
               </div>
-            ) : (
+            ) : source === "paste" ? (
               <div>
                 <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">Paste Resume Content</label>
                 <textarea value={pasteContent} onChange={e => setPasteContent(e.target.value)}
                   rows={8} placeholder="Paste your resume text here..."
                   className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-ring font-mono" />
+              </div>
+            ) : (
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">Upload Resume File</label>
+                <input ref={fileInputRef} type="file" accept=".txt,.md,.doc,.docx,.pdf" className="hidden" onChange={handleFileUpload} />
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full rounded-xl border-2 border-dashed border-input bg-background p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:border-accent/50 hover:bg-muted/30 transition-all">
+                  {uploading ? (
+                    <><Loader2 className="w-6 h-6 animate-spin text-accent mb-2" /><p className="text-sm text-muted-foreground">Reading file...</p></>
+                  ) : uploadedFileName ? (
+                    <><FileText className="w-6 h-6 text-accent mb-2" /><p className="text-sm font-semibold text-foreground">{uploadedFileName}</p><p className="text-xs text-muted-foreground mt-1">Click to replace</p></>
+                  ) : (
+                    <><FileText className="w-6 h-6 text-muted-foreground mb-2" /><p className="text-sm font-semibold text-foreground">Click to upload</p><p className="text-xs text-muted-foreground mt-1">.txt, .md, .doc, .docx, .pdf</p></>
+                  )}
+                </div>
+                {uploadedContent && (
+                  <div className="mt-3 bg-muted/40 rounded-xl p-3 max-h-40 overflow-auto">
+                    <pre className="text-[11px] text-muted-foreground font-mono whitespace-pre-wrap">{uploadedContent.slice(0, 400)}...</pre>
+                  </div>
+                )}
               </div>
             )}
           </div>

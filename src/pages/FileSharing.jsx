@@ -17,7 +17,7 @@ function generateLink() {
   const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
   let id = "";
   for (let i = 0; i < 8; i++) id += chars[Math.floor(Math.random() * chars.length)];
-  return `https://softdugo.com/download/${id}`;
+  return `https://dugosoft.com/download/${id}`;
 }
 
 // Free plan constants
@@ -121,7 +121,7 @@ export default function FileSharing() {
           <div className="absolute bottom-0 left-20 w-24 h-24 rounded-full bg-green-300/20" />
           <div className="relative z-10 p-7 h-full flex flex-col justify-center">
             <h1 className="text-2xl font-extrabold text-white tracking-tight mb-0.5">File Sharing</h1>
-            <p className="text-white/80 text-sm">Share files instantly — like WeTransfer, built into Softdugo.</p>
+            <p className="text-white/80 text-sm">Share files instantly — like WeTransfer, built into Dugosoft.</p>
           </div>
         </div>
       </motion.div>
