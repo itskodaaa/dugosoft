@@ -237,7 +237,13 @@ export default function PricingSettings() {
             <h1 className="text-2xl font-extrabold tracking-tight text-foreground">Pricing & Subscription</h1>
             <p className="text-muted-foreground text-sm">Manage your plan and billing. Payments via Flutterwave & Stripe.</p>
           </div>
-          <GeoPricingBadge region={region} onChangeRegion={setManualRegion} detecting={detecting} />
+          {detecting && <span className="text-xs text-muted-foreground flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" />Detecting region...</span>}
+          {!detecting && (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border bg-card text-xs font-semibold text-muted-foreground">
+              {isAfrica ? <MapPin className="w-3.5 h-3.5 text-green-600" /> : <Globe className="w-3.5 h-3.5 text-blue-500" />}
+              {isAfrica ? "Africa Pricing" : "Global Pricing"}
+            </div>
+          )}
         </div>
       </motion.div>
 
@@ -300,8 +306,17 @@ export default function PricingSettings() {
           className="flex items-start gap-3 bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-sm text-green-800">
           <MapPin className="w-4 h-4 shrink-0 mt-0.5 text-green-600" />
           <p>
-            <strong>Africa regional pricing is active.</strong> You're seeing discounted rates for your region.
-            Features are identical across all regions — only the price differs.
+            <strong>Africa regional pricing is active.</strong> You're seeing special rates for your region.
+            All features are identical — only the price differs.
+          </p>
+        </motion.div>
+      )}
+      {!isAfrica && (
+        <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
+          className="flex items-start gap-3 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-sm text-blue-800">
+          <Globe className="w-4 h-4 shrink-0 mt-0.5 text-blue-600" />
+          <p>
+            <strong>Global pricing is active.</strong> Prices are shown in USD for your region.
           </p>
         </motion.div>
       )}
@@ -351,19 +366,15 @@ export default function PricingSettings() {
                 {plan.id !== "free" && <span className="text-sm text-muted-foreground ml-1">/month</span>}
               </div>
 
-              {/* Regional pricing indicator */}
-              {hasDiscount && (
+              {/* Regional pricing indicator — Africa users see their discount, global users see nothing */}
+              {isAfrica && hasDiscount && (
                 <div className="mb-3 flex items-center gap-1.5 text-xs">
-                  <span className="line-through text-muted-foreground">${globalPrice}/mo</span>
-                  <span className="text-green-700 font-semibold bg-green-100 px-1.5 py-0.5 rounded-full flex items-center gap-1">
-                    <MapPin className="w-2.5 h-2.5" /> Your region
+                  <span className="text-green-700 font-semibold bg-green-100 border border-green-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <MapPin className="w-2.5 h-2.5" /> Africa rate
                   </span>
                 </div>
               )}
-              {!hasDiscount && plan.id !== "free" && isAfrica && (
-                <div className="mb-3" />
-              )}
-              {!isAfrica && plan.id !== "free" && <div className="mb-3" />}
+              {plan.id !== "free" && <div className="mb-3" />
 
               <ul className="space-y-2 flex-1 mb-5">
                 {plan.features.map((f, fi) => (

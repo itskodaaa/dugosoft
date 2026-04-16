@@ -1,10 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { BarChart3, AlertTriangle, CheckCircle2, Lightbulb, Share2 } from "lucide-react";
+import { BarChart3, AlertTriangle, CheckCircle2, Lightbulb, Share2, Upload, FileText, X } from "lucide-react";
 import ProcessingBorder from "../components/shared/ProcessingBorder";
 import ShareModal from "../components/shared/ShareModal";
 import JobUrlParser from "../components/shared/JobUrlParser";
@@ -20,6 +20,18 @@ export default function ATSChecker() {
   const [result, setResult]             = useState(null);
   const [showShare, setShowShare]       = useState(false);
   const [notConfigured, setNotConfigured] = useState(false);
+  const [resumeFile, setResumeFile] = useState(null);
+  const [resumeInputMode, setResumeInputMode] = useState("paste");
+  const resumeFileRef = useRef(null);
+
+  const handleResumeFile = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setResumeFile(file);
+    const reader = new FileReader();
+    reader.onload = (ev) => setResumeText(ev.target.result);
+    reader.readAsText(file);
+  };
 
   const handleAnalyze = async () => {
     if (!resumeText.trim() || !jobDescription.trim()) {
@@ -72,15 +84,53 @@ export default function ATSChecker() {
 
       <div className="grid lg:grid-cols-2 gap-8 mb-8">
         <div>
-          <Label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3 block">
-            {t("ats_your_resume")}
-          </Label>
-          <Textarea
-            placeholder="Paste your resume text here..."
-            value={resumeText}
-            onChange={(e) => setResumeText(e.target.value)}
-            className="min-h-[200px] bg-card ink-border resize-none"
-          />
+          <div className="flex items-center justify-between mb-3">
+            <Label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{t("ats_your_resume")}</Label>
+            <div className="flex gap-1 bg-muted rounded-lg p-0.5">
+              {["paste","upload"].map(m => (
+                <button key={m} onClick={() => { setResumeInputMode(m); setResumeFile(null); }}
+                  className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${resumeInputMode === m ? "bg-card shadow text-foreground" : "text-muted-foreground"}`}>
+                  {m === "paste" ? "Paste" : "Upload"}
+                </button>
+              ))}
+            </div>
+          </div>
+          {resumeInputMode === "paste" ? (
+            <Textarea
+              placeholder="Paste your resume text here..."
+              value={resumeText}
+              onChange={(e) => setResumeText(e.target.value)}
+              className="min-h-[200px] bg-card ink-border resize-none"
+            />
+          ) : (
+            <div>
+              <input ref={resumeFileRef} type="file" accept=".txt,.pdf,.doc,.docx,.md" className="hidden" onChange={handleResumeFile} />
+              {resumeFile ? (
+                <div className="flex items-center gap-3 p-4 rounded-xl bg-card ink-border min-h-[80px]">
+                  <FileText className="w-8 h-8 text-accent shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-foreground truncate">{resumeFile.name}</p>
+                    <p className="text-xs text-green-600 font-medium mt-0.5">✓ File loaded</p>
+                  </div>
+                  <button onClick={() => { setResumeFile(null); setResumeText(""); }}
+                    className="w-7 h-7 rounded-lg hover:bg-muted flex items-center justify-center">
+                    <X className="w-3.5 h-3.5 text-muted-foreground" />
+                  </button>
+                </div>
+              ) : (
+                <div onClick={() => resumeFileRef.current?.click()}
+                  className="min-h-[200px] rounded-xl border-2 border-dashed border-border hover:border-accent/50 bg-card cursor-pointer flex flex-col items-center justify-center gap-3 transition-all hover:bg-muted/20">
+                  <div className="w-12 h-12 rounded-2xl bg-accent/10 flex items-center justify-center">
+                    <Upload className="w-5 h-5 text-accent" />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm font-semibold text-foreground">Upload Resume</p>
+                    <p className="text-xs text-muted-foreground mt-1">PDF, DOCX, TXT, MD</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
         <div>
           <Label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3 block">

@@ -93,10 +93,7 @@ export default function Translator() {
         <p className="text-muted-foreground mb-4 text-sm">
           Translate text or full documents between 12+ languages using real AI.
         </p>
-        <div className="flex items-center gap-2 bg-accent/5 border border-accent/20 rounded-xl px-4 py-2.5 mb-4 text-xs text-accent">
-          <Languages className="w-4 h-4 shrink-0" />
-          <span>Powered by Gemini AI. Preserves professional tone and document structure.</span>
-        </div>
+
       </motion.div>
 
       <div className="flex items-center gap-3 bg-muted/40 border border-border rounded-xl px-4 py-3 mb-4 text-sm">

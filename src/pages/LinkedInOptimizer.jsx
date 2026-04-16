@@ -1,10 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Sparkles, Linkedin, Copy, Check, ChevronDown, ChevronUp, User, Tag, FileText, Share2, ExternalLink } from "lucide-react";
+import { Sparkles, Linkedin, Copy, Check, ChevronDown, ChevronUp, User, Tag, FileText, Share2, ExternalLink, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { useLang } from "@/lib/i18n";
 import { useAI } from "@/lib/useAI";
@@ -16,13 +16,25 @@ export default function LinkedInOptimizer() {
   const [resumeText, setResumeText] = useState("");
   const [targetRole, setTargetRole] = useState("");
   const [result, setResult] = useState(null);
+  const [uploadedFile, setUploadedFile] = useState(null);
+  const [inputMode, setInputMode] = useState("paste"); // "paste" | "upload"
+  const fileInputRef = useRef(null);
   const [copiedKey, setCopiedKey] = useState(null);
   const [expanded, setExpanded] = useState({ headline: true, skills: true, about: true });
 
   const langName = { en: "English", it: "Italian", fr: "French", es: "Spanish", de: "German" }[lang] || "English";
 
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploadedFile(file);
+    const reader = new FileReader();
+    reader.onload = (ev) => setResumeText(ev.target.result);
+    reader.readAsText(file);
+  };
+
   const handleAnalyze = async () => {
-    if (!resumeText.trim()) { toast.warning("Please paste your resume text first."); return; }
+    if (!resumeText.trim()) { toast.warning("Please paste your resume text or upload a file first."); return; }
     if (!targetRole.trim()) { toast.warning("Please enter your target job role."); return; }
     setResult(null);
     const data = await call("optimizeLinkedInProfile", { resumeText, targetRole, language: langName });
@@ -55,13 +67,53 @@ export default function LinkedInOptimizer() {
       {/* Inputs */}
       <div className="grid lg:grid-cols-2 gap-6 mb-6">
         <div>
-          <Label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2 block">Your Resume</Label>
-          <Textarea
-            placeholder="Paste your resume text here..."
-            value={resumeText}
-            onChange={(e) => setResumeText(e.target.value)}
-            className="min-h-[200px] bg-card ink-border resize-none text-sm"
-          />
+          <div className="flex items-center justify-between mb-2">
+            <Label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Your Resume</Label>
+            <div className="flex gap-1 bg-muted rounded-lg p-0.5">
+              {["paste", "upload"].map(m => (
+                <button key={m} onClick={() => { setInputMode(m); setUploadedFile(null); }}
+                  className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${inputMode === m ? "bg-card shadow text-foreground" : "text-muted-foreground"}`}>
+                  {m === "paste" ? "Paste Text" : "Upload File"}
+                </button>
+              ))}
+            </div>
+          </div>
+          {inputMode === "paste" ? (
+            <Textarea
+              placeholder="Paste your resume text here..."
+              value={resumeText}
+              onChange={(e) => setResumeText(e.target.value)}
+              className="min-h-[200px] bg-card ink-border resize-none text-sm"
+            />
+          ) : (
+            <div>
+              <input ref={fileInputRef} type="file" accept=".txt,.pdf,.doc,.docx,.md" className="hidden" onChange={handleFileUpload} />
+              {uploadedFile ? (
+                <div className="flex items-center gap-3 p-4 rounded-xl bg-card ink-border">
+                  <FileText className="w-8 h-8 text-accent shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-foreground truncate">{uploadedFile.name}</p>
+                    <p className="text-xs text-green-600 font-medium mt-0.5">✓ File loaded successfully</p>
+                  </div>
+                  <button onClick={() => { setUploadedFile(null); setResumeText(""); }}
+                    className="w-7 h-7 rounded-lg hover:bg-muted flex items-center justify-center">
+                    <X className="w-3.5 h-3.5 text-muted-foreground" />
+                  </button>
+                </div>
+              ) : (
+                <div onClick={() => fileInputRef.current?.click()}
+                  className="min-h-[200px] rounded-xl border-2 border-dashed border-border hover:border-accent/50 bg-card cursor-pointer flex flex-col items-center justify-center gap-3 transition-all hover:bg-muted/20">
+                  <div className="w-12 h-12 rounded-2xl bg-[#0A66C2]/10 flex items-center justify-center">
+                    <Upload className="w-5 h-5 text-[#0A66C2]" />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm font-semibold text-foreground">Upload Resume</p>
+                    <p className="text-xs text-muted-foreground mt-1">PDF, DOCX, TXT, MD</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
         <div className="flex flex-col gap-4">
           <div>

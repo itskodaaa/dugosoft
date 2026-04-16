@@ -76,9 +76,19 @@ export default function FileSharing() {
     setFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const isEmailValid = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+
   const handleCreate = () => {
     if (files.length === 0) {
       toast.error("Please upload at least one file.");
+      return;
+    }
+    if (!senderEmail.trim() || !isEmailValid(senderEmail)) {
+      toast.error("Please enter a valid sender email address.");
+      return;
+    }
+    if (!recipientEmail.trim() || !isEmailValid(recipientEmail)) {
+      toast.error("Please enter a valid recipient email address.");
       return;
     }
     setCreating(true);
@@ -229,17 +239,23 @@ export default function FileSharing() {
                 <h3 className="text-sm font-bold text-foreground">Transfer Settings</h3>
 
                 <div>
-                  <Label className="text-xs text-muted-foreground mb-1.5 block">Your Email</Label>
+                  <Label className="text-xs text-muted-foreground mb-1.5 block">Your Email <span className="text-destructive">*</span></Label>
                   <Input placeholder="you@example.com" value={senderEmail}
                     onChange={(e) => setSenderEmail(e.target.value)}
-                    className="h-9 text-sm bg-background" />
+                    className={`h-9 text-sm bg-background ${senderEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(senderEmail) ? "border-destructive focus-visible:ring-destructive" : ""}`} />
+                  {senderEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(senderEmail) && (
+                    <p className="text-[11px] text-destructive mt-1">Enter a valid email address</p>
+                  )}
                 </div>
 
                 <div>
-                  <Label className="text-xs text-muted-foreground mb-1.5 block">Recipient Email <span className="text-muted-foreground/60">(optional)</span></Label>
+                  <Label className="text-xs text-muted-foreground mb-1.5 block">Recipient Email <span className="text-destructive">*</span></Label>
                   <Input placeholder="recipient@example.com" value={recipientEmail}
                     onChange={(e) => setRecipientEmail(e.target.value)}
-                    className="h-9 text-sm bg-background" />
+                    className={`h-9 text-sm bg-background ${recipientEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipientEmail) ? "border-destructive focus-visible:ring-destructive" : ""}`} />
+                  {recipientEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipientEmail) && (
+                    <p className="text-[11px] text-destructive mt-1">Enter a valid email address</p>
+                  )}
                 </div>
 
                 <div>

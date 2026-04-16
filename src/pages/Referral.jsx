@@ -80,7 +80,7 @@ export default function Referral() {
         <h1 className="text-2xl font-extrabold tracking-tight text-foreground flex items-center gap-2 mb-1">
           <Gift className="w-6 h-6 text-accent" /> Referral Program
         </h1>
-        <p className="text-muted-foreground text-sm">Invite friends to Dugosoft. Earn 7 days of free Pro for every user who signs up.</p>
+        <p className="text-muted-foreground text-sm">Invite friends to Dugosoft. Earn 7 days of free Pro when they sign up <strong>and purchase any plan</strong>.</p>
       </motion.div>
 
       {/* Stats */}
@@ -119,7 +119,7 @@ export default function Referral() {
                 </div>
                 <div>
                   <p className="text-xs font-semibold text-foreground">Your code: <code className="text-accent">{referralCode}</code></p>
-                  <p className="text-xs text-muted-foreground">You earn 7 days free Pro per successful referral</p>
+                  <p className="text-xs text-muted-foreground">You earn 7 free Pro days when your friend purchases any paid plan</p>
                 </div>
               </div>
               {/* Share buttons */}
@@ -218,8 +218,8 @@ export default function Referral() {
           {[
             "Generate your unique referral link above",
             "Share it with friends, colleagues, or on social media",
-            "When they sign up and apply your code, you earn 7 free Pro days",
-            "Referral credits stack — no limit on how much you can earn!",
+            "Your friend signs up and purchases any paid plan (Pro or Business)",
+            "You earn 7 free Pro days — credits stack with no limit!",
           ].map((step, i) => (
             <div key={i} className="flex items-start gap-3 text-sm">
               <div className="w-5 h-5 rounded-full bg-accent text-accent-foreground text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">{i + 1}</div>
