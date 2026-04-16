@@ -6,7 +6,7 @@ import {
   Linkedin, Globe, ArrowRight, Clock, Zap,
   FolderOpen, RefreshCw, Star, Crown, Share2,
   TrendingUp, CheckCircle2, Sparkles, Bot, Merge,
-  ScanText, PenLine, Briefcase, Users, PieChart, X, Brain
+  ScanText, PenLine, Briefcase, Users, PieChart, X, Brain, Upload
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -15,6 +15,7 @@ import { usePlan, PLAN_LIMITS } from "@/lib/usePlan";
 import { base44 } from "@/api/base44Client";
 import OnboardingChecklist from "@/components/shared/OnboardingChecklist";
 import UsageMeter from "@/components/dashboard/UsageMeter";
+import JobRecommendations from "@/components/dashboard/JobRecommendations";
 
 const QUICK_TOOLS = [
   { icon: FileText,      title: "Resume Builder",        desc: "Build ATS-optimized resumes",           path: "/dashboard/resume-builder-v2",   color: "text-accent",        bg: "bg-accent/10",        gradient: "from-accent to-blue-500" },
@@ -31,6 +32,7 @@ const QUICK_TOOLS = [
   { icon: Briefcase,     title: "Job Tracker",           desc: "Track your job applications",           path: "/dashboard/job-tracker",         color: "text-teal-500",      bg: "bg-teal-500/10",      gradient: "from-teal-500 to-cyan-400" },
   { icon: BarChart3,     title: "Skill Gap Analysis",    desc: "Find & bridge skill gaps with courses", path: "/dashboard/skill-gap",           color: "text-purple-500",    bg: "bg-purple-500/10",    gradient: "from-purple-500 to-accent" },
   { icon: Brain,         title: "Interview Prep",        desc: "AI-powered interview practice",         path: "/dashboard/interview-prep",      color: "text-rose-500",      bg: "bg-rose-500/10",      gradient: "from-rose-500 to-pink-400" },
+  { icon: Upload,        title: "Import Resume",         desc: "AI-parse your existing PDF/Word resume", path: "/dashboard/import-resume",       color: "text-cyan-500",      bg: "bg-cyan-500/10",      gradient: "from-cyan-500 to-blue-400" },
 ];
 
 const RECENT_ACTIVITY = [
@@ -271,6 +273,11 @@ export default function DashboardHome() {
             );
           })}
         </div>
+      </motion.div>
+
+      {/* Job Recommendations */}
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
+        <JobRecommendations />
       </motion.div>
 
       {/* Upgrade banner */}

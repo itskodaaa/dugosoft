@@ -52,6 +52,7 @@ import ResumeTranslator from './pages/ResumeTranslator';
 import EmailVerification from './pages/EmailVerification';
 import Referral from './pages/Referral';
 import AuthPage from './pages/AuthPage';
+import ImportResume from './pages/ImportResume';
 
 
 const AuthenticatedApp = () => {
@@ -123,6 +124,7 @@ const AuthenticatedApp = () => {
         <Route path="ai-language" element={<AILanguageTools />} />
         <Route path="resume-translator" element={<ResumeTranslator />} />
         <Route path="referral" element={<Referral />} />
+        <Route path="import-resume" element={<ImportResume />} />
       </Route>
       <Route path="/sign/:token" element={<ESignSign />} />
       <Route path="/auth" element={<AuthPage />} />

@@ -5,7 +5,7 @@ import {
   MessageSquare, Clock, Settings, ChevronLeft, Lock, RefreshCw,
   Share2, Activity, PenLine, CreditCard, Merge, Linkedin,
   FolderOpen, ScanText, LayoutTemplate, Target, Users, Globe,
-  MessageCircle, Bot, Zap, Briefcase, Sparkles, Brain, X, Wand2, Crown, FileSignature, Gift
+  MessageCircle, Bot, Zap, Briefcase, Sparkles, Brain, X, Wand2, Crown, FileSignature, Gift, Upload
 } from "lucide-react";
 
 // Pro-gated items (show badge)
@@ -52,6 +52,7 @@ const NAV_GROUPS = [
     label: "Career Accelerator",
     items: [
       { label: "Resume Builder",   icon: FileText,      path: "/dashboard/resume-builder-v2" },
+      { label: "Import Resume",    icon: Upload,        path: "/dashboard/import-resume" },
       { label: "Design Editor",    icon: LayoutTemplate,path: "/dashboard/resume-design" },
       { label: "CV Vault",         icon: Globe,         path: "/dashboard/cv-vault" },
       { label: "LinkedIn Import",  icon: Linkedin,      path: "/dashboard/linkedin-import" },

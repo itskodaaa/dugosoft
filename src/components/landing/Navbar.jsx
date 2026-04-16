@@ -93,16 +93,14 @@ export default function Navbar() {
         {/* Desktop CTAs */}
         <div className="hidden md:flex items-center gap-3">
           <LanguageSwitcher />
-          {!isLoggedIn && (
-            <Link to="/auth">
-              <Button size="sm" variant="outline" className="rounded-full px-5 font-semibold text-sm">
-                Sign In
-              </Button>
-            </Link>
-          )}
-          <Link to="/dashboard">
+          <Link to="/auth">
+            <Button size="sm" variant="outline" className="rounded-full px-5 font-semibold text-sm">
+              {isLoggedIn ? "My Account" : "Sign In"}
+            </Button>
+          </Link>
+          <Link to={isLoggedIn ? "/dashboard" : "/auth"}>
             <Button size="sm" className="bg-accent hover:bg-accent/90 text-accent-foreground rounded-full px-5 font-semibold text-sm gap-1.5">
-              <Sparkles className="w-3.5 h-3.5" /> {isLoggedIn ? t("nav_dashboard") : "Get Started"}
+              <Sparkles className="w-3.5 h-3.5" /> {isLoggedIn ? t("nav_dashboard") : "Get Started Free"}
             </Button>
           </Link>
         </div>
@@ -136,14 +134,14 @@ export default function Navbar() {
           <Link to="/contact" className="block px-3 py-2.5 text-sm font-medium text-foreground rounded-xl hover:bg-muted" onClick={() => setMobileOpen(false)}>Contact</Link>
           <div className="pt-2 space-y-2">
             <div className="py-1"><LanguageSwitcher /></div>
-            {!isLoggedIn && (
-              <Link to="/auth" onClick={() => setMobileOpen(false)}>
-                <Button size="sm" variant="outline" className="w-full rounded-full font-semibold">Sign In</Button>
-              </Link>
-            )}
-            <Link to="/dashboard" onClick={() => setMobileOpen(false)}>
+            <Link to="/auth" onClick={() => setMobileOpen(false)}>
+              <Button size="sm" variant="outline" className="w-full rounded-full font-semibold">
+                {isLoggedIn ? "My Account" : "Sign In"}
+              </Button>
+            </Link>
+            <Link to={isLoggedIn ? "/dashboard" : "/auth"} onClick={() => setMobileOpen(false)}>
               <Button size="sm" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground rounded-full font-semibold">
-                <Sparkles className="w-3.5 h-3.5 mr-1" /> {isLoggedIn ? t("nav_dashboard") : "Get Started"}
+                <Sparkles className="w-3.5 h-3.5 mr-1" /> {isLoggedIn ? t("nav_dashboard") : "Get Started Free"}
               </Button>
             </Link>
           </div>
