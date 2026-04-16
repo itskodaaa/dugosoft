@@ -8,7 +8,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
-const GEMINI_MODEL   = "gemini-1.5-flash-latest";
+const GEMINI_MODEL   = "gemini-2.0-flash";
 const OPENAI_MODEL   = "gpt-4o-mini";
 
 // ── Plan limits (server-side authoritative) ───────────────────────────────────
@@ -88,13 +88,22 @@ async function callGemini(prompt, jsonSchema = null) {
   return text;
 }
 
-// ── Unified AI caller (OpenAI first, Gemini fallback) ─────────────────────────
+// ── Unified AI caller (OpenAI first, Gemini fallback on quota/error) ──────────
 async function callAI(prompt, jsonSchema = null) {
   if (!OPENAI_API_KEY && !GEMINI_API_KEY) {
     return { _not_configured: true };
   }
   if (OPENAI_API_KEY) {
-    return await callOpenAI(prompt, !!jsonSchema);
+    try {
+      return await callOpenAI(prompt, !!jsonSchema);
+    } catch (err) {
+      // On quota or server error, fall through to Gemini if available
+      if (GEMINI_API_KEY) {
+        console.warn("OpenAI failed, falling back to Gemini:", err.message);
+      } else {
+        throw err;
+      }
+    }
   }
   return await callGemini(prompt, jsonSchema);
 }
