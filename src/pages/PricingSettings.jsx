@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   CheckCircle2, Crown, Zap, Star, Lock, X, ChevronRight,
   Shield, Headphones, Gauge, CreditCard, AlertCircle, Calendar,
-  ArrowDownLeft, Loader2, Globe, MapPin
+  ArrowDownLeft, Loader2, Globe, MapPin, Tag
 } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -96,20 +96,51 @@ const COMPARISON_ROWS = [
   ]},
 ];
 
+const YEARLY_DISCOUNT = 0.20; // 20% off for annual
+
+function getYearlyPrice(monthlyPrice) {
+  return Math.round(monthlyPrice * 12 * (1 - YEARLY_DISCOUNT));
+}
+
+// ── Billing Toggle ─────────────────────────────────────────────────────────────
+function BillingToggle({ cycle, onChange }) {
+  return (
+    <div className="flex items-center justify-center">
+      <div className="inline-flex items-center gap-1 bg-muted rounded-full p-1 relative">
+        <button
+          onClick={() => onChange("monthly")}
+          className={`px-5 py-1.5 rounded-full text-sm font-semibold transition-all ${cycle === "monthly" ? "bg-card shadow text-foreground" : "text-muted-foreground hover:text-foreground"}`}>
+          Monthly
+        </button>
+        <button
+          onClick={() => onChange("annual")}
+          className={`px-5 py-1.5 rounded-full text-sm font-semibold transition-all flex items-center gap-2 ${cycle === "annual" ? "bg-card shadow text-foreground" : "text-muted-foreground hover:text-foreground"}`}>
+          Annual
+          <span className="bg-green-100 text-green-700 text-[10px] font-bold px-1.5 py-0.5 rounded-full border border-green-200">
+            Save 20%
+          </span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── Payment Modal ──────────────────────────────────────────────────────────────
-function PaymentModal({ plan, region, prices, onClose }) {
+function PaymentModal({ plan, region, prices, cycle, onClose }) {
   const [provider, setProvider] = useState("flutterwave");
   const [loading, setLoading] = useState(false);
 
-  const amount = prices[plan.id];
+  const monthlyAmount = prices[plan.id];
+  const amount = cycle === "annual" ? Math.round(monthlyAmount * (1 - YEARLY_DISCOUNT)) : monthlyAmount;
+  const annualTotal = cycle === "annual" ? Math.round(monthlyAmount * 12 * (1 - YEARLY_DISCOUNT)) : null;
   const globalAmount = REGION_PRICES.global[plan.id];
-  const isRegional = region === "africa" && amount !== globalAmount;
+  const isRegional = region === "africa" && monthlyAmount !== globalAmount;
 
   const handlePay = async () => {
     setLoading(true);
     try {
       if (provider === "flutterwave") {
-        const res = await base44.functions.invoke("createFlutterwavePayment", { plan: plan.id, region });
+        const res = await base44.functions.invoke("createFlutterwavePayment", { plan: plan.id, region, billing_cycle: cycle });
         if (res.data?.error === "billing_not_configured") {
           toast.error("Flutterwave is not configured yet. Set FLUTTERWAVE_SECRET_KEY in environment secrets.", { duration: 7000 });
         } else if (res.data?.payment_link) {
@@ -118,7 +149,7 @@ function PaymentModal({ plan, region, prices, onClose }) {
           toast.error(res.data?.message || "Failed to create payment link.");
         }
       } else {
-        const res = await base44.functions.invoke("createStripeCheckout", { plan: plan.id, region });
+        const res = await base44.functions.invoke("createStripeCheckout", { plan: plan.id, region, billing_cycle: cycle });
         if (res.data?.error === "billing_not_configured") {
           toast.error("Stripe price IDs are not configured. Set STRIPE_PRICE_PRO_GLOBAL and STRIPE_PRICE_BUSINESS_GLOBAL secrets.", { duration: 7000 });
         } else if (res.data?.checkout_url) {
@@ -146,10 +177,17 @@ function PaymentModal({ plan, region, prices, onClose }) {
           <div>
             <h2 className="font-bold text-foreground text-lg">Upgrade to {plan.name}</h2>
             <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-              <p className="text-2xl font-extrabold text-foreground">${amount}<span className="text-sm font-normal text-muted-foreground">/month</span></p>
+              <p className="text-2xl font-extrabold text-foreground">
+                ${amount}<span className="text-sm font-normal text-muted-foreground">/month</span>
+              </p>
+              {cycle === "annual" && (
+                <span className="text-xs text-green-700 bg-green-100 border border-green-200 px-2 py-0.5 rounded-full font-semibold flex items-center gap-1">
+                  <Tag className="w-3 h-3" /> ${annualTotal}/year (Save 20%)
+                </span>
+              )}
               {isRegional && (
                 <div className="flex items-center gap-1 text-xs text-green-700 bg-green-100 border border-green-200 px-2 py-0.5 rounded-full font-semibold">
-                  <MapPin className="w-3 h-3" /> Africa price (was ${globalAmount})
+                  <MapPin className="w-3 h-3" /> Africa price
                 </div>
               )}
             </div>
@@ -193,7 +231,7 @@ function PaymentModal({ plan, region, prices, onClose }) {
             className={`w-full h-11 rounded-xl font-semibold text-sm gap-2 ${plan.id === "business" ? "bg-amber-500 hover:bg-amber-500/90 text-white" : "bg-accent hover:bg-accent/90 text-accent-foreground"}`}>
             {loading
               ? <><Loader2 className="w-4 h-4 animate-spin" /> Redirecting...</>
-              : <><CreditCard className="w-4 h-4" /> Pay ${amount}/month via {provider === "flutterwave" ? "Flutterwave" : "Stripe"}</>}
+              : <><CreditCard className="w-4 h-4" /> Pay {cycle === "annual" ? `$${annualTotal}/year` : `$${amount}/month`} via {provider === "flutterwave" ? "Flutterwave" : "Stripe"}</>}
           </Button>
         </div>
       </motion.div>
@@ -208,6 +246,7 @@ export default function PricingSettings() {
   const { region, prices, detecting, setManualRegion } = useGeoPrice();
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [cancelling, setCancelling] = useState(false);
+  const [billingCycle, setBillingCycle] = useState("monthly");
 
   const handleSelectPlan = (plan) => {
     if (!isAuthenticated) {
@@ -362,14 +401,20 @@ export default function PricingSettings() {
         </motion.div>
       )}
 
+      {/* Billing cycle toggle */}
+      <BillingToggle cycle={billingCycle} onChange={setBillingCycle} />
+
       {/* Plan cards */}
       <div className="grid md:grid-cols-3 gap-5">
         {PLAN_FEATURES.map((plan, i) => {
           const Icon = plan.icon;
           const isActive = plan.id === currentPlanId;
-          const price = prices[plan.id] || 0;
+          const monthlyPrice = prices[plan.id] || 0;
+          const price = billingCycle === "annual" && plan.id !== "free"
+            ? Math.round(monthlyPrice * (1 - YEARLY_DISCOUNT))
+            : monthlyPrice;
           const globalPrice = globalPrices[plan.id] || 0;
-          const hasDiscount = isAfrica && price !== globalPrice && plan.id !== "free";
+          const hasDiscount = isAfrica && monthlyPrice !== globalPrice && plan.id !== "free";
 
           return (
             <motion.div key={plan.id}
@@ -407,18 +452,26 @@ export default function PricingSettings() {
                 <span className="text-3xl font-extrabold text-foreground">
                   {plan.id === "free" ? "Free" : `$${price}`}
                 </span>
-                {plan.id !== "free" && <span className="text-sm text-muted-foreground ml-1">/month</span>}
+                {plan.id !== "free" && (
+                  <span className="text-sm text-muted-foreground ml-1">
+                    /month{billingCycle === "annual" ? ", billed annually" : ""}
+                  </span>
+                )}
               </div>
 
-              {/* Regional pricing indicator — Africa users see their discount, global users see nothing */}
-              {isAfrica && hasDiscount && (
-                <div className="mb-3 flex items-center gap-1.5 text-xs">
-                  <span className="text-green-700 font-semibold bg-green-100 border border-green-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+              {/* Savings indicators */}
+              <div className="flex flex-wrap items-center gap-1.5 mb-3">
+                {billingCycle === "annual" && plan.id !== "free" && (
+                  <span className="text-green-700 font-semibold bg-green-100 border border-green-200 px-2 py-0.5 rounded-full text-[10px] flex items-center gap-1">
+                    <Tag className="w-2.5 h-2.5" /> Save 20% — ${getYearlyPrice(monthlyPrice)}/yr
+                  </span>
+                )}
+                {isAfrica && hasDiscount && (
+                  <span className="text-green-700 font-semibold bg-green-100 border border-green-200 px-2 py-0.5 rounded-full text-[10px] flex items-center gap-1">
                     <MapPin className="w-2.5 h-2.5" /> Africa rate
                   </span>
-                </div>
-              )}
-              {plan.id !== "free" && <div className="mb-3" />}
+                )}
+              </div>
 
               <ul className="space-y-2 flex-1 mb-5">
                 {plan.features.map((f, fi) => (
@@ -551,6 +604,7 @@ export default function PricingSettings() {
             plan={selectedPlan}
             region={region}
             prices={prices}
+            cycle={billingCycle}
             onClose={() => setSelectedPlan(null)}
           />
         )}
