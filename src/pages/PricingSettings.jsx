@@ -529,18 +529,20 @@ export default function PricingSettings() {
         </div>
       </div>
 
-      {/* Dev note */}
-      <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-xs text-amber-800">
-        <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
-        <p>
-          <strong>Developers:</strong> To activate Stripe, create monthly prices in your Stripe dashboard and set secrets:{" "}
-          <code className="bg-amber-100 px-1 rounded">STRIPE_PRICE_PRO_GLOBAL</code>,{" "}
-          <code className="bg-amber-100 px-1 rounded">STRIPE_PRICE_BUSINESS_GLOBAL</code>,{" "}
-          <code className="bg-amber-100 px-1 rounded">STRIPE_PRICE_PRO_AFRICA</code>,{" "}
-          <code className="bg-amber-100 px-1 rounded">STRIPE_PRICE_BUSINESS_AFRICA</code>.
-          For Flutterwave, set <code className="bg-amber-100 px-1 rounded">FLUTTERWAVE_SECRET_KEY</code>.
-        </p>
-      </div>
+      {/* Dev note — admin only */}
+      {user?.role === "admin" && (
+        <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-xs text-amber-800">
+          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
+          <p>
+            <strong>Developers:</strong> To activate Stripe, create monthly prices in your Stripe dashboard and set secrets:{" "}
+            <code className="bg-amber-100 px-1 rounded">STRIPE_PRICE_PRO_GLOBAL</code>,{" "}
+            <code className="bg-amber-100 px-1 rounded">STRIPE_PRICE_BUSINESS_GLOBAL</code>,{" "}
+            <code className="bg-amber-100 px-1 rounded">STRIPE_PRICE_PRO_AFRICA</code>,{" "}
+            <code className="bg-amber-100 px-1 rounded">STRIPE_PRICE_BUSINESS_AFRICA</code>.
+            For Flutterwave, set <code className="bg-amber-100 px-1 rounded">FLUTTERWAVE_SECRET_KEY</code>.
+          </p>
+        </div>
+      )}
 
       {/* Payment Modal */}
       <AnimatePresence>
