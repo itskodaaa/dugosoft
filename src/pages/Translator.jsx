@@ -42,6 +42,7 @@ export default function Translator() {
   const [status, setStatus] = useState("idle");
   const [result, setResult] = useState("");
   const [copied, setCopied] = useState(false);
+  const [layout, setLayout] = useState(null);
 
   const canTranslate = inputMode === "paste" ? inputText.trim().length > 10 : file !== null;
 
@@ -52,18 +53,81 @@ export default function Translator() {
     }
     setStatus("processing");
     setResult("");
+    setLayout(null);
+    const token = localStorage.getItem('auth_token');
 
-    const data = await call("translateText", {
-      text: inputText,
-      targetLanguage: targetLang,
-      tone: "professional",
-    });
+    try {
+      if (inputMode === "upload" && file) {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("targetLanguage", targetLang);
 
-    if (data?.translation) {
-      setResult(data.translation);
-      setStatus("complete");
-    } else {
+        const response = await fetch('http://localhost:3001/api/ai/translate-file', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: formData
+        });
+
+        const data = await response.json();
+        if (response.ok && data.success) {
+          setResult(data.translation);
+          if (data.layout) setLayout(data.layout);
+          setStatus("complete");
+        } else {
+          toast.error(data.message || "File translation failed");
+          setStatus("idle");
+        }
+      } else {
+        const data = await call("translateText", {
+          text: inputText,
+          targetLanguage: targetLang,
+          tone: "professional",
+        });
+
+        if (data?.translation) {
+          setResult(data.translation);
+          setStatus("complete");
+        } else {
+          setStatus("idle");
+        }
+      }
+    } catch (e) {
+      toast.error("Translation request failed");
       setStatus("idle");
+    }
+  };
+
+  const handleDownloadPDF = async () => {
+    if (!layout) return;
+    setStatus("processing");
+    try {
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch('http://localhost:3001/api/export/pdf', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ 
+          html: layout,
+          filename: `translated-${targetLang.toLowerCase()}.pdf`
+        })
+      });
+      
+      if (!response.ok) throw new Error("PDF generation failed");
+      
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `translated-${targetLang.toLowerCase()}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("PDF document downloaded!");
+    } catch (err) {
+      toast.error("Failed to generate PDF");
+    } finally {
+      setStatus("complete");
     }
   };
 
@@ -140,11 +204,6 @@ export default function Translator() {
                       onFile={setFile}
                       onRemove={() => { setFile(null); setResult(""); setStatus("idle"); }}
                     />
-                    {file && (
-                      <p className="text-xs text-muted-foreground mt-2 bg-amber-50 border border-amber-200 rounded-lg p-2">
-                        Note: File content extraction is coming soon. Please paste the text content directly for now.
-                      </p>
-                    )}
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -197,14 +256,24 @@ export default function Translator() {
                   <motion.div key="result" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                     <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap mb-5">{result}</p>
                     <div className="flex flex-wrap gap-2 pt-4 border-t border-border">
-                      <Button size="sm" variant="outline" onClick={handleCopy} className="rounded-full h-8 text-xs gap-1.5">
-                        {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                        {copied ? "Copied" : "Copy"}
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={handleDownload} className="rounded-full h-8 text-xs gap-1.5">
-                        <Download className="w-3 h-3" /> Download
-                      </Button>
-                    </div>
+                      <button
+                      onClick={handleCopy}
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl bg-muted border border-border text-xs font-bold text-foreground hover:bg-muted/80 transition-all"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                      Copy
+                    </button>
+                    {layout && (
+                      <button
+                        onClick={handleDownloadPDF}
+                        disabled={status === "processing"}
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-accent text-accent-foreground text-xs font-bold hover:bg-accent/90 transition-all"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        Download Document
+                      </button>
+                    )}
+                  </div>
                   </motion.div>
                 ) : (
                   <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }}

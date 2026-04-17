@@ -23,34 +23,29 @@ export default function JobUrlParser({ onParsed }) {
 
     setLoading(true);
     setParsed(null);
+    const token = localStorage.getItem('auth_token');
 
-    const res = await base44.integrations.Core.InvokeLLM({
-      prompt: `A user has pasted this job posting URL: ${trimmed}
+    try {
+      const response = await fetch('http://localhost:3001/api/ai/invoke', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ action: "parseJobUrl", url: trimmed })
+      });
 
-Based on the URL structure (domain, path, query params), extract or intelligently infer the following job information. 
-If the URL is from LinkedIn (linkedin.com/jobs), Indeed (indeed.com/viewjob), Glassdoor, or similar boards, extract what you can from the URL.
-Then generate a realistic, detailed job description that would match a real posting at that URL.
-
-Return JSON with:
-- title: job title (string)
-- company: company name (string, infer from URL or use a realistic one)
-- location: job location (string)
-- requirements: array of 8-12 specific technical and soft skill requirements
-- description: full job description text (200+ words, realistic)`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          title:        { type: "string" },
-          company:      { type: "string" },
-          location:     { type: "string" },
-          requirements: { type: "array", items: { type: "string" } },
-          description:  { type: "string" },
-        }
+      const data = await response.json();
+      if (response.ok && data.success) {
+        setParsed(data.result);
+      } else {
+        toast.error(data.message || "Failed to parse job URL");
       }
-    });
-
-    setParsed(res);
-    setLoading(false);
+    } catch (e) {
+      toast.error("Failed to connect to AI service");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const apply = () => {

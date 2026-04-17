@@ -73,33 +73,35 @@ export default function ResumeTranslator() {
     setTranslating(true);
     setTranslated("");
     setSaved(false);
+    const token = localStorage.getItem('auth_token');
 
-    // Real AI call — endpoint: /api/translate-resume
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are an expert professional resume translator and career advisor.
+    try {
+      const response = await fetch('http://localhost:3001/api/ai/invoke', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ 
+          action: "translateResume", 
+          sourceContent, 
+          targetLang, 
+          jobTarget 
+        })
+      });
 
-Translate the following resume into ${targetLang.name}.
-
-TRANSLATION REQUIREMENTS:
-- Adapt the tone to: ${targetLang.tone}
-- Preserve ALL sections: name, contact info, summary, experience, education, skills
-- Maintain professional formatting with clear section headers
-- Use country-appropriate terminology and conventions
-- Ensure ATS compatibility for the target country's job market
-- Keep dates, numbers, company names, and technical terms accurate
-- Do NOT add or remove information — only translate and culturally adapt
-${jobTarget ? `- The target job role is: ${jobTarget} — optimize phrasing accordingly` : ""}
-
-Resume to translate:
-${sourceContent}
-
-Return ONLY the translated resume content, formatted cleanly.`,
-      model: "claude_sonnet_4_6",
-    });
-
-    setTranslated(result);
-    setTranslating(false);
-    toast.success(`Resume translated to ${targetLang.name}!`);
+      const data = await response.json();
+      if (response.ok && data.success) {
+        setTranslated(data.result);
+        toast.success(`Resume translated to ${targetLang.name}!`);
+      } else {
+        toast.error(data.message || "Translation failed");
+      }
+    } catch (e) {
+      toast.error("Failed to connect to AI service");
+    } finally {
+      setTranslating(false);
+    }
   };
 
   const handleSaveToVault = async () => {

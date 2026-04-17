@@ -119,7 +119,7 @@ function ResumePreview({ layout, font, margin, data, accentColor }) {
     <div style={{ ...base, maxWidth: "680px", margin: "0 auto", color: "#1e293b", background: "white" }}>
       <div style={{ marginBottom: "28px" }}>
         <h1 style={{ fontSize: "32px", fontWeight: 300, letterSpacing: "3px", textTransform: "uppercase", margin: 0, color: "#0f172a" }}>{data.name}</h1>
-        <p style={{ fontSize: "13px", color: "#94a3b8", margin: "6px 0 4px", letterSpacing: "1.5px", textTransform: "uppercase", fontSize: "11px" }}>{data.title}</p>
+        <p style={{ fontSize: "13px", color: "#94a3b8", margin: "6px 0 4px", letterSpacing: "1.5px", textTransform: "uppercase" }}>{data.title}</p>
         <p style={{ fontSize: "11px", color: "#cbd5e1" }}>{data.contact}</p>
         <div style={{ width: 48, height: 3, background: accentColor, marginTop: 14 }} />
       </div>

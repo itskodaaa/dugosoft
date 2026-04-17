@@ -3,8 +3,10 @@ import { motion } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { User, Bell, Shield, Palette, Monitor, Sun, Moon, Check, Globe, Download } from "lucide-react";
+import { User, Bell, Shield, Palette, Monitor, Sun, Moon, Check, Globe, Download, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/lib/AuthContext";
+import { authApi } from "@/api/auth";
 
 const ACCENT_COLORS = [
   { label: "Blue",    value: "219 100% 61%",  hex: "#4f8ef7" },
@@ -32,7 +34,7 @@ const NOTIF_OPTIONS = [
 
 function Section({ icon: Icon, title, children }) {
   return (
-    <div className="rounded-2xl ink-border bg-card p-6">
+    <div className="rounded-2xl ink-border bg-card p-6 shadow-sm">
       <div className="flex items-center gap-2 mb-5">
         <Icon className="w-4 h-4 text-accent" />
         <h2 className="text-base font-semibold text-foreground">{title}</h2>
@@ -43,10 +45,37 @@ function Section({ icon: Icon, title, children }) {
 }
 
 export default function SettingsPage() {
+  const { user, updateUser } = useAuth();
   const [theme, setTheme] = useState(() => localStorage.getItem("ds-theme") || "system");
   const [accent, setAccent] = useState(() => localStorage.getItem("ds-accent") || "219 100% 61%");
   const [notifs, setNotifs] = useState({ plan_limit: true, task_done: true, new_features: false, deadline: true });
-  const [profile, setProfile] = useState({ name: "", email: "", website: "dugosoft.com" });
+  
+  const [profile, setProfile] = useState({ 
+    firstName: "", 
+    lastName: "", 
+    email: "", 
+    website: "" 
+  });
+
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: "",
+    newPassword: ""
+  });
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [isPasswordLoading, setIsPasswordLoading] = useState(false);
+
+  // Hydrate profile from user context
+  useEffect(() => {
+    if (user) {
+      setProfile({
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+        email: user.email || "",
+        website: user.website || ""
+      });
+    }
+  }, [user]);
 
   // Apply theme
   useEffect(() => {
@@ -68,7 +97,40 @@ export default function SettingsPage() {
     localStorage.setItem("ds-accent", accent);
   }, [accent]);
 
-  const saveProfile = () => toast.success("Profile saved!");
+  const saveProfile = async () => {
+    setIsLoading(true);
+    try {
+      const data = await authApi.updateProfile({
+        firstName: profile.firstName,
+        lastName: profile.lastName,
+        website: profile.website
+      });
+      updateUser(data.user);
+      toast.success("Profile saved!");
+    } catch (error) {
+      toast.error(error.message || "Failed to update profile");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleUpdatePassword = async () => {
+    if (!passwordData.currentPassword || !passwordData.newPassword) {
+      toast.error("Please fill in both password fields");
+      return;
+    }
+    setIsPasswordLoading(true);
+    try {
+      await authApi.updatePassword(passwordData);
+      setPasswordData({ currentPassword: "", newPassword: "" });
+      toast.success("Password updated successfully!");
+    } catch (error) {
+      toast.error(error.message || "Failed to update password");
+    } finally {
+      setIsPasswordLoading(false);
+    }
+  };
+
   const saveNotifs = () => toast.success("Notification preferences saved!");
 
   const exportData = () => {
@@ -103,31 +165,36 @@ export default function SettingsPage() {
         </div>
       </motion.div>
 
-      <div className="space-y-5 mt-6">
+      <div className="space-y-5 mt-6 pb-12">
         {/* Profile */}
         <Section icon={User} title="Profile">
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
-              <Label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2 block">Full Name</Label>
-              <Input value={profile.name} onChange={e => setProfile(p => ({ ...p, name: e.target.value }))} placeholder="John Doe" className="bg-muted border-0" />
+              <Label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2 block">First Name</Label>
+              <Input value={profile.firstName} onChange={e => setProfile(p => ({ ...p, firstName: e.target.value }))} placeholder="John" className="bg-muted border-0" />
             </div>
             <div>
-              <Label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2 block">Email</Label>
-              <Input value={profile.email} onChange={e => setProfile(p => ({ ...p, email: e.target.value }))} placeholder="john@example.com" className="bg-muted border-0" />
+              <Label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2 block">Last Name</Label>
+              <Input value={profile.lastName} onChange={e => setProfile(p => ({ ...p, lastName: e.target.value }))} placeholder="Doe" className="bg-muted border-0" />
             </div>
-            <div className="sm:col-span-2">
+            <div>
+              <Label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2 block">Email Address</Label>
+              <Input value={profile.email} readOnly className="bg-muted border-0 opacity-60 cursor-not-allowed" />
+            </div>
+            <div>
               <Label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2 block flex items-center gap-1.5">
                 <Globe className="w-3 h-3" /> Website
               </Label>
-              <Input value={profile.website} onChange={e => setProfile(p => ({ ...p, website: e.target.value }))} className="bg-muted border-0" />
+              <Input value={profile.website} onChange={e => setProfile(p => ({ ...p, website: e.target.value }))} placeholder="yourwebsite.com" className="bg-muted border-0" />
             </div>
           </div>
-          <Button onClick={saveProfile} size="sm" className="mt-4 bg-accent hover:bg-accent/90 text-accent-foreground rounded-full px-6">Save Profile</Button>
+          <Button onClick={saveProfile} disabled={isLoading} size="sm" className="mt-4 bg-accent hover:bg-accent/90 text-accent-foreground rounded-full px-6 min-w-[120px]">
+            {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Profile"}
+          </Button>
         </Section>
 
         {/* Appearance */}
         <Section icon={Palette} title="Appearance">
-          {/* Theme */}
           <div className="mb-6">
             <p className="text-sm font-semibold text-foreground mb-3">Theme</p>
             <div className="flex gap-3 flex-wrap">
@@ -145,7 +212,6 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          {/* Accent Color */}
           <div>
             <p className="text-sm font-semibold text-foreground mb-3">Accent Color</p>
             <div className="flex flex-wrap gap-3">
@@ -186,13 +252,34 @@ export default function SettingsPage() {
           <div className="space-y-4">
             <div>
               <Label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2 block">Current Password</Label>
-              <Input type="password" placeholder="••••••••" className="bg-muted border-0 max-w-xs" />
+              <Input 
+                type="password" 
+                autoComplete="current-password"
+                placeholder="••••••••" 
+                className="bg-muted border-0 max-w-xs" 
+                value={passwordData.currentPassword}
+                onChange={e => setPasswordData(p => ({ ...p, currentPassword: e.target.value }))}
+              />
             </div>
             <div>
               <Label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2 block">New Password</Label>
-              <Input type="password" placeholder="••••••••" className="bg-muted border-0 max-w-xs" />
+              <Input 
+                type="password" 
+                autoComplete="new-password"
+                placeholder="••••••••" 
+                className="bg-muted border-0 max-w-xs" 
+                value={passwordData.newPassword}
+                onChange={e => setPasswordData(p => ({ ...p, newPassword: e.target.value }))}
+              />
             </div>
-            <Button size="sm" onClick={() => toast.success("Password updated!")} className="bg-accent hover:bg-accent/90 text-accent-foreground rounded-full px-6">Update Password</Button>
+            <Button 
+               size="sm" 
+               disabled={isPasswordLoading}
+               onClick={handleUpdatePassword} 
+               className="bg-accent hover:bg-accent/90 text-accent-foreground rounded-full px-6 min-w-[140px]"
+            >
+              {isPasswordLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Update Password"}
+            </Button>
           </div>
         </Section>
       </div>

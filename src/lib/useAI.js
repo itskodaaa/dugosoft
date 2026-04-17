@@ -15,6 +15,7 @@ export function useAI() {
   const call = async (action, params) => {
     setError(null);
     setLoading(true);
+    const token = localStorage.getItem('auth_token');
 
     // Check usage limit before calling
     const allowed = await guard();
@@ -24,24 +25,32 @@ export function useAI() {
     }
 
     try {
-      const res = await base44.functions.invoke("aiService", { action, ...params });
-      const data = res.data;
+      const response = await fetch('http://localhost:3001/api/ai/invoke', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ action, ...params })
+      });
 
-      if (data?.error === "ai_not_configured") {
-        setError({ type: "not_configured", message: data.message });
-        toast.error("AI service not configured. Contact the administrator.", { duration: 5000 });
-        return null;
-      }
+      const data = await response.json();
 
-      if (data?.error === "limit_exceeded") {
-        toast.error(data.message, {
-          action: { label: "Upgrade", onClick: () => window.location.href = "/dashboard/pricing" }
-        });
-        setError({ type: "limit_exceeded", message: data.message });
-        return null;
-      }
+      if (!response.ok || !data.success) {
+        if (data?.error === "ai_not_configured") {
+          setError({ type: "not_configured", message: data.message });
+          toast.error("AI service not configured. Contact the administrator.", { duration: 5000 });
+          return null;
+        }
 
-      if (!data?.success) {
+        if (data?.error === "limit_exceeded") {
+          toast.error(data.message, {
+            action: { label: "Upgrade", onClick: () => window.location.href = "/dashboard/pricing" }
+          });
+          setError({ type: "limit_exceeded", message: data.message });
+          return null;
+        }
+
         const msg = data?.message || "AI request failed";
         setError({ type: "error", message: msg });
         toast.error(msg);

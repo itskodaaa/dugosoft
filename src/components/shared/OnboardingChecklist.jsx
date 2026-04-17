@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import { CheckCircle2, Circle, ChevronDown, ChevronUp, X, Sparkles, Trophy } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
-import { base44 } from "@/api/base44Client";
+import { authApi } from "@/api/auth";
 
 const STEPS = [
   { id: "profile",   label: "Complete your profile",     path: "/dashboard/settings",          desc: "Add your name and preferences" },
@@ -15,36 +15,48 @@ const STEPS = [
 ];
 
 export default function OnboardingChecklist() {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const [open, setOpen] = useState(true);
   const [dismissed, setDismissed] = useState(false);
   const [completed, setCompleted] = useState({});
 
   // Load completed steps from user data
   useEffect(() => {
-    if (user?.onboarding_steps) {
-      try { setCompleted(JSON.parse(user.onboarding_steps)); } catch {}
+    if (user?.onboardingSteps) {
+      setCompleted(user.onboardingSteps);
     }
     // Auto-dismiss if all done
-    if (user?.onboarding_dismissed) setDismissed(true);
+    if (user?.onboardingDismissed) setDismissed(true);
   }, [user]);
 
   // Only show for relatively new users (created in last 30 days)
-  const isNewUser = !user?.created_date || (Date.now() - new Date(user.created_date).getTime()) < 30 * 24 * 60 * 60 * 1000;
+  const isNewUser = !user?.createdAt || (Date.now() - new Date(user.createdAt).getTime()) < 30 * 24 * 60 * 60 * 1000;
   if (dismissed || !isNewUser) return null;
 
   const completedCount = Object.values(completed).filter(Boolean).length;
   const allDone = completedCount === STEPS.length;
 
   const markStep = async (id) => {
-    const next = { ...completed, [id]: true };
-    setCompleted(next);
-    await base44.auth.updateMe({ onboarding_steps: JSON.stringify(next) }).catch(() => {});
+    // Optimistic update
+    const nextSteps = { ...completed, [id]: true };
+    setCompleted(nextSteps);
+    
+    try {
+      const data = await authApi.updateProfile({ onboardingSteps: nextSteps });
+      updateUser(data.user);
+    } catch (error) {
+      console.error('Failed to update onboarding progress:', error);
+    }
   };
 
   const dismiss = async () => {
     setDismissed(true);
-    await base44.auth.updateMe({ onboarding_dismissed: true }).catch(() => {});
+    try {
+      const data = await authApi.updateProfile({ onboardingDismissed: true });
+      updateUser(data.user);
+    } catch (error) {
+      console.error('Failed to dismiss onboarding:', error);
+    }
   };
 
   return (

@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
+import { resumesApi } from "@/api/resumes";
 
 const BADGES = [
   {
@@ -161,7 +162,7 @@ export default function CareerHealthModule() {
   useEffect(() => {
     if (!user) return;
     Promise.all([
-      base44.entities.ResumeProject.list("-updated_date", 10),
+      resumesApi.getAll(),
       base44.entities.CoverLetter.list("-created_date", 10),
       base44.entities.Portfolio.filter({ created_by: user.email }),
     ]).then(([r, l, p]) => {

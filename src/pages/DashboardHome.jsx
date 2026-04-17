@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/lib/AuthContext";
 import { usePlan } from "@/lib/usePlan";
 import { base44 } from "@/api/base44Client";
+import { resumesApi } from "@/api/resumes";
 import OnboardingChecklist from "@/components/shared/OnboardingChecklist";
 import UsageMeter from "@/components/dashboard/UsageMeter";
 import JobRecommendations from "@/components/dashboard/JobRecommendations";
@@ -101,7 +102,7 @@ export default function DashboardHome() {
 
   useEffect(() => {
     if (!user?.id) return;
-    base44.entities.ResumeProject.list("-updated_date", 3).then(setRecentResumes).catch(() => {});
+    resumesApi.getAll().then(setRecentResumes).catch(() => {});
     base44.entities.CoverLetter.list("-created_date", 2).then(setRecentLetters).catch(() => {});
   }, [user?.id]);
 
@@ -127,8 +128,8 @@ export default function DashboardHome() {
       icon: FileText, color: "text-accent bg-accent/10",
       title: r.title || "Untitled Resume",
       action: "Continue editing", path: "/dashboard/resume-builder-v2",
-      time: new Date(r.updated_date || r.created_date).toLocaleDateString(),
-      status: r.status === "complete" ? "Complete" : "Draft",
+      time: new Date(r.updated_at || r.created_at).toLocaleDateString(),
+      status: "Draft",
     })),
     ...recentLetters.map(r => ({
       icon: PenLine, color: "text-purple-500 bg-purple-500/10",
