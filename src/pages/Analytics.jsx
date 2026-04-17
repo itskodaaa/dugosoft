@@ -10,8 +10,8 @@ import {
   CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from "recharts";
 import {
-  FileText, Languages, BarChart3, RefreshCw as ConvIcon, Zap,
-  Crown, ArrowUp, ArrowDown, ScanText
+  FileText, Zap,
+  Crown, ScanText
 } from "lucide-react";
 import { toast } from "sonner";
 

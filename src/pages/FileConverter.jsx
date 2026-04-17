@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, FileText, RefreshCw, AlertCircle, Settings } from "lucide-react";
+import { ArrowRight, FileText, RefreshCw, Settings } from "lucide-react";
 import FileUpload from "../components/shared/FileUpload";
 import StatusBadge from "../components/shared/StatusBadge";
 import ProcessingBorder from "../components/shared/ProcessingBorder";

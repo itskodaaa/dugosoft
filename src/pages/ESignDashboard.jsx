@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FileSignature, Plus, Clock, CheckCircle2, AlertCircle,
-  Eye, Send, Trash2, Upload, LayoutTemplate, Users, Bell
+  Eye, Trash2, Upload, LayoutTemplate, Users, Bell
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";

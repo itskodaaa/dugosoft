@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  Briefcase, MapPin, DollarSign, Sparkles, ExternalLink,
+  Briefcase, MapPin, DollarSign, Sparkles,
   Loader2, RefreshCw, X, CheckCircle2, Building2, Clock, BarChart3
 } from "lucide-react";
 import { base44 } from "@/api/base44Client";

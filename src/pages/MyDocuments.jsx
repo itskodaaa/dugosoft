@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Download, Share2, Trash2, Eye, FileText, File, Table, FileCode, Clock, CheckCircle2, AlertCircle, SlidersHorizontal, Mail, X, Folder, FolderPlus, ChevronRight, MoveRight } from "lucide-react";
+import { Search, Download, Trash2, Eye, FileText, File, Table, FileCode, Clock, CheckCircle2, AlertCircle, SlidersHorizontal, Mail, X, Folder, FolderPlus, MoveRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";

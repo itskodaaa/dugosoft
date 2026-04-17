@@ -8,7 +8,6 @@ import { BarChart3, AlertTriangle, CheckCircle2, Lightbulb, Share2, Upload, File
 import ProcessingBorder from "../components/shared/ProcessingBorder";
 import ShareModal from "../components/shared/ShareModal";
 import JobUrlParser from "../components/shared/JobUrlParser";
-import AINotConfigured from "../components/shared/AINotConfigured";
 import { useLang } from "@/lib/i18n";
 import { useAI } from "@/lib/useAI";
 

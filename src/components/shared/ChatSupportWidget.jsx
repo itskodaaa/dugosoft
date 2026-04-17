@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageCircle, X, Send, Bot, ChevronDown, Minimize2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 const QUICK_REPLIES = [
   "How do I upgrade my plan?",

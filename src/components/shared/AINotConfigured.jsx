@@ -1,5 +1,5 @@
 import React from "react";
-import { AlertTriangle, Settings } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 
 /**
  * Shown when the AI service is not configured (missing API key).

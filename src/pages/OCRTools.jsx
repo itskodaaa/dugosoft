@@ -2,7 +2,7 @@ import React, { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Upload, X, FileText, Image, RefreshCw, Layers, Scissors, Merge,
-  Lock, Crown, Download, Eye, CheckCircle2, Clock, AlertCircle, Zap, Shield
+  Lock, Crown, Download, Eye, CheckCircle2, Zap, Shield
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";

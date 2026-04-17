@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Sparkles, Linkedin, Copy, Check, ChevronDown, ChevronUp, User, Tag, FileText, Share2, ExternalLink, Upload, X } from "lucide-react";
+import { Sparkles, Linkedin, Copy, Check, ChevronDown, ChevronUp, User, Tag, FileText, ExternalLink, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { useLang } from "@/lib/i18n";
 import { useAI } from "@/lib/useAI";

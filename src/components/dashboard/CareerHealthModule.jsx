@@ -2,9 +2,8 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import {
-  Trophy, Star, Zap, Target, Brain, Globe, FileText,
-  CheckCircle2, Lock, ChevronRight, TrendingUp, Award,
-  Shield, Flame, BookOpen, Users, ArrowRight
+  Trophy, Zap, Target, Brain, Globe, FileText, Lock, ChevronRight,
+  Shield, ArrowRight
 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";

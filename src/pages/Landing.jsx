@@ -3,8 +3,7 @@ import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowRight, Sparkles, CheckCircle2, Globe2, FileText, Languages,
-  ScanText, Target, MessageCircle, Zap, Star, Users, TrendingUp,
-  Shield, Play, RefreshCw, ChevronRight
+  ScanText, Target, MessageCircle, Star, Users, Play, RefreshCw
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import GlobeVisualization from "../components/landing/GlobeVisualization";

@@ -12,7 +12,6 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/AuthContext";
 import { base44 } from "@/api/base44Client";
 import { useGeoPrice, REGION_PRICES } from "@/lib/useGeoPrice";
-import GeoPricingBadge from "@/components/pricing/GeoPricingBadge";
 
 const PLAN_FEATURES = [
   {

@@ -3,11 +3,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import {
   User, Globe, Briefcase, Code, Star, Link2, Plus, Trash2, Eye,
   Sparkles, Save, CheckCircle2, Copy, ExternalLink, Palette,
-  Loader2, X, Github, Linkedin, Mail, MapPin, Edit3
+  Loader2
 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { LogOut, Settings, CreditCard, ChevronDown, Crown, User } from "lucide-react";
+import { LogOut, Settings, CreditCard, ChevronDown, Crown } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 
 const PLAN_STYLES = {

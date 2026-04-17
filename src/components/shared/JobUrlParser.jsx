@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link2, Sparkles, X, Building2, Briefcase, AlertCircle } from "lucide-react";
+import { Link2, Sparkles, X, Building2, Briefcase } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { base44 } from "@/api/base44Client";

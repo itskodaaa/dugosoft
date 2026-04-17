@@ -2,8 +2,7 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import {
-  Plus, X, Building2, Calendar, Link2, FileText, Mail, Sparkles,
-  Bell, MoreHorizontal, ExternalLink, Briefcase, RefreshCw,
+  Plus, X, FileText, Mail, Sparkles, MoreHorizontal, Briefcase, RefreshCw,
   TrendingUp, Target, CheckCircle2, Clock, Star, Copy
 } from "lucide-react";
 import { Button } from "@/components/ui/button";

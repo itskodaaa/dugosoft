@@ -4,9 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
-  Sparkles, Target, BookOpen, ExternalLink, Copy, Check,
-  TrendingUp, AlertTriangle, CheckCircle2, BarChart3, Share2,
-  ChevronDown, ChevronUp, Linkedin, Mail
+  Sparkles, Target, BookOpen, ExternalLink, Copy, AlertTriangle, CheckCircle2,
+  ChevronDown, ChevronUp, Linkedin
 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";

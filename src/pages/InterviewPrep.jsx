@@ -1,13 +1,10 @@
 import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Mic, MicOff, ChevronRight, ChevronLeft, CheckCircle2, Brain,
-  MessageSquare, Upload, Sparkles, RotateCcw, Play, Square,
-  Clock, Star, FileText, Briefcase, Volume2, ThumbsUp
+  Mic, MicOff, ChevronRight, ChevronLeft, CheckCircle2, Brain, Sparkles, RotateCcw, Play, Star, ThumbsUp
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 import { useAI } from "@/lib/useAI";

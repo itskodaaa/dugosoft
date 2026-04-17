@@ -1,8 +1,8 @@
 import React from "react";
 import { motion } from "framer-motion";
 import {
-  AreaChart, Area, BarChart, Bar, RadarChart, Radar, PolarGrid, PolarAngleAxis,
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
+  AreaChart, Area, RadarChart, Radar, PolarGrid, PolarAngleAxis,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from "recharts";
 import { TrendingUp, Target, Zap, Award, ChevronUp, ChevronDown } from "lucide-react";
 

@@ -2,16 +2,14 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
-  FileText, BarChart3, Languages, Target, MessageCircle,
-  Linkedin, Globe, ArrowRight, Clock, Zap,
-  FolderOpen, RefreshCw, Star, Crown, Share2,
-  TrendingUp, CheckCircle2, Sparkles, Bot, Merge,
-  ScanText, PenLine, Briefcase, Users, PieChart, X, Brain, Upload
+  FileText, BarChart3, Languages, Target, MessageCircle, Globe, ArrowRight, Clock, Zap, RefreshCw, Star, Crown, Share2,
+  TrendingUp, CheckCircle2, Sparkles, Bot,
+  ScanText, PenLine, Briefcase, X, Brain, Upload
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/AuthContext";
-import { usePlan, PLAN_LIMITS } from "@/lib/usePlan";
+import { usePlan } from "@/lib/usePlan";
 import { base44 } from "@/api/base44Client";
 import OnboardingChecklist from "@/components/shared/OnboardingChecklist";
 import UsageMeter from "@/components/dashboard/UsageMeter";

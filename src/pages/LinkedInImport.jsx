@@ -1,9 +1,9 @@
 import React, { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Linkedin, Upload, Link2, CheckCircle2, Sparkles, ArrowRight,
-  User, Briefcase, GraduationCap, Award, Languages, Code, X,
-  ChevronRight, Edit3, Save, FileText, Crown, Camera, RefreshCw, Image
+  Linkedin, Upload, Link2, CheckCircle2, Sparkles,
+  User, Briefcase, GraduationCap, Award, Languages, Code,
+  ChevronRight, FileText, Crown, Camera, RefreshCw
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Settings, User, Bell, Shield, Palette, Monitor, Sun, Moon, Check, Globe, Download } from "lucide-react";
+import { User, Bell, Shield, Palette, Monitor, Sun, Moon, Check, Globe, Download } from "lucide-react";
 import { toast } from "sonner";
 
 const ACCENT_COLORS = [

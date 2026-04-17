@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Clock, FileText, ChevronDown, ChevronUp, Eye, MessageSquare,
+import { FileText, ChevronDown, ChevronUp, Eye,
   Send, RefreshCw, PenLine, Inbox
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { base44 } from "@/api/base44Client";
-import { toast } from "sonner";
 import { useAuth } from "@/lib/AuthContext";
 import { Link } from "react-router-dom";
 

@@ -1,11 +1,10 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
-  LayoutDashboard, FileText, BarChart3, Languages, Table2, TrendingUp,
-  MessageSquare, Clock, Settings, ChevronLeft, Lock, RefreshCw,
+  LayoutDashboard, FileText, BarChart3, Languages, TrendingUp, Clock, Settings, ChevronLeft, RefreshCw,
   Share2, Activity, PenLine, CreditCard, Merge, Linkedin,
   FolderOpen, ScanText, LayoutTemplate, Target, Users, Globe,
-  MessageCircle, Bot, Zap, Briefcase, Sparkles, Brain, X, Wand2, Crown, FileSignature, Gift, Upload
+  MessageCircle, Bot, Zap, Briefcase, Sparkles, Brain, X, Wand2, FileSignature, Gift, Upload
 } from "lucide-react";
 
 // Pro-gated items (show badge)

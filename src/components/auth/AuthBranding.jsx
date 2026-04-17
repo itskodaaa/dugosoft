@@ -1,5 +1,5 @@
 import React from "react";
-import { Zap, FileText, Languages, BarChart3, Shield } from "lucide-react";
+import { FileText, Languages, BarChart3, Shield } from "lucide-react";
 
 const FEATURES = [
   { icon: FileText, text: "AI-powered Resume & Cover Letter builder" },

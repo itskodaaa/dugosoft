@@ -2,13 +2,12 @@ import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   MessageCircle, Upload, FileText, Sparkles, Send, X,
-  Crown, Download, Lightbulb, List, Globe, HelpCircle,
+  Crown, Lightbulb, List, Globe, HelpCircle,
   Zap, BookOpen, ChevronRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { base44 } from "@/api/base44Client";
-import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 
 const SUGGESTED_PROMPTS = [

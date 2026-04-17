@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Button } from "@/components/ui/button";
+import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import {
-  X, DollarSign, TrendingUp, Globe, Loader2, BarChart3,
-  MapPin, Sparkles, ChevronUp, ChevronDown, Minus, Info
+  X, Loader2, BarChart3, Sparkles, ChevronUp, ChevronDown
 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";

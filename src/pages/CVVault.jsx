@@ -2,10 +2,8 @@ import React, { useState } from "react";
 import FeatureGate from "../components/shared/FeatureGate";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Globe, Plus, Download, Share2, Eye, Trash2, Languages,
-  FileText, CheckCircle2, Sparkles, X, Clock, Copy, GitCompare,
-  Tag, Building2, Briefcase, Stethoscope, Code, TrendingUp, PenLine,
-  Camera, RefreshCw
+  Globe, Plus, Download, Share2, Eye, Trash2, Languages, Sparkles, X, Clock, GitCompare, Briefcase, Stethoscope, Code, TrendingUp, PenLine,
+  Camera
 } from "lucide-react";
 import CVShareModal from "../components/shared/CVShareModal";
 import { Button } from "@/components/ui/button";

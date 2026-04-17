@@ -1,9 +1,9 @@
 import React, { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
-  FolderOpen, Plus, Users, Mail, Shield, Edit3, Eye, MessageSquare,
-  Crown, Trash2, Settings, FileText, RefreshCw, ChevronRight, X, Check,
-  UserPlus, Lock
+  FolderOpen, Plus, Users, Shield, Edit3, Eye, MessageSquare,
+  Crown, Trash2, FileText, ChevronRight, X,
+  UserPlus
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
