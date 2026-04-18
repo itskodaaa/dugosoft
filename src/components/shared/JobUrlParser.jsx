@@ -1,8 +1,8 @@
 import React, { useState } from "react";
+import { API_BASE } from "@/api/config";
 import { Link2, Sparkles, X, Building2, Briefcase } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -26,7 +26,7 @@ export default function JobUrlParser({ onParsed }) {
     const token = localStorage.getItem('auth_token');
 
     try {
-      const response = await fetch('http://localhost:3001/api/ai/invoke', {
+      const response = await fetch(`${API_BASE}/api/ai/invoke`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

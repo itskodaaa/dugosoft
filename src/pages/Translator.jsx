@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Languages, Copy, Check, Download, Type, FileUp, ArrowRight } from "lucide-react";
+import { Languages, Copy, Download, Type, FileUp, ArrowRight } from "lucide-react";
 import ProcessingBorder from "../components/shared/ProcessingBorder";
 import FileUpload from "../components/shared/FileUpload";
 import InputModeToggle from "../components/shared/InputModeToggle";
@@ -12,6 +12,7 @@ import StatusBadge from "../components/shared/StatusBadge";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { useAI } from "@/lib/useAI";
+import { API_BASE } from "@/api/config";
 
 const LANGUAGES = [
   { value: "English",    label: "🇬🇧 English" },
@@ -62,7 +63,7 @@ export default function Translator() {
         formData.append("file", file);
         formData.append("targetLanguage", targetLang);
 
-        const response = await fetch('http://localhost:3001/api/ai/translate-file', {
+        const response = await fetch(`${API_BASE}/api/ai/translate-file`, {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${token}` },
           body: formData
@@ -102,7 +103,7 @@ export default function Translator() {
     setStatus("processing");
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch('http://localhost:3001/api/export/pdf', {
+      const response = await fetch(`${API_BASE}/api/export/pdf`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',

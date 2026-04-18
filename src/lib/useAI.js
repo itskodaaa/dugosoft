@@ -3,7 +3,7 @@
  * Centralizes error handling, loading states, and usage guard.
  */
 import { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { API_BASE } from "@/api/config";
 import { toast } from "sonner";
 import { useUsageGuard } from "./useUsageGuard";
 
@@ -25,7 +25,7 @@ export function useAI() {
     }
 
     try {
-      const response = await fetch('http://localhost:3001/api/ai/invoke', {
+      const response = await fetch(`${API_BASE}/api/ai/invoke`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

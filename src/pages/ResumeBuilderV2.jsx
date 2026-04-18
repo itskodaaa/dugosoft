@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import {
-  GripVertical, Plus, Trash2, Download, Eye, Crown, Lock, Check, ChevronDown, ChevronUp,
+  GripVertical, Plus, Trash2, Download, Crown, Lock, Check, ChevronDown, ChevronUp,
   Type, Palette, Globe2, Save, CheckCircle2, Loader2, FileText, User
 } from "lucide-react";
 import { resumesApi } from "@/api/resumes";
@@ -11,8 +11,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/lib/AuthContext";
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
 
 // ─── Templates ────────────────────────────────────────────────────────────────
 const TEMPLATES = [

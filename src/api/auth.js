@@ -1,4 +1,5 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api/auth';
+import { API_BASE } from './config';
+const API_URL = `${API_BASE}/api/auth`;
 
 export const authApi = {
   async register({ email, password, firstName, lastName }) {

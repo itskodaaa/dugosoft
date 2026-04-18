@@ -1,4 +1,5 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api/resumes';
+import { API_BASE } from './config';
+const API_URL = `${API_BASE}/api/resumes`;
 
 export const resumesApi = {
   async getAll() {
@@ -85,7 +86,7 @@ export const resumesApi = {
 
   async downloadPDF(resume, template) {
     const token = localStorage.getItem('auth_token');
-    const EXPORT_URL = import.meta.env.VITE_EXPORT_URL || 'http://localhost:3001/api/export/pdf';
+    const EXPORT_URL = `${API_BASE}/api/export/pdf`;
     
     const response = await fetch(EXPORT_URL, {
       method: 'POST',

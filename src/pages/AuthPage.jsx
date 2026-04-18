@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/lib/AuthContext";
 import { toast } from "sonner";
 import {
-  ArrowLeft, Sparkles, CheckCircle2, Globe2, FileText,
+  ArrowLeft, Sparkles, Globe2, FileText,
   Languages, Target, Star, Shield, Zap, Lock, Mail, User
 } from "lucide-react";
 

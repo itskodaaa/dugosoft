@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { Menu, X, ChevronDown, Sparkles, FileText, Languages, Target, Globe2, MessageCircle, BarChart3, Users, Zap } from "lucide-react";
 import LanguageSwitcher from "@/components/shared/LanguageSwitcher";
 import { useLang } from "@/lib/i18n";
-import { base44 } from "@/api/base44Client";
+import { useAuth } from "@/lib/AuthContext";
 
 const FEATURES_MENU = [
   { icon: FileText,      label: "Resume Builder",     desc: "ATS-optimized resumes",   path: "/dashboard/resume-builder-v2",  color: "text-accent" },
@@ -21,17 +21,13 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [featuresOpen, setFeaturesOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const { t } = useLang();
+  const { isAuthenticated: isLoggedIn } = useAuth();
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 10);
     window.addEventListener("scroll", handler);
     return () => window.removeEventListener("scroll", handler);
-  }, []);
-
-  useEffect(() => {
-    base44.auth.isAuthenticated().then(setIsLoggedIn);
   }, []);
 
   return (

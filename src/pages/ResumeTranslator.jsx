@@ -5,7 +5,7 @@ import {
   FileText, Loader2, Globe, Download, GitCompare
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { base44 } from "@/api/base44Client";
+import { API_BASE } from "@/api/config";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { jsPDF } from "jspdf";
@@ -76,7 +76,7 @@ export default function ResumeTranslator() {
     const token = localStorage.getItem('auth_token');
 
     try {
-      const response = await fetch('http://localhost:3001/api/ai/invoke', {
+      const response = await fetch(`${API_BASE}/api/ai/invoke`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
