@@ -31,14 +31,17 @@ export const AuthProvider = ({ children }) => {
         setUser(formatUser(JSON.parse(storedUser)));
         setIsAuthenticated(true);
         
-        // Then, optionally refresh from backend to get fresh onboarding progress
+        // Validate token against backend — clear and force re-login if invalid
         try {
           const data = await authApi.getMe();
           const refreshedUser = formatUser(data.user);
           setUser(refreshedUser);
           localStorage.setItem('auth_user', JSON.stringify(refreshedUser));
         } catch (err) {
-          console.warn('Backend user refresh failed, using cached data');
+          localStorage.removeItem('auth_token');
+          localStorage.removeItem('auth_user');
+          setUser(null);
+          setIsAuthenticated(false);
         }
       } else {
         setIsAuthenticated(false);
