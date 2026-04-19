@@ -6,11 +6,11 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { API_BASE } from "@/api/config";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const isPremiumUser = false;
 const FREE_LIMIT_MB = 10;
-const FREE_DAILY_CONVERSIONS = 5;
 
 const TABS = [
   { key: "ocr", label: "OCR Tools", icon: Eye, color: "#4f8ef7" },
@@ -29,39 +29,49 @@ const OCR_FEATURES = [
   { label: "Selectable OCR regions", free: false },
 ];
 
+// Maps UI conversion labels to API ?type= param and output filename extension
+const CONVERSION_TYPE_MAP = {
+  "Word → PDF":  { type: "docx-pdf", ext: "pdf" },
+  "Text → PDF":  { type: "txt-pdf",  ext: "pdf" },
+  "JPG → PDF":   { type: "img-pdf",  ext: "pdf" },
+  "PNG → PDF":   { type: "img-pdf",  ext: "pdf" },
+  "PDF → Word":  { type: "pdf-docx", ext: "docx" },
+  "PDF → Text":  { type: "pdf-txt",  ext: "txt" },
+};
+
 const CONVERSION_MATRIX = {
   "to-pdf": [
     { from: "DOCX", to: "PDF", label: "Word → PDF", free: true },
-    { from: "TXT", to: "PDF", label: "Text → PDF", free: true },
-    { from: "JPG", to: "PDF", label: "JPG → PDF", free: true },
-    { from: "PNG", to: "PDF", label: "PNG → PDF", free: true },
+    { from: "TXT",  to: "PDF", label: "Text → PDF", free: true },
+    { from: "JPG",  to: "PDF", label: "JPG → PDF",  free: true },
+    { from: "PNG",  to: "PDF", label: "PNG → PDF",  free: true },
     { from: "PPTX", to: "PDF", label: "PowerPoint → PDF", free: false },
-    { from: "XLSX", to: "PDF", label: "Excel → PDF", free: false },
-    { from: "RTF", to: "PDF", label: "RTF → PDF", free: false },
-    { from: "TIFF", to: "PDF", label: "TIFF → PDF", free: false },
+    { from: "XLSX", to: "PDF", label: "Excel → PDF",      free: false },
+    { from: "RTF",  to: "PDF", label: "RTF → PDF",        free: false },
+    { from: "TIFF", to: "PDF", label: "TIFF → PDF",       free: false },
   ],
   "from-pdf": [
     { from: "PDF", to: "DOCX", label: "PDF → Word", free: true },
-    { from: "PDF", to: "TXT", label: "PDF → Text", free: true },
-    { from: "PDF", to: "XLSX", label: "PDF → Excel", free: false },
-    { from: "PDF", to: "PPTX", label: "PDF → PowerPoint", free: false },
+    { from: "PDF", to: "TXT",  label: "PDF → Text", free: true },
+    { from: "PDF", to: "XLSX", label: "PDF → Excel",       free: false },
+    { from: "PDF", to: "PPTX", label: "PDF → PowerPoint",  free: false },
   ],
   "images": [
     { from: "HEIC", to: "JPG", label: "HEIC → JPG", free: true },
     { from: "WebP", to: "JPG", label: "WebP → JPG", free: true },
-    { from: "BMP", to: "JPG", label: "BMP → JPG", free: true },
-    { from: "GIF", to: "PNG", label: "GIF → PNG", free: false },
+    { from: "BMP",  to: "JPG", label: "BMP → JPG",  free: true },
+    { from: "GIF",  to: "PNG", label: "GIF → PNG",  free: false },
   ],
   "pdf-tools": [
-    { from: "PDF", to: "PDF", label: "Merge PDFs", free: true, icon: Merge },
-    { from: "PDF", to: "PDF", label: "Split PDF", free: true, icon: Scissors },
+    { from: "PDF", to: "PDF", label: "Merge PDFs",   free: true,  icon: Merge },
+    { from: "PDF", to: "PDF", label: "Split PDF",    free: true,  icon: Scissors },
     { from: "PDF", to: "PDF", label: "Compress PDF", free: false },
     { from: "PDF", to: "PDF", label: "Rotate Pages", free: false },
-    { from: "PDF", to: "PDF", label: "Extract Images", free: false },
-    { from: "PDF", to: "PDF", label: "Add Watermark", free: false },
-    { from: "PDF", to: "PDF", label: "Password Protect", free: false },
+    { from: "PDF", to: "PDF", label: "Extract Images",       free: false },
+    { from: "PDF", to: "PDF", label: "Add Watermark",        free: false },
+    { from: "PDF", to: "PDF", label: "Password Protect",     free: false },
     { from: "PDF", to: "PDF", label: "Unlock PDF (remove password)", free: false, premium: true },
-    { from: "PDF", to: "PDF", label: "Remove Watermark", free: false, premium: true },
+    { from: "PDF", to: "PDF", label: "Remove Watermark",     free: false, premium: true },
   ],
 };
 
@@ -69,6 +79,15 @@ function formatBytes(bytes) {
   if (bytes < 1024) return bytes + " B";
   if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
   return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 // ─── Upload Zone ──────────────────────────────────────────────────────────────
@@ -124,29 +143,83 @@ function OCRPanel() {
   const [result, setResult] = useState(null);
   const [lang, setLang] = useState("English");
 
-  const run = () => {
+  const run = async () => {
     if (!file) { toast.warning("Please upload a file first."); return; }
     setProcessing(true);
-    setTimeout(() => {
+    setResult(null);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const token = localStorage.getItem("auth_token");
+      const headers = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
+      const res = await fetch(`${API_BASE}/api/ocr`, {
+        method: "POST",
+        headers,
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setResult(data.text);
+      } else {
+        toast.error(data.message || "OCR failed");
+      }
+    } catch (err) {
+      toast.error("OCR request failed");
+    } finally {
       setProcessing(false);
-      setResult(`EXTRACTED TEXT
-==============
-Invoice #INV-2026-0341
-Date: March 31, 2026
-Client: Acme Corporation
+    }
+  };
 
-Items:
-  - Software License      $1,200.00
-  - Support Package       $  350.00
-  - Implementation Fee    $  450.00
+  const downloadTxt = () => {
+    if (!result) return;
+    const blob = new Blob([result], { type: "text/plain;charset=utf-8" });
+    const baseName = file?.name.replace(/\.[^.]+$/, "") || "ocr-result";
+    downloadBlob(blob, `${baseName}.txt`);
+  };
 
-Subtotal: $2,000.00
-Tax (10%): $200.00
-Total: $2,200.00
+  const downloadDocx = async () => {
+    if (!result || !file) return;
+    try {
+      const token = localStorage.getItem("auth_token");
+      const headers = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
 
-Payment due: April 30, 2026
-Thank you for your business.`);
-    }, 2500);
+      // Convert the extracted text as a plain-text file to DOCX
+      const txtBlob = new Blob([result], { type: "text/plain" });
+      const txtFile = new File([txtBlob], "ocr-result.txt", { type: "text/plain" });
+
+      const formData = new FormData();
+      formData.append("file", txtFile);
+
+      // txt-pdf doesn't help here; we'll download as TXT wrapped in a DOCX via pdf-docx path
+      // Instead: use the existing pdf-docx route by uploading original PDF if available,
+      // otherwise just download TXT with .docx extension won't work — download TXT instead
+      const baseName = file?.name.replace(/\.[^.]+$/, "") || "ocr-result";
+
+      if (file.type === "application/pdf") {
+        const pdfForm = new FormData();
+        pdfForm.append("file", file);
+        const res = await fetch(`${API_BASE}/api/convert?type=pdf-docx`, {
+          method: "POST",
+          headers,
+          body: pdfForm,
+        });
+        if (!res.ok) throw new Error("Conversion failed");
+        const blob = await res.blob();
+        downloadBlob(blob, `${baseName}.docx`);
+      } else {
+        // For images, OCR text → download as TXT (DOCX conversion not supported without a server-side text-to-docx route)
+        toast.info("Downloading as TXT (DOCX available for PDF sources only)");
+        const blob = new Blob([result], { type: "text/plain;charset=utf-8" });
+        downloadBlob(blob, `${baseName}.txt`);
+      }
+    } catch (err) {
+      toast.error("Download failed");
+    }
   };
 
   return (
@@ -200,10 +273,10 @@ Thank you for your business.`);
         </div>
         {result && (
           <div className="flex gap-2 mt-3">
-            <Button onClick={() => toast.success("Downloading TXT...")} variant="outline" className="flex-1 rounded-full h-9 text-xs gap-1.5">
+            <Button onClick={downloadTxt} variant="outline" className="flex-1 rounded-full h-9 text-xs gap-1.5">
               <Download className="w-3.5 h-3.5" /> Download TXT
             </Button>
-            <Button onClick={() => toast.success("Downloading DOCX...")} className="flex-1 rounded-full h-9 text-xs gap-1.5 bg-accent hover:bg-accent/90 text-accent-foreground">
+            <Button onClick={downloadDocx} className="flex-1 rounded-full h-9 text-xs gap-1.5 bg-accent hover:bg-accent/90 text-accent-foreground">
               <Download className="w-3.5 h-3.5" /> Download DOCX
             </Button>
           </div>
@@ -220,14 +293,57 @@ function ConversionPanel({ tabKey }) {
   const [file, setFile] = useState(null);
   const [processing, setProcessing] = useState(false);
   const [done, setDone] = useState(false);
+  const [resultBlob, setResultBlob] = useState(null);
 
-  const run = () => {
+  const run = async () => {
     if (!file) { toast.warning("Upload a file first."); return; }
     if (!selected) { toast.warning("Select a conversion type."); return; }
     if (!selected.free && !isPremiumUser) { toast.warning("This conversion requires a Pro plan."); return; }
+
+    const mapping = CONVERSION_TYPE_MAP[selected.label];
+    if (!mapping) {
+      toast.warning("This conversion is not yet available.");
+      return;
+    }
+
     setProcessing(true);
     setDone(false);
-    setTimeout(() => { setProcessing(false); setDone(true); }, 2200);
+    setResultBlob(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const token = localStorage.getItem("auth_token");
+      const headers = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
+      const res = await fetch(`${API_BASE}/api/convert?type=${mapping.type}`, {
+        method: "POST",
+        headers,
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.message || "Conversion failed");
+        return;
+      }
+
+      const blob = await res.blob();
+      setResultBlob({ blob, ext: mapping.ext });
+      setDone(true);
+    } catch (err) {
+      toast.error("Conversion request failed");
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleDownload = () => {
+    if (!resultBlob) return;
+    const baseName = file?.name.replace(/\.[^.]+$/, "") || "converted";
+    downloadBlob(resultBlob.blob, `${baseName}.${resultBlob.ext}`);
   };
 
   return (
@@ -239,7 +355,7 @@ function ConversionPanel({ tabKey }) {
             {options.map((opt, i) => {
               const locked = !opt.free && !isPremiumUser;
               return (
-                <button key={i} onClick={() => locked ? toast.warning("Upgrade to Pro to unlock this conversion.") : setSelected(opt)}
+                <button key={i} onClick={() => { if (locked) { toast.warning("Upgrade to Pro to unlock this conversion."); return; } setSelected(opt); setDone(false); setResultBlob(null); }}
                   className={`w-full p-3 rounded-xl text-left border transition-all flex items-center justify-between ${selected?.label === opt.label ? "border-accent bg-accent/5" : "border-border hover:border-accent/30 bg-card"} ${locked ? "opacity-60" : ""}`}>
                   <span className="text-sm font-medium text-foreground">{opt.label}</span>
                   {locked ? <Crown className="w-3.5 h-3.5 text-amber-400" /> : opt.free ? <span className="text-[10px] text-green-600 font-bold bg-green-100 px-1.5 py-0.5 rounded">FREE</span> : null}
@@ -252,7 +368,7 @@ function ConversionPanel({ tabKey }) {
       <div className="lg:col-span-3 space-y-5">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">2. Upload File</p>
-          <UploadZone onFile={setFile} />
+          <UploadZone onFile={(f) => { setFile(f); setDone(false); setResultBlob(null); }} />
         </div>
         <Button onClick={run} disabled={processing || !file || !selected}
           className="w-full h-11 bg-accent hover:bg-accent/90 text-accent-foreground rounded-xl font-semibold gap-2">
@@ -260,7 +376,7 @@ function ConversionPanel({ tabKey }) {
           : done ? <><CheckCircle2 className="w-4 h-4" />Converted!</>
           : <><RefreshCw className="w-4 h-4" />Convert</>}
         </Button>
-        {done && (
+        {done && resultBlob && (
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
             className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -270,7 +386,7 @@ function ConversionPanel({ tabKey }) {
                 <p className="text-xs text-green-600">{file?.name} → {selected?.to}</p>
               </div>
             </div>
-            <Button onClick={() => toast.success("Downloading...")} size="sm" className="rounded-full h-8 text-xs gap-1.5 bg-green-600 hover:bg-green-700 text-white">
+            <Button onClick={handleDownload} size="sm" className="rounded-full h-8 text-xs gap-1.5 bg-green-600 hover:bg-green-700 text-white">
               <Download className="w-3 h-3" />Download
             </Button>
           </motion.div>
@@ -300,7 +416,6 @@ export default function OCRTools() {
           )}
         </div>
 
-        {/* Privacy notice */}
         <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 rounded-lg px-4 py-2.5 mt-3">
           <Shield className="w-3.5 h-3.5 text-green-500 shrink-0" />
           Files are encrypted during upload and automatically deleted after 1 hour. We never store or share your content.
