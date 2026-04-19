@@ -36,7 +36,7 @@ export default function FileConverter() {
       const headers = {};
       if (token) headers["Authorization"] = `Bearer ${token}`;
 
-      const response = await fetch(`${API_BASE}/api/convert`, {
+      const response = await fetch(`${API_BASE}/api/convert?type=${conversion}`, {
         method: "POST",
         headers,
         body: formData,
