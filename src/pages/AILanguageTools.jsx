@@ -5,20 +5,20 @@ import {
   Copy, Check, ArrowRight, Send, Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { useAI } from "@/lib/useAI";
 
 const TOOLS = [
-  { id: "context-translate", icon: Languages,    label: "Context Translation",  color: "from-blue-500 to-cyan-400",    bg: "bg-blue-50",   desc: "Context-aware translation preserving tone, idioms and intent." },
-  { id: "examples",          icon: BookOpen,     label: "Sentence Examples",    color: "from-purple-500 to-violet-400", bg: "bg-purple-50", desc: "See native usage examples for any phrase or word." },
-  { id: "synonyms",          icon: Lightbulb,    label: "Synonym Suggestions",  color: "from-amber-500 to-yellow-400",  bg: "bg-amber-50",  desc: "Find richer alternatives and expand vocabulary." },
-  { id: "grammar",           icon: ShieldCheck,  label: "Grammar Correction",   color: "from-green-500 to-emerald-400", bg: "bg-green-50",  desc: "Fix grammar mistakes with explanations. Connects to Cover Letter AI." },
-  { id: "paraphrase",        icon: RefreshCw,    label: "Paraphrasing Tool",    color: "from-rose-500 to-pink-400",    bg: "bg-rose-50",   desc: "Rewrite text in different tones: formal, casual, academic." },
+  { id: "context-translate", icon: Languages,   label: "Context Translation", color: "from-blue-500 to-cyan-400",    bg: "bg-blue-50",   desc: "Context-aware translation preserving tone, idioms and intent." },
+  { id: "examples",          icon: BookOpen,    label: "Sentence Examples",   color: "from-purple-500 to-violet-400", bg: "bg-purple-50", desc: "See native usage examples for any phrase or word." },
+  { id: "synonyms",          icon: Lightbulb,   label: "Synonym Suggestions", color: "from-amber-500 to-yellow-400",  bg: "bg-amber-50",  desc: "Find richer alternatives and expand vocabulary." },
+  { id: "grammar",           icon: ShieldCheck, label: "Grammar Correction",  color: "from-green-500 to-emerald-400", bg: "bg-green-50",  desc: "Fix grammar mistakes with explanations. Connects to Cover Letter AI." },
+  { id: "paraphrase",        icon: RefreshCw,   label: "Paraphrasing Tool",   color: "from-rose-500 to-pink-400",    bg: "bg-rose-50",   desc: "Rewrite text in different tones: formal, casual, academic." },
 ];
 
-const LANGS = ["English","French","Spanish","German","Italian","Portuguese","Dutch","Russian","Chinese","Japanese","Arabic"];
-const TONES = ["Formal","Casual","Academic","Professional","Simplified"];
+const LANGS  = ["English","French","Spanish","German","Italian","Portuguese","Dutch","Russian","Chinese","Japanese","Arabic"];
+const TONES  = ["Formal","Casual","Academic","Professional","Simplified"];
 
 function useCopy() {
   const [copied, setCopied] = useState(false);
@@ -31,7 +31,7 @@ function useCopy() {
   return { copied, copy };
 }
 
-function ResultBox({ result, endpoint, extraActions }) {
+function ResultBox({ result, extraActions }) {
   const { copied, copy } = useCopy();
   if (!result) return null;
   return (
@@ -43,7 +43,6 @@ function ResultBox({ result, endpoint, extraActions }) {
         </button>
       </div>
       {extraActions}
-      <p className="text-[10px] text-muted-foreground font-mono">Endpoint: <code className="bg-muted px-1 rounded">{endpoint}</code></p>
     </div>
   );
 }
@@ -52,13 +51,12 @@ function ContextTranslate() {
   const [text, setText] = useState("");
   const [lang, setLang] = useState("French");
   const [result, setResult] = useState("");
-  const [loading, setLoading] = useState(false);
+  const { call, loading } = useAI();
   const navigate = useNavigate();
 
   const run = async () => {
     if (!text.trim()) { toast.error("Enter text to translate."); return; }
-    setLoading(true);
-    const res = await base44.integrations.Core.InvokeLLM({
+    const res = await call("generateText", {
       prompt: `You are an expert context-aware translator. Translate the following text to ${lang}.
 Do NOT translate word-for-word — preserve idioms, tone, cultural context, and intent.
 Format your response as:
@@ -71,8 +69,7 @@ CONTEXT NOTES:
 Text to translate:
 ${text}`,
     });
-    setResult(res);
-    setLoading(false);
+    if (res) setResult(res);
   };
 
   return (
@@ -88,7 +85,7 @@ ${text}`,
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Languages className="w-4 h-4" />Translate</>}
         </Button>
       </div>
-      <ResultBox result={result} endpoint="/api/translate-context" extraActions={
+      <ResultBox result={result} extraActions={
         <button onClick={() => navigate("/dashboard/resume-builder-v2")}
           className="text-xs font-semibold text-accent hover:underline flex items-center gap-1">
           <ArrowRight className="w-3 h-3" /> Send to Resume Builder
@@ -102,12 +99,11 @@ function SentenceExamples() {
   const [phrase, setPhrase] = useState("");
   const [lang, setLang] = useState("French");
   const [result, setResult] = useState("");
-  const [loading, setLoading] = useState(false);
+  const { call, loading } = useAI();
 
   const run = async () => {
     if (!phrase.trim()) { toast.error("Enter a phrase."); return; }
-    setLoading(true);
-    const res = await base44.integrations.Core.InvokeLLM({
+    const res = await call("generateText", {
       prompt: `Provide 5 natural, diverse sentence examples in ${lang} that use or illustrate the phrase/word: "${phrase}".
 For each example, provide:
 1. The ${lang} sentence
@@ -115,15 +111,15 @@ For each example, provide:
 
 Format as a numbered list. Keep examples varied in context (formal, casual, written, spoken).`,
     });
-    setResult(res);
-    setLoading(false);
+    if (res) setResult(res);
   };
 
   return (
     <div className="space-y-3">
       <div className="flex gap-2">
         <input value={phrase} onChange={e => setPhrase(e.target.value)} placeholder="Enter a word or phrase..."
-          className="flex-1 h-9 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring" />
+          className="flex-1 h-9 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+          onKeyDown={e => e.key === "Enter" && run()} />
         <select value={lang} onChange={e => setLang(e.target.value)}
           className="h-9 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none">
           {LANGS.map(l => <option key={l}>{l}</option>)}
@@ -132,7 +128,7 @@ Format as a numbered list. Keep examples varied in context (formal, casual, writ
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
         </Button>
       </div>
-      <ResultBox result={result} endpoint="/api/sentence-examples" />
+      <ResultBox result={result} />
     </div>
   );
 }
@@ -140,12 +136,11 @@ Format as a numbered list. Keep examples varied in context (formal, casual, writ
 function Synonyms() {
   const [word, setWord] = useState("");
   const [result, setResult] = useState("");
-  const [loading, setLoading] = useState(false);
+  const { call, loading } = useAI();
 
   const run = async () => {
     if (!word.trim()) { toast.error("Enter a word."); return; }
-    setLoading(true);
-    const res = await base44.integrations.Core.InvokeLLM({
+    const res = await call("generateText", {
       prompt: `For the English word/phrase "${word}", provide:
 
 SYNONYMS (10-15 alternatives, from common to sophisticated):
@@ -159,8 +154,7 @@ USAGE CONTEXT:
 
 Make it suitable for professional writing and resume/cover letter improvement.`,
     });
-    setResult(res);
-    setLoading(false);
+    if (res) setResult(res);
   };
 
   return (
@@ -173,7 +167,7 @@ Make it suitable for professional writing and resume/cover letter improvement.`,
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lightbulb className="w-4 h-4" />}
         </Button>
       </div>
-      <ResultBox result={result} endpoint="/api/synonyms" />
+      <ResultBox result={result} />
     </div>
   );
 }
@@ -181,13 +175,12 @@ Make it suitable for professional writing and resume/cover letter improvement.`,
 function GrammarCorrection() {
   const [text, setText] = useState("");
   const [result, setResult] = useState("");
-  const [loading, setLoading] = useState(false);
+  const { call, loading } = useAI();
   const navigate = useNavigate();
 
   const run = async () => {
     if (!text.trim()) { toast.error("Enter text to check."); return; }
-    setLoading(true);
-    const res = await base44.integrations.Core.InvokeLLM({
+    const res = await call("generateText", {
       prompt: `You are a professional English grammar editor. Analyze and correct the following text.
 
 FORMAT YOUR RESPONSE AS:
@@ -204,8 +197,7 @@ STYLE SUGGESTIONS:
 Original text:
 ${text}`,
     });
-    setResult(res);
-    setLoading(false);
+    if (res) setResult(res);
   };
 
   return (
@@ -215,7 +207,7 @@ ${text}`,
       <Button onClick={run} disabled={loading} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground rounded-xl gap-2">
         {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Checking...</> : <><ShieldCheck className="w-4 h-4" /> Check Grammar</>}
       </Button>
-      <ResultBox result={result} endpoint="/api/grammar-correct" extraActions={
+      <ResultBox result={result} extraActions={
         <button onClick={() => navigate("/dashboard/cover-letter-architect")}
           className="text-xs font-semibold text-accent hover:underline flex items-center gap-1">
           <ArrowRight className="w-3 h-3" /> Apply to Cover Letter AI
@@ -229,17 +221,16 @@ function Paraphrase() {
   const [text, setText] = useState("");
   const [tone, setTone] = useState("Professional");
   const [result, setResult] = useState("");
-  const [loading, setLoading] = useState(false);
+  const { call, loading } = useAI();
 
   const run = async () => {
     if (!text.trim()) { toast.error("Enter text to paraphrase."); return; }
-    setLoading(true);
-    const res = await base44.integrations.Core.InvokeLLM({
+    const res = await call("generateText", {
       prompt: `Paraphrase the following text in a ${tone.toLowerCase()} tone.
 
 Provide 3 different paraphrased versions labeled as:
 VERSION 1: [paraphrase]
-VERSION 2: [paraphrase]  
+VERSION 2: [paraphrase]
 VERSION 3: [paraphrase]
 
 Make each version meaningfully different. Preserve the original meaning but vary structure, vocabulary, and emphasis.
@@ -247,8 +238,7 @@ Make each version meaningfully different. Preserve the original meaning but vary
 Original text:
 ${text}`,
     });
-    setResult(res);
-    setLoading(false);
+    if (res) setResult(res);
   };
 
   return (
@@ -268,17 +258,17 @@ ${text}`,
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><RefreshCw className="w-4 h-4" />Paraphrase</>}
         </Button>
       </div>
-      <ResultBox result={result} endpoint="/api/paraphrase" />
+      <ResultBox result={result} />
     </div>
   );
 }
 
 const TOOL_COMPONENTS = {
   "context-translate": ContextTranslate,
-  "examples": SentenceExamples,
-  "synonyms": Synonyms,
-  "grammar": GrammarCorrection,
-  "paraphrase": Paraphrase,
+  "examples":          SentenceExamples,
+  "synonyms":          Synonyms,
+  "grammar":           GrammarCorrection,
+  "paraphrase":        Paraphrase,
 };
 
 export default function AILanguageTools() {
@@ -293,7 +283,6 @@ export default function AILanguageTools() {
         <p className="text-muted-foreground text-sm">Reverso-inspired AI tools: context translation, synonyms, grammar correction, and paraphrasing.</p>
       </motion.div>
 
-      {/* Tool tabs */}
       <div className="flex gap-2 flex-wrap">
         {TOOLS.map(tool => {
           const Icon = tool.icon;
@@ -306,9 +295,8 @@ export default function AILanguageTools() {
         })}
       </div>
 
-      {/* Active tool panel */}
       <motion.div key={activeTool} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-        className="bg-card ink-border rounded-2xl p-6">
+        className="bg-card border border-border rounded-2xl p-6">
         <div className="flex items-center gap-3 mb-5">
           <div className={`w-10 h-10 rounded-xl ${active.bg} flex items-center justify-center shrink-0`}>
             <div className={`w-6 h-6 rounded-lg bg-gradient-to-br ${active.color} flex items-center justify-center`}>
