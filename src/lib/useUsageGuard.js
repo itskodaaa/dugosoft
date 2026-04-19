@@ -17,12 +17,12 @@ function incrementGuestUsage(type) {
 }
 
 export function useUsageGuard(type) {
-  const { plan, checkLimit } = usePlan();
-  const { user, setUser } = useAuth();
+  const { plan, checkLimit, incrementUsage } = usePlan();
+  const { user } = useAuth();
 
   const guard = async () => {
     if (!user) {
-      // Guest — track usage in localStorage against free plan limits
+      // Guest — track in localStorage against free limits
       const usage = getGuestUsage();
       const used = usage[type] || 0;
       const limit = PLAN_LIMITS.free[type];
@@ -42,16 +42,15 @@ export function useUsageGuard(type) {
     if (!checkLimit(type)) {
       toast.error(
         plan === "free"
-          ? `Daily limit reached. Upgrade to Pro for more ${type.replace("_", " ")}.`
+          ? `Daily limit reached. Upgrade to Pro for more ${type.replace(/_/g, " ")}.`
           : `Monthly limit reached. Upgrade to Business for unlimited usage.`,
         { action: { label: "Upgrade", onClick: () => window.location.href = "/dashboard/pricing" } }
       );
       return false;
     }
 
-    // Increment usage in user profile
-    const current = user[type] || 0;
-    if (setUser) setUser(prev => ({ ...prev, [type]: current + 1 }));
+    // Persist increment to backend
+    await incrementUsage(type);
     return true;
   };
 
