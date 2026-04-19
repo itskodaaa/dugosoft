@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { useAI } from "@/lib/useAI";
 import { API_BASE } from "@/api/config";
+import { useDocumentTracker } from "@/lib/useDocumentTracker";
 
 const LANGUAGES = [
   { value: "English",    label: "🇬🇧 English" },
@@ -36,6 +37,7 @@ const INPUT_MODES = [
 
 export default function Translator() {
   const { call, loading } = useAI();
+  const { track } = useDocumentTracker();
   const [inputMode, setInputMode] = useState("paste");
   const [inputText, setInputText] = useState("");
   const [file, setFile] = useState(null);
@@ -77,6 +79,7 @@ export default function Translator() {
           setResult(data.translation);
           if (data.layout) setLayout(data.layout);
           setStatus("complete");
+          track({ name: file.name, size: file.size, category: "Translation" });
         } else {
           toast.error(data.message || "File translation failed");
           setStatus("idle");

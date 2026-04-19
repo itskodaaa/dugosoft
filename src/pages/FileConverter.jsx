@@ -7,6 +7,7 @@ import StatusBadge from "../components/shared/StatusBadge";
 import ProcessingBorder from "../components/shared/ProcessingBorder";
 import { toast } from "sonner";
 import { API_BASE } from "@/api/config";
+import { useDocumentTracker } from "@/lib/useDocumentTracker";
 
 const CONVERSION_OPTIONS = [
   { from: "DOCX", to: "PDF",  label: "Word → PDF",  desc: "Convert Word documents to PDF format",         value: "docx-pdf", accept: ".docx,.doc" },
@@ -15,6 +16,7 @@ const CONVERSION_OPTIONS = [
 ];
 
 export default function FileConverter() {
+  const { track } = useDocumentTracker();
   const [file,       setFile]       = useState(null);
   const [conversion, setConversion] = useState(null);
   const [status,     setStatus]     = useState("idle"); // idle | converting | done | error
@@ -61,6 +63,7 @@ export default function FileConverter() {
       document.body.removeChild(a);
 
       setStatus("done");
+      track({ name: file.name, size: file.size, category: "Conversion" });
     } catch (err) {
       setErrorMsg(err.message);
       setStatus("error");

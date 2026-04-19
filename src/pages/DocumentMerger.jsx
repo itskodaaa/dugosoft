@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { useDocumentTracker } from "@/lib/useDocumentTracker";
 import { Upload, X, File, Download, RefreshCw, Merge, GripVertical, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { API_BASE } from "@/api/config";
@@ -60,6 +61,8 @@ export default function DocumentMerger() {
     });
   };
 
+  const { track } = useDocumentTracker();
+
   const handleMerge = async () => {
     if (files.length < 2) { toast.error("Add at least 2 files to merge."); return; }
     setStatus("processing");
@@ -80,6 +83,7 @@ export default function DocumentMerger() {
       const blob = await res.blob();
       setResultBlob(blob);
       setStatus("done");
+      track({ name: "merged_document.pdf", size: blob.size, category: "Merge" });
     } catch {
       toast.error("Merge request failed");
       setStatus("idle");

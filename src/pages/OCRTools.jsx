@@ -7,6 +7,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { API_BASE } from "@/api/config";
+import { useDocumentTracker } from "@/lib/useDocumentTracker";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const isPremiumUser = false;
@@ -138,6 +139,7 @@ function UploadZone({ onFile, accept = "*", label = "Any file" }) {
 
 // ─── OCR Panel ────────────────────────────────────────────────────────────────
 function OCRPanel() {
+  const { track } = useDocumentTracker();
   const [file, setFile] = useState(null);
   const [processing, setProcessing] = useState(false);
   const [result, setResult] = useState(null);
@@ -164,6 +166,7 @@ function OCRPanel() {
       const data = await res.json();
       if (res.ok && data.success) {
         setResult(data.text);
+        track({ name: file.name, size: file.size, category: "OCR" });
       } else {
         toast.error(data.message || "OCR failed");
       }
@@ -288,6 +291,7 @@ function OCRPanel() {
 
 // ─── Conversion Panel ─────────────────────────────────────────────────────────
 function ConversionPanel({ tabKey }) {
+  const { track } = useDocumentTracker();
   const options = CONVERSION_MATRIX[tabKey] || [];
   const [selected, setSelected] = useState(null);
   const [file, setFile] = useState(null);
@@ -333,6 +337,7 @@ function ConversionPanel({ tabKey }) {
       const blob = await res.blob();
       setResultBlob({ blob, ext: mapping.ext });
       setDone(true);
+      track({ name: file.name, size: file.size, category: "Conversion" });
     } catch (err) {
       toast.error("Conversion request failed");
     } finally {

@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { API_BASE } from "@/api/config";
 import { useAuth } from "@/lib/AuthContext";
+import { useDocumentTracker } from "@/lib/useDocumentTracker";
 
 function formatBytes(bytes) {
   if (bytes < 1024) return bytes + " B";
@@ -35,6 +36,7 @@ const EXPIRY_OPTIONS = [
 
 export default function FileSharing() {
   const { user } = useAuth();
+  const { track } = useDocumentTracker();
   const inputRef = useRef(null);
   const [files, setFiles]               = useState([]);
   const [dragging, setDragging]         = useState(false);
@@ -120,6 +122,7 @@ export default function FileSharing() {
       if (!res.ok) { toast.error(data.message || "Upload failed"); return; }
 
       setResult(data);
+      files.forEach(f => track({ name: f.name, size: f.size, category: "Sharing", shareToken: data.token }));
       if (user) loadHistory();
     } catch (err) {
       toast.error("Upload failed — please try again");
