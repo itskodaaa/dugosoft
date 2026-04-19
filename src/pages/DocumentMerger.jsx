@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Upload, X, File, Download, RefreshCw, Merge, GripVertical, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import { API_BASE } from "@/api/config";
 
 // Free plan limits
 const FREE_MAX_FILES = 3;
@@ -14,34 +15,13 @@ function formatBytes(bytes) {
   return (bytes / (1024 * 1024)).toFixed(1) + " MB";
 }
 
-const MOCK_RESULT = `MERGED DOCUMENT
-===============
-
-[Page 1 - From: document1.pdf]
-Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.
-
----
-
-[Page 2 - From: document2.pdf]
-Duis aute irure dolor in reprehenderit in voluptate velit esse.
-Cillum dolore eu fugiat nulla pariatur excepteur sint occaecat.
-Cupidatat non proident, sunt in culpa qui officia deserunt mollit.
-
----
-
-[Page 3 - From: document3.docx]
-Anim id est laborum. Sed ut perspiciatis unde omnis iste natus.
-Error sit voluptatem accusantium doloremque laudantium totam rem.
-Aperiam, eaque ipsa quae ab illo inventore veritatis et quasi.`;
 
 export default function DocumentMerger() {
   const inputRef = useRef(null);
   const [files, setFiles] = useState([]);
   const [dragging, setDragging] = useState(false);
   const [status, setStatus] = useState("idle"); // idle | processing | done
-  const [result, setResult] = useState(null);
+  const [resultBlob, setResultBlob] = useState(null);
   const [dragOver, setDragOver] = useState(null); // index being dragged over
 
   const addFiles = useCallback((newFiles) => {
@@ -80,23 +60,46 @@ export default function DocumentMerger() {
     });
   };
 
-  const handleMerge = () => {
-    if (files.length < 2) {
-      toast.error("Add at least 2 files to merge.");
-      return;
-    }
+  const handleMerge = async () => {
+    if (files.length < 2) { toast.error("Add at least 2 files to merge."); return; }
     setStatus("processing");
-    setResult(null);
-    setTimeout(() => {
+    setResultBlob(null);
+    try {
+      const formData = new FormData();
+      files.forEach(f => formData.append("file", f));
+      const token = localStorage.getItem("auth_token");
+      const headers = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      const res = await fetch(`${API_BASE}/api/merge`, { method: "POST", headers, body: formData });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.message || "Merge failed");
+        setStatus("idle");
+        return;
+      }
+      const blob = await res.blob();
+      setResultBlob(blob);
       setStatus("done");
-      setResult(MOCK_RESULT);
-    }, 2500);
+    } catch {
+      toast.error("Merge request failed");
+      setStatus("idle");
+    }
+  };
+
+  const handleDownload = () => {
+    if (!resultBlob) return;
+    const url = URL.createObjectURL(resultBlob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "merged_document.pdf";
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const handleReset = () => {
     setFiles([]);
     setStatus("idle");
-    setResult(null);
+    setResultBlob(null);
   };
 
   const atLimit = files.length >= FREE_MAX_FILES;
@@ -226,27 +229,25 @@ export default function DocumentMerger() {
           <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Output Preview</p>
           <div className="bg-card ink-border rounded-2xl min-h-[440px] p-6">
             <AnimatePresence mode="wait">
-              {status === "done" && result ? (
-                <motion.div key="result" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                  <div className="flex items-center gap-3 mb-5 p-3 rounded-lg bg-success/5 border border-success/20">
-                    <div className="w-8 h-8 rounded-lg bg-success/10 flex items-center justify-center">
-                      <File className="w-4 h-4 text-success" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-foreground">merged_document.pdf</p>
-                      <p className="text-xs text-muted-foreground">{files.length} documents merged · Ready to download</p>
-                    </div>
+              {status === "done" && resultBlob ? (
+                <motion.div key="result" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                  className="flex flex-col items-center justify-center h-[380px] gap-5 text-center">
+                  <div className="w-16 h-16 rounded-2xl bg-green-100 flex items-center justify-center">
+                    <File className="w-8 h-8 text-green-600" />
                   </div>
-                  <div className="rounded-lg ink-border bg-muted/30 p-5 mb-5 max-h-64 overflow-y-auto">
-                    <pre className="text-xs font-mono text-foreground leading-relaxed whitespace-pre-wrap">{result}</pre>
+                  <div>
+                    <p className="text-base font-bold text-foreground mb-1">Merge complete!</p>
+                    <p className="text-sm text-muted-foreground">{files.length} documents merged into one PDF</p>
                   </div>
-                  <Button
-                    onClick={() => toast.success("Download started (simulated)")}
-                    className="bg-accent hover:bg-accent/90 text-accent-foreground rounded-full h-10 px-6 font-semibold gap-2"
-                  >
-                    <Download className="w-4 h-4" />
-                    Download Merged PDF
-                  </Button>
+                  <div className="flex gap-3">
+                    <Button onClick={handleDownload}
+                      className="bg-accent hover:bg-accent/90 text-accent-foreground rounded-full h-10 px-6 font-semibold gap-2">
+                      <Download className="w-4 h-4" /> Download Merged PDF
+                    </Button>
+                    <Button onClick={handleReset} variant="outline" className="rounded-full h-10 px-5 text-sm">
+                      <RefreshCw className="w-3.5 h-3.5 mr-1.5" /> Start Over
+                    </Button>
+                  </div>
                 </motion.div>
               ) : status === "processing" ? (
                 <motion.div key="processing" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
