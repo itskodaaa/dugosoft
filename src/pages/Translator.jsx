@@ -63,9 +63,12 @@ export default function Translator() {
         formData.append("file", file);
         formData.append("targetLanguage", targetLang);
 
+        const fileHeaders = /** @type {Record<string, string>} */ ({});
+        if (token) fileHeaders['Authorization'] = `Bearer ${token}`;
+
         const response = await fetch(`${API_BASE}/api/ai/translate-file`, {
           method: 'POST',
-          headers: { 'Authorization': `Bearer ${token}` },
+          headers: fileHeaders,
           body: formData
         });
 

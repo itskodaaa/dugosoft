@@ -1,18 +1,44 @@
 import { toast } from "sonner";
 import { usePlan } from "./usePlan";
-import { base44 } from "@/api/base44Client";
 import { useAuth } from "./AuthContext";
+import { PLAN_LIMITS } from "./planConfig";
 
-/**
- * Returns a guard function that checks usage limits before allowing an action.
- * Usage: const guard = useUsageGuard('ai_requests');
- *        const allowed = await guard();  // returns false and shows toast if over limit
- */
+const GUEST_USAGE_KEY = "guest_usage";
+
+function getGuestUsage() {
+  try { return JSON.parse(localStorage.getItem(GUEST_USAGE_KEY) || "{}"); }
+  catch { return {}; }
+}
+
+function incrementGuestUsage(type) {
+  const usage = getGuestUsage();
+  usage[type] = (usage[type] || 0) + 1;
+  localStorage.setItem(GUEST_USAGE_KEY, JSON.stringify(usage));
+}
+
 export function useUsageGuard(type) {
   const { plan, checkLimit } = usePlan();
   const { user, setUser } = useAuth();
 
   const guard = async () => {
+    if (!user) {
+      // Guest — track usage in localStorage against free plan limits
+      const usage = getGuestUsage();
+      const used = usage[type] || 0;
+      const limit = PLAN_LIMITS.free[type];
+
+      if (limit !== undefined && used >= limit) {
+        toast.error("You've used your free limit. Sign up for free to get more!", {
+          action: { label: "Sign Up", onClick: () => window.location.href = "/auth" },
+        });
+        return false;
+      }
+
+      incrementGuestUsage(type);
+      return true;
+    }
+
+    // Logged-in user — check plan limits
     if (!checkLimit(type)) {
       toast.error(
         plan === "free"
@@ -23,12 +49,9 @@ export function useUsageGuard(type) {
       return false;
     }
 
-    // Increment usage
-    if (user) {
-      const current = user[type] || 0;
-      await base44.auth.updateMe({ [type]: current + 1 });
-      if (setUser) setUser(prev => ({ ...prev, [type]: current + 1 }));
-    }
+    // Increment usage in user profile
+    const current = user[type] || 0;
+    if (setUser) setUser(prev => ({ ...prev, [type]: current + 1 }));
     return true;
   };
 
