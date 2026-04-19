@@ -6,7 +6,8 @@ export const base44 = {
   },
   integrations: {
     Core: {
-      InvokeLLM: async () => ({})
+      InvokeLLM: async () => ({}),
+      UploadFile: async () => ({ file_url: "" }),
     }
   },
   entities: {

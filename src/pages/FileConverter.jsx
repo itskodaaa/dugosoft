@@ -1,69 +1,86 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, FileText, RefreshCw, Settings } from "lucide-react";
+import { ArrowRight, FileText, RefreshCw, CheckCircle2 } from "lucide-react";
 import FileUpload from "../components/shared/FileUpload";
 import StatusBadge from "../components/shared/StatusBadge";
 import ProcessingBorder from "../components/shared/ProcessingBorder";
 import { toast } from "sonner";
-import { base44 } from "@/api/base44Client";
-import { useAuth } from "@/lib/AuthContext";
+import { API_BASE } from "@/api/config";
 
 const CONVERSION_OPTIONS = [
-  { from: "DOCX", to: "PDF",  label: "Word → PDF",  desc: "Convert Word documents to PDF format",          value: "docx-pdf" },
-  { from: "PDF",  to: "DOCX", label: "PDF → Word",  desc: "Convert PDF files to editable Word documents",  value: "pdf-docx" },
-  { from: "PDF",  to: "TXT",  label: "PDF → Text",  desc: "Extract plain text content from PDF files",      value: "pdf-txt"  },
+  { from: "DOCX", to: "PDF",  label: "Word → PDF",  desc: "Convert Word documents to PDF format",         value: "docx-pdf", accept: ".docx,.doc" },
+  { from: "PDF",  to: "DOCX", label: "PDF → Word",  desc: "Convert PDF files to editable Word documents", value: "pdf-docx", accept: ".pdf" },
+  { from: "PDF",  to: "TXT",  label: "PDF → Text",  desc: "Extract plain text content from PDF files",    value: "pdf-txt",  accept: ".pdf" },
 ];
 
 export default function FileConverter() {
-  const { user } = useAuth();
   const [file,       setFile]       = useState(null);
   const [conversion, setConversion] = useState(null);
-  const [status,     setStatus]     = useState("idle"); // idle | uploading | provider_not_configured
-  const [fileRecord, setFileRecord] = useState(null);
+  const [status,     setStatus]     = useState("idle"); // idle | converting | done | error
+  const [errorMsg,   setErrorMsg]   = useState("");
 
   const handleConvert = async () => {
     if (!file)       { toast.warning("Please upload a file first"); return; }
     if (!conversion) { toast.warning("Please select a conversion type"); return; }
 
-    setStatus("uploading");
-    setFileRecord(null);
+    setStatus("converting");
+    setErrorMsg("");
 
-    // Upload file to get a real URL
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    try {
+      const token = localStorage.getItem("auth_token");
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("conversionType", conversion);
 
-    // Record file metadata in DB
-    const record = await base44.entities.FileRecord.create({
-      user_id:       user?.id || "unknown",
-      original_name: file.name,
-      file_type:     file.type || conversion.split("-")[0],
-      file_size:     file.size,
-      file_url,
-      storage_path:  file_url,
-      tool_used:     "file-converter",
-      status:        "provider_not_configured",
-      error_message: "Automatic file conversion requires a third-party conversion provider (e.g. CloudConvert). Not yet configured.",
-    });
+      const headers = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
 
-    setFileRecord(record);
-    setStatus("provider_not_configured");
+      const response = await fetch(`${API_BASE}/api/convert`, {
+        method: "POST",
+        headers,
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ message: "Conversion failed" }));
+        throw new Error(err.message || "Conversion failed");
+      }
+
+      const blob = await response.blob();
+      const opt = CONVERSION_OPTIONS.find(o => o.value === conversion);
+      const ext = opt?.to.toLowerCase();
+      const baseName = file.name.replace(/\.[^.]+$/, "");
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${baseName}.${ext}`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      setStatus("done");
+    } catch (err) {
+      setErrorMsg(err.message);
+      setStatus("error");
+      toast.error(err.message);
+    }
   };
 
   const handleReset = () => {
     setFile(null);
     setConversion(null);
     setStatus("idle");
-    setFileRecord(null);
+    setErrorMsg("");
   };
-
-  const selectedOption = CONVERSION_OPTIONS.find(o => o.value === conversion);
 
   return (
     <div className="max-w-5xl">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
         <div className="flex items-center justify-between mb-1">
           <h1 className="text-2xl font-extrabold tracking-tight text-foreground">File Converter</h1>
-          {(file || fileRecord) && (
+          {file && (
             <Button variant="outline" size="sm" onClick={handleReset} className="rounded-full h-8 text-xs gap-1.5">
               <RefreshCw className="w-3 h-3" /> Start Over
             </Button>
@@ -113,10 +130,10 @@ export default function FileConverter() {
           <AnimatePresence>
             {file && conversion && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                <Button onClick={handleConvert} disabled={status === "uploading"}
+                <Button onClick={handleConvert} disabled={status === "converting"}
                   className="w-full bg-accent hover:bg-accent/90 text-accent-foreground rounded-full h-12 font-semibold gap-2">
-                  {status === "uploading" ? (
-                    <><div className="w-4 h-4 border-2 border-accent-foreground/30 border-t-accent-foreground rounded-full animate-spin" /> Uploading...</>
+                  {status === "converting" ? (
+                    <><div className="w-4 h-4 border-2 border-accent-foreground/30 border-t-accent-foreground rounded-full animate-spin" /> Converting...</>
                   ) : (
                     <><ArrowRight className="w-4 h-4" /> Convert File</>
                   )}
@@ -130,41 +147,44 @@ export default function FileConverter() {
         <div className="lg:col-span-3">
           <div className="flex items-center justify-between mb-3">
             <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Output</p>
-            {status !== "idle" && <StatusBadge status={status === "provider_not_configured" ? "error" : status} />}
+            {status !== "idle" && <StatusBadge status={status === "done" ? "complete" : status === "error" ? "error" : status} />}
           </div>
 
-          <ProcessingBorder processing={status === "uploading"}>
+          <ProcessingBorder processing={status === "converting"}>
             <div className="min-h-[380px] p-6 flex items-center justify-center">
               <AnimatePresence mode="wait">
-                {status === "provider_not_configured" && fileRecord ? (
-                  <motion.div key="not-configured" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                    className="flex flex-col items-center text-center gap-4 max-w-sm">
-                    <div className="w-14 h-14 rounded-2xl bg-amber-100 flex items-center justify-center">
-                      <Settings className="w-7 h-7 text-amber-600" />
+                {status === "done" ? (
+                  <motion.div key="done" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                    className="flex flex-col items-center gap-4 text-center">
+                    <div className="w-16 h-16 rounded-2xl bg-green-100 flex items-center justify-center">
+                      <CheckCircle2 className="w-8 h-8 text-green-600" />
                     </div>
                     <div>
-                      <p className="text-base font-bold text-foreground mb-1">Conversion Provider Not Configured</p>
-                      <p className="text-sm text-muted-foreground leading-relaxed">
-                        Your file <strong>{file?.name}</strong> was uploaded and saved, but automatic conversion requires a third-party provider (e.g. CloudConvert API) which is not yet configured.
-                      </p>
+                      <p className="text-base font-bold text-foreground mb-1">Conversion Complete</p>
+                      <p className="text-sm text-muted-foreground">Your file has been downloaded automatically.</p>
                     </div>
-                    <div className="w-full bg-muted/40 rounded-xl p-3 text-xs text-left space-y-1">
-                      <p className="font-semibold text-foreground">File recorded:</p>
-                      <p className="text-muted-foreground">Name: {fileRecord.original_name}</p>
-                      <p className="text-muted-foreground">Size: {(file?.size / 1024).toFixed(1)} KB</p>
-                      <p className="text-muted-foreground">Status: <span className="text-amber-600 font-medium">pending_setup</span></p>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      To enable conversions, integrate a conversion API and connect it to the <code className="bg-muted px-1 rounded">FileRecord</code> entity.
-                    </p>
+                    <Button variant="outline" size="sm" onClick={handleReset} className="rounded-full">
+                      Convert Another File
+                    </Button>
                   </motion.div>
-                ) : status === "uploading" ? (
-                  <motion.div key="uploading" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                ) : status === "error" ? (
+                  <motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                    className="flex flex-col items-center gap-3 text-center max-w-sm">
+                    <div className="w-16 h-16 rounded-2xl bg-red-100 flex items-center justify-center">
+                      <FileText className="w-7 h-7 text-red-500" />
+                    </div>
+                    <p className="text-sm font-semibold text-foreground">Conversion Failed</p>
+                    <p className="text-xs text-muted-foreground">{errorMsg}</p>
+                    <Button variant="outline" size="sm" onClick={() => setStatus("idle")} className="rounded-full">Try Again</Button>
+                  </motion.div>
+                ) : status === "converting" ? (
+                  <motion.div key="converting" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                     className="flex flex-col items-center gap-3 text-center">
                     <div className="w-16 h-16 rounded-2xl bg-accent/10 flex items-center justify-center">
                       <div className="w-7 h-7 border-2 border-accent/30 border-t-accent rounded-full animate-spin" />
                     </div>
-                    <p className="text-sm font-semibold text-foreground">Uploading {file?.name}...</p>
+                    <p className="text-sm font-semibold text-foreground">Converting {file?.name}...</p>
+                    <p className="text-xs text-muted-foreground">This may take a moment.</p>
                   </motion.div>
                 ) : (
                   <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
