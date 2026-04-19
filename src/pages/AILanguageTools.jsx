@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useAI } from "@/lib/useAI";
+import ReactMarkdown from "react-markdown";
 
 const TOOLS = [
   { id: "context-translate", icon: Languages,   label: "Context Translation", color: "from-blue-500 to-cyan-400",    bg: "bg-blue-50",   desc: "Context-aware translation preserving tone, idioms and intent." },
@@ -37,7 +38,18 @@ function ResultBox({ result, extraActions }) {
   return (
     <div className="bg-muted/30 rounded-xl p-4 space-y-3 border border-border">
       <div className="flex items-start justify-between gap-2">
-        <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap flex-1">{result}</p>
+        <div className="text-sm text-foreground leading-relaxed flex-1 min-w-0">
+          <ReactMarkdown components={{
+            strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
+            p:      ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+            ul:     ({ children }) => <ul className="list-disc pl-4 space-y-1 mb-2">{children}</ul>,
+            ol:     ({ children }) => <ol className="list-decimal pl-4 space-y-1 mb-2">{children}</ol>,
+            li:     ({ children }) => <li className="leading-relaxed">{children}</li>,
+            h1:     ({ children }) => <p className="font-bold text-foreground mt-3 mb-1">{children}</p>,
+            h2:     ({ children }) => <p className="font-bold text-foreground mt-3 mb-1">{children}</p>,
+            h3:     ({ children }) => <p className="font-semibold text-foreground mt-2 mb-1">{children}</p>,
+          }}>{result}</ReactMarkdown>
+        </div>
         <button onClick={() => copy(result)} className="shrink-0 w-7 h-7 rounded-lg hover:bg-muted flex items-center justify-center transition-colors">
           {copied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5 text-muted-foreground" />}
         </button>
