@@ -55,6 +55,7 @@ import AuthPage from './pages/AuthPage';
 import ImportResume from './pages/ImportResume';
 import PortfolioBuilder from './pages/PortfolioBuilder';
 import PublicPortfolio from './pages/PublicPortfolio';
+import ShareDownload from './pages/ShareDownload';
 
 
 const AuthenticatedApp = () => {
@@ -130,6 +131,7 @@ const AuthenticatedApp = () => {
         <Route path="portfolio-builder" element={<PortfolioBuilder />} />
       </Route>
       <Route path="/portfolio/:slug" element={<PublicPortfolio />} />
+      <Route path="/download/:token" element={<ShareDownload />} />
       <Route path="/sign/:token" element={<ESignSign />} />
       <Route path="/auth" element={<AuthPage />} />
       <Route path="*" element={<PageNotFound />} />
