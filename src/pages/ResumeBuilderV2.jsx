@@ -533,8 +533,8 @@ export default function ResumeBuilderV2() {
             </div>
             <p className="text-[10px] text-muted-foreground italic">What you see is what gets exported</p>
           </div>
-          <div className="sticky top-4 overflow-auto max-h-[85vh] rounded-2xl shadow-2xl bg-muted/30 p-8 flex justify-center custom-scrollbar border border-border">
-            <div className="shadow-[0_20px_50px_rgba(0,0,0,0.2)] origin-top transform scale-[0.85] lg:scale-100 transition-all">
+          <div className="sticky top-4 overflow-y-auto max-h-[85vh] rounded-2xl shadow-2xl bg-muted/30 p-4 flex justify-center custom-scrollbar border border-border">
+            <div style={{ zoom: 0.72 }} className="shadow-[0_20px_50px_rgba(0,0,0,0.2)]">
               <ResumePreview ref={previewRef} data={resume} template={selectedTemplate} />
             </div>
           </div>
