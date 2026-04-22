@@ -58,9 +58,16 @@ USER QUESTION: ${msg}
 
 Respond in a friendly, concise, and actionable way. Use markdown formatting. Keep it focused and personalized based on the context above.`;
 
-    const response = await base44.integrations.Core.InvokeLLM({ prompt });
-    setMessages(p => [...p, { role: "assistant", content: response }]);
-    setLoading(false);
+    try {
+      const response = await base44.integrations.Core.InvokeLLM({ prompt });
+      setMessages(p => [...p, { role: "assistant", content: response }]);
+    } catch (err) {
+      // The useAI hook inside InvokeLLM handles toasts, but we need to stop loading if it throws
+      console.error(err);
+      setMessages(p => [...p, { role: "assistant", content: "I'm sorry, I'm having trouble connecting right now." }]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const clearChat = () => {
