@@ -62,10 +62,25 @@ export default function ResumeTranslator() {
     setUploading(true);
     setUploadedContent("");
     setUploadedFileName(file.name);
-    const text = await file.text();
-    setUploadedContent(text);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const token = localStorage.getItem("auth_token");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const res = await fetch(`${API_BASE}/api/ai/extract-text`, {
+        method: "POST",
+        headers,
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Extraction failed");
+      setUploadedContent(data.text || "");
+      toast.success(`Loaded: ${file.name}`);
+    } catch (err) {
+      toast.error(err?.message || "Failed to parse file.");
+      setUploadedFileName("");
+    }
     setUploading(false);
-    toast.success(`Loaded: ${file.name}`);
   };
 
   const handleTranslate = async () => {
@@ -110,27 +125,26 @@ export default function ResumeTranslator() {
     const sourceCVTitle = source === "vault"
       ? INITIAL_CVS.find(c => c.id === selectedCVId)?.title
       : "Pasted Resume";
-
-    // Save metadata to entity + upload content as file
-    const blob = new Blob([translated], { type: "text/plain" });
-    const file = new File([blob], `resume_${targetLang.code}_${Date.now()}.txt`, { type: "text/plain" });
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-
-    await base44.entities.CVVaultEntry.create({
-      title: `${sourceCVTitle} — ${targetLang.flag} ${targetLang.name}`,
-      language: targetLang.name,
-      language_code: targetLang.code,
-      flag: targetLang.flag,
-      original_title: sourceCVTitle,
-      job_target: jobTarget || null,
-      file_url,
-      content: translated,
-      version_type: "translation",
-    });
-
+    try {
+      // Create new vault entry directly without needing a separate upload
+      const token = localStorage.getItem('auth_token');
+      const res = await fetch(`${API_BASE}/api/portfolios/vault`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        body: JSON.stringify({
+          title: `${sourceCVTitle} — ${targetLang.flag} ${targetLang.name}`,
+          content: translated,
+          language: targetLang.name,
+          version_type: "translation",
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to save to vault");
+      setSaved(true);
+      toast.success("Saved to CV Vault!");
+    } catch (e) {
+      toast.error("Could not save to vault.");
+    }
     setSaving(false);
-    setSaved(true);
-    toast.success("Saved to CV Vault!");
   };
 
   const handleCopy = () => {
