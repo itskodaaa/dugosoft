@@ -4,8 +4,8 @@ import { Gift, Copy, CheckCircle2, Users, Calendar, Loader2, Share2, Link2 } fro
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
+import { API_BASE } from "@/api/config";
 
 const STATUS_CFG = {
   pending:   { label: "Pending",   cls: "bg-amber-100 text-amber-700" },
@@ -14,9 +14,11 @@ const STATUS_CFG = {
 };
 
 export default function Referral() {
-  const { user, setUser } = useAuth();
-  const [referralCode, setReferralCode] = useState(user?.referral_code || "");
+  const { user } = useAuth();
+  const [referralCode, setReferralCode] = useState("");
   const [referrals, setReferrals] = useState([]);
+  const [referredBy, setReferredBy] = useState("");
+  const [credits, setCredits] = useState(0);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [inputCode, setInputCode] = useState("");
@@ -26,24 +28,30 @@ export default function Referral() {
     ? `${window.location.origin}?ref=${referralCode}`
     : "";
 
+  const authH = () => {
+    const t = localStorage.getItem("auth_token");
+    return t ? { Authorization: `Bearer ${t}`, "Content-Type": "application/json" } : { "Content-Type": "application/json" };
+  };
+
   useEffect(() => {
-    if (user?.referral_code) {
-      setReferralCode(user.referral_code);
-    }
-    if (user?.id) {
-      base44.entities.Referral.filter({ referrer_id: user.id })
-        .then(setReferrals)
-        .finally(() => setLoading(false));
-    }
+    if (!user?.id) { setLoading(false); return; }
+    fetch(`${API_BASE}/api/referrals`, { headers: authH() })
+      .then(r => r.json())
+      .then(d => {
+        setReferralCode(d.referral_code || "");
+        setReferrals(d.referrals || []);
+        setReferredBy(d.referred_by || "");
+        setCredits(d.referral_credits || 0);
+      })
+      .finally(() => setLoading(false));
   }, [user?.id]);
 
   const generateCode = async () => {
     setGenerating(true);
     try {
-      const res = await base44.functions.invoke("generateReferralCode", {});
-      const code = res.data?.referral_code;
-      setReferralCode(code);
-      setUser(prev => ({ ...prev, referral_code: code }));
+      const res = await fetch(`${API_BASE}/api/referrals/generate`, { method: "POST", headers: authH() });
+      const d = await res.json();
+      setReferralCode(d.referral_code || "");
       toast.success("Referral code generated!");
     } catch {
       toast.error("Failed to generate code.");
@@ -60,18 +68,23 @@ export default function Referral() {
     if (!inputCode.trim()) return;
     setSubmitting(true);
     try {
-      await base44.functions.invoke("referralSignup", { referral_code: inputCode.trim().toUpperCase() });
+      const res = await fetch(`${API_BASE}/api/referrals/apply`, {
+        method: "POST",
+        headers: authH(),
+        body: JSON.stringify({ code: inputCode.trim().toUpperCase() }),
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.message);
       toast.success("Referral applied! Your referrer earned a reward.");
-      setUser(prev => ({ ...prev, referred_by: inputCode.trim().toUpperCase() }));
+      setReferredBy(inputCode.trim().toUpperCase());
       setInputCode("");
     } catch (e) {
-      toast.error(e?.response?.data?.error || "Invalid or already used referral code.");
+      toast.error(e?.message || "Invalid or already used referral code.");
     }
     setSubmitting(false);
   };
 
   const completedReferrals = referrals.filter(r => r.status !== "pending").length;
-  const credits = user?.referral_credits || 0;
 
   return (
     <div className="max-w-3xl space-y-6">
@@ -148,7 +161,7 @@ export default function Referral() {
       </motion.div>
 
       {/* Enter a referral code */}
-      {!user?.referred_by && (
+      {!referredBy && (
         <div className="bg-card ink-border rounded-2xl p-5 space-y-3">
           <h3 className="font-bold text-foreground text-sm">Have a referral code?</h3>
           <div className="flex gap-2">
@@ -164,10 +177,10 @@ export default function Referral() {
           </div>
         </div>
       )}
-      {user?.referred_by && (
+      {referredBy && (
         <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-sm text-green-800">
           <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
-          You signed up with referral code <code className="font-mono font-bold">{user.referred_by}</code>
+          You signed up with referral code <code className="font-mono font-bold">{referredBy}</code>
         </div>
       )}
 

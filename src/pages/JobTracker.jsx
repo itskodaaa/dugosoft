@@ -8,8 +8,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
+import { API_BASE } from "@/api/config";
 
 const COLUMNS = [
   { id: "saved",        label: "Saved",        emoji: "📌", gradient: "from-slate-500 to-slate-600",   light: "bg-slate-50 border-slate-200",  dot: "bg-slate-400",  textCol: "text-slate-600"  },
@@ -19,16 +19,21 @@ const COLUMNS = [
   { id: "rejected",     label: "Rejected",      emoji: "❌", gradient: "from-rose-400 to-red-500",      light: "bg-rose-50 border-rose-200",     dot: "bg-rose-400",   textCol: "text-rose-600"   },
 ];
 
-const RESUME_VERSIONS = ["Senior Dev Resume", "Product Manager Resume", "General Resume"];
-const COVER_LETTERS   = ["Cover Letter – Google", "Cover Letter – Startup", "Default Cover Letter"];
+const EMPTY_COLS = { saved: [], applied: [], interviewing: [], offer: [], rejected: [] };
 
-const INITIAL_JOBS = {
-  saved:        [{ id: "j1", company: "Stripe", role: "Sr. Frontend Engineer", location: "Remote", url: "", resume: "", coverLetter: "", reminder: "", notes: "", stage: "saved" }],
-  applied:      [{ id: "j2", company: "Notion", role: "Product Manager", location: "SF, CA", url: "", resume: "Senior Dev Resume", coverLetter: "Cover Letter – Google", reminder: "2026-04-10", notes: "Applied via LinkedIn.", stage: "applied" }],
-  interviewing: [{ id: "j3", company: "Figma", role: "UX Engineer", location: "London, UK", url: "", resume: "General Resume", coverLetter: "", reminder: "2026-04-07", notes: "Technical round scheduled.", stage: "interviewing" }],
-  offer:        [],
-  rejected:     [{ id: "j4", company: "Airbnb", role: "Design Lead", location: "NY", url: "", resume: "", coverLetter: "", reminder: "", notes: "", stage: "rejected" }],
-};
+function authH() {
+  const t = localStorage.getItem("auth_token");
+  return t ? { Authorization: `Bearer ${t}`, "Content-Type": "application/json" } : { "Content-Type": "application/json" };
+}
+
+function jobsToColumns(jobs) {
+  const cols = { saved: [], applied: [], interviewing: [], offer: [], rejected: [] };
+  for (const j of jobs) {
+    const stage = cols[j.stage] ? j.stage : "saved";
+    cols[stage].push(j);
+  }
+  return cols;
+}
 
 function genId() { return "j" + Date.now(); }
 
@@ -165,12 +170,22 @@ function AIEmailModal({ job, onClose }) {
 
   const generate = async () => {
     setLoading(true);
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `Write a professional follow-up email for a job application.
+    try {
+      const res = await fetch(`${API_BASE}/api/ai/invoke`, {
+        method: "POST",
+        headers: authH(),
+        body: JSON.stringify({
+          action: "invokeLLM",
+          prompt: `Write a professional follow-up email for a job application.
 Company: ${job.company}, Role: ${job.role}, Stage: ${stage}, Notes: ${job.notes || "None"}
 Return only the email (Subject line + body), no extra commentary.`,
-    });
-    setEmail(result || "");
+        }),
+      });
+      const data = await res.json();
+      setEmail(data.result || "");
+    } catch {
+      toast.error("Failed to generate email.");
+    }
     setLoading(false);
   };
 
@@ -236,10 +251,17 @@ Return only the email (Subject line + body), no extra commentary.`,
 }
 
 export default function JobTracker() {
-  const [columns, setColumns] = useState(INITIAL_JOBS);
+  const [columns, setColumns] = useState(EMPTY_COLS);
   const [editJob, setEditJob] = useState(null);
   const [aiJob, setAiJob] = useState(null);
   const [showModal, setShowModal] = useState(false);
+
+  useEffect(() => {
+    fetch(`${API_BASE}/api/jobs`, { headers: authH() })
+      .then(r => r.ok ? r.json() : { jobs: [] })
+      .then(d => setColumns(jobsToColumns(d.jobs || [])))
+      .catch(() => {});
+  }, []);
 
   const allJobs = Object.values(columns).flat();
   const allCount = allJobs.length;
@@ -264,32 +286,44 @@ export default function JobTracker() {
     }
   };
 
-  const saveJob = (form) => {
+  const saveJob = async (form) => {
     if (!form.company || !form.role) { toast.warning("Company and role are required."); return; }
-    if (form.id) {
-      setColumns(p => {
-        const next = { ...p };
-        Object.keys(next).forEach(col => { next[col] = next[col].filter(j => j.id !== form.id); });
-        next[form.stage] = [form, ...next[form.stage]];
+    try {
+      let saved;
+      if (form.id) {
+        const res = await fetch(`${API_BASE}/api/jobs/${form.id}`, {
+          method: "PUT", headers: authH(),
+          body: JSON.stringify({ ...form, cover_letter: form.coverLetter }),
+        });
+        const d = await res.json();
+        saved = d.job;
+      } else {
+        const res = await fetch(`${API_BASE}/api/jobs`, {
+          method: "POST", headers: authH(),
+          body: JSON.stringify({ ...form, cover_letter: form.coverLetter }),
+        });
+        const d = await res.json();
+        saved = d.job;
+      }
+      setColumns(prev => {
+        const next = {};
+        for (const col of Object.keys(prev)) next[col] = prev[col].filter(j => j.id !== saved.id);
+        next[saved.stage] = [saved, ...next[saved.stage]];
         return next;
       });
-    } else {
-      const newJob = { ...form, id: genId() };
-      setColumns(p => ({ ...p, [form.stage]: [newJob, ...p[form.stage]] }));
-    }
-    setShowModal(false);
-    setEditJob(null);
-    toast.success("Application saved!");
+      setShowModal(false); setEditJob(null);
+      toast.success("Application saved!");
+    } catch { toast.error("Failed to save."); }
   };
 
-  const deleteJob = (id) => {
-    setColumns(p => {
-      const next = { ...p };
-      Object.keys(next).forEach(col => { next[col] = next[col].filter(j => j.id !== id); });
+  const deleteJob = async (id) => {
+    await fetch(`${API_BASE}/api/jobs/${id}`, { method: "DELETE", headers: authH() }).catch(() => {});
+    setColumns(prev => {
+      const next = {};
+      for (const col of Object.keys(prev)) next[col] = prev[col].filter(j => j.id !== id);
       return next;
     });
-    setShowModal(false);
-    setEditJob(null);
+    setShowModal(false); setEditJob(null);
     toast.success("Application removed.");
   };
 
