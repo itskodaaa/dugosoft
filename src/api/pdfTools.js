@@ -15,12 +15,13 @@ function getToken() {
  */
 export async function processPdf(endpoint, file, fields = {}) {
   const form = new FormData();
-  form.append('file', file);
+  // Fields must come before the file so @fastify/multipart can read them
   for (const [key, value] of Object.entries(fields)) {
     if (value !== undefined && value !== null && value !== '') {
       form.append(key, String(value));
     }
   }
+  form.append('file', file);
 
   const headers = {};
   const token = getToken();

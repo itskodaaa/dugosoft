@@ -7,6 +7,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { processPdf } from "@/api/pdfTools";
+import { useDocumentTracker } from "@/lib/useDocumentTracker";
 
 // ── Tool definitions ──────────────────────────────────────────────────────────
 const TOOLS = [
@@ -142,6 +143,7 @@ function ToolCard({ tool }) {
   const [opts, setOpts] = useState({});
   const [loading, setLoading] = useState(false);
   const [resultBlob, setResultBlob] = useState(null);
+  const { track } = useDocumentTracker();
   const Icon = tool.icon;
 
   const handleFile = (e) => {
@@ -178,6 +180,7 @@ function ToolCard({ tool }) {
       delete fields.confirmPassword; // don't send confirmation field
       const blob = await processPdf(tool.endpoint, file, fields);
       setResultBlob(blob);
+      track({ name: tool.outputName, size: blob.size, category: "PDF Tools" });
       toast.success(`${tool.label} complete! Click Download.`);
     } catch (err) {
       toast.error(err.message || "Processing failed.");
