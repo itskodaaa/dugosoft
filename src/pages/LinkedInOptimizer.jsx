@@ -8,6 +8,7 @@ import { Sparkles, Linkedin, Copy, Check, ChevronDown, ChevronUp, User, Tag, Fil
 import { toast } from "sonner";
 import { useLang } from "@/lib/i18n";
 import { useAI } from "@/lib/useAI";
+import { API_BASE } from "@/api/config";
 import SectionShareBar from "@/components/shared/SectionShareBar";
 
 export default function LinkedInOptimizer() {
@@ -24,13 +25,26 @@ export default function LinkedInOptimizer() {
 
   const langName = { en: "English", it: "Italian", fr: "French", es: "Spanish", de: "German" }[lang] || "English";
 
-  const handleFileUpload = (e) => {
+  const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     setUploadedFile(file);
-    const reader = new FileReader();
-    reader.onload = (ev) => setResumeText(ev.target.result);
-    reader.readAsText(file);
+    setResumeText("");
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const token = localStorage.getItem("auth_token");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const res = await fetch(`${API_BASE}/api/ai/extract-text`, {
+        method: "POST", headers, body: formData
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Extraction failed");
+      setResumeText(data.text || "");
+    } catch (err) {
+      toast.error(err?.message || "Failed to parse file.");
+      setUploadedFile(null);
+    }
   };
 
   const handleAnalyze = async () => {

@@ -10,6 +10,8 @@ import ShareModal from "../components/shared/ShareModal";
 import JobUrlParser from "../components/shared/JobUrlParser";
 import { useLang } from "@/lib/i18n";
 import { useAI } from "@/lib/useAI";
+import { API_BASE } from "@/api/config";
+import { toast } from "sonner";
 
 export default function ATSChecker() {
   const { t } = useLang();
@@ -23,13 +25,26 @@ export default function ATSChecker() {
   const [resumeInputMode, setResumeInputMode] = useState("paste");
   const resumeFileRef = useRef(null);
 
-  const handleResumeFile = (e) => {
+  const handleResumeFile = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     setResumeFile(file);
-    const reader = new FileReader();
-    reader.onload = (ev) => setResumeText(ev.target.result);
-    reader.readAsText(file);
+    setResumeText("");
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const token = localStorage.getItem("auth_token");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const res = await fetch(`${API_BASE}/api/ai/extract-text`, {
+        method: "POST", headers, body: formData
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Extraction failed");
+      setResumeText(data.text || "");
+    } catch (err) {
+      toast.error(err?.message || "Failed to parse file.");
+      setResumeFile(null);
+    }
   };
 
   const handleAnalyze = async () => {
