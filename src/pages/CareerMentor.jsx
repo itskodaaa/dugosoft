@@ -89,18 +89,18 @@ export default function CareerMentor() {
   };
 
   return (
-    <div className="max-w-4xl flex flex-col h-[calc(100vh-120px)]">
+    <div className="max-w-4xl flex flex-col" style={{ height: 'calc(100dvh - 7rem)' }}>
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-start sm:items-center justify-between gap-2">
           <div>
-            <h1 className="text-2xl font-extrabold tracking-tight text-foreground mb-1 flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-accent to-violet-500 flex items-center justify-center">
-                <Bot className="w-4 h-4 text-white" />
+            <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-foreground mb-0.5 flex items-center gap-2">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-gradient-to-br from-accent to-violet-500 flex items-center justify-center">
+                <Bot className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
               </div>
               Career Mentor
             </h1>
-            <p className="text-muted-foreground text-sm">AI-powered career advisor with your personal context</p>
+            <p className="text-muted-foreground text-xs sm:text-sm">AI-powered career advisor with your personal context</p>
           </div>
 
           {/* Context toggle */}
@@ -146,7 +146,7 @@ export default function CareerMentor() {
 
       {/* Suggested questions (only before first user message) */}
       {messages.length === 1 && (
-        <div className="grid sm:grid-cols-2 gap-2 mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
           {SUGGESTED_QUESTIONS.map((q) => (
             <button
               key={q}

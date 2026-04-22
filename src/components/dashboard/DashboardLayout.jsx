@@ -30,7 +30,7 @@ export default function DashboardLayout() {
       {/* Main content */}
       <div className={`transition-all duration-300 ${collapsed ? "lg:ml-16" : "lg:ml-60"}`}>
         <DashboardHeader onMenuToggle={() => setMobileOpen(!mobileOpen)} />
-        <main className="p-4 sm:p-6 lg:p-8 min-h-[calc(100vh-4rem)]">
+        <main className="p-3 sm:p-5 lg:p-8 min-h-[calc(100vh-4rem)] pb-safe">
           <Outlet />
         </main>
       </div>

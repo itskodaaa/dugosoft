@@ -68,7 +68,7 @@ Respond in a friendly, concise, and actionable way. Use markdown formatting. Kee
   };
 
   return (
-    <div className="max-w-4xl flex flex-col h-[calc(100vh-80px)]">
+    <div className="max-w-4xl flex flex-col" style={{ height: 'calc(100dvh - 5rem)' }}>
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-4 shrink-0">
         <div className="flex items-center justify-between flex-wrap gap-3">

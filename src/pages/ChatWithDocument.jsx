@@ -82,7 +82,7 @@ export default function ChatWithDocument() {
   };
 
   return (
-    <div className="max-w-6xl h-[calc(100vh-10rem)] flex flex-col">
+    <div className="max-w-6xl flex flex-col" style={{ height: 'calc(100dvh - 10rem)' }}>
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between mb-5 shrink-0">
         <div>
           <h1 className="text-2xl font-extrabold text-foreground flex items-center gap-2">
