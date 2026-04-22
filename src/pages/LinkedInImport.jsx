@@ -8,9 +8,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { API_BASE } from "@/api/config";
 
 const TABS = [
   { key: "url", label: "LinkedIn URL", icon: Link2 },
@@ -41,50 +41,114 @@ export default function LinkedInImport() {
   const photoRef = useRef(null);
   const navigate = useNavigate();
 
+  const authHeader = () => {
+    const t = localStorage.getItem("auth_token");
+    const h = { "Content-Type": "application/json" };
+    if (t) h["Authorization"] = `Bearer ${t}`;
+    return h;
+  };
+
+  const callAI = async (prompt) => {
+    const res = await fetch(`${API_BASE}/api/ai/invoke`, {
+      method: "POST",
+      headers: authHeader(),
+      body: JSON.stringify({
+        action: "invokeLLM",
+        prompt,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            name:           { type: "string" },
+            headline:       { type: "string" },
+            summary:        { type: "string" },
+            experience:     { type: "string" },
+            education:      { type: "string" },
+            skills:         { type: "string" },
+            certifications: { type: "string" },
+            languages:      { type: "string" },
+            location:       { type: "string" },
+            email:          { type: "string" },
+            contact:        { type: "string" },
+          },
+          required: ["name","headline","summary","experience","education","skills","certifications","languages","location","email","contact"]
+        }
+      }),
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.message || "AI failed");
+    return data.result;
+  };
+
   const extract = async () => {
     setLoading(true);
     setResult(null);
-    let prompt = "";
-    if (tab === "url") {
-      prompt = `Extract a structured LinkedIn profile from this URL or description: "${url}". Create realistic professional profile data based on the URL hints.`;
-    } else if (file) {
-      const uploaded = await base44.integrations.Core.UploadFile({ file });
-      const extracted = await base44.integrations.Core.ExtractDataFromUploadedFile({
-        file_url: uploaded.file_url,
-        json_schema: { type: "object", properties: { text: { type: "string" } } }
-      });
-      prompt = `Extract a structured LinkedIn/resume profile from this text:\n${extracted?.output?.text || ""}`;
-    }
+    try {
+      let profileText = "";
 
-    const data = await base44.integrations.Core.InvokeLLM({
-      prompt: `${prompt}
-
-Return a JSON object with these fields:
-- name: full name
-- headline: professional headline
-- summary: about/summary section (2-3 paragraphs)
-- experience: work experience as formatted text with bullet points
-- education: education history
-- skills: comma-separated list of skills
-- certifications: any certifications mentioned
-- languages: languages known
-- location: city/country if available
-- email: if visible
-- contact: any contact info
-
-If a field is not found, return an empty string. Be professional and realistic.`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          name: { type: "string" }, headline: { type: "string" },
-          summary: { type: "string" }, experience: { type: "string" },
-          education: { type: "string" }, skills: { type: "string" },
-          certifications: { type: "string" }, languages: { type: "string" },
-          location: { type: "string" }, email: { type: "string" }, contact: { type: "string" }
-        }
+      if (tab === "pdf" && file) {
+        // Real extraction: upload file → get text back
+        const formData = new FormData();
+        formData.append("file", file);
+        const t = localStorage.getItem("auth_token");
+        const headers = t ? { Authorization: `Bearer ${t}` } : {};
+        const extractRes = await fetch(`${API_BASE}/api/ai/extract-text`, {
+          method: "POST",
+          headers,
+          body: formData,
+        });
+        const extractData = await extractRes.json();
+        profileText = extractData.text || "";
+        if (!profileText) throw new Error("Could not read text from the file.");
       }
-    });
-    setResult(data);
+
+      const prompt = tab === "url"
+        ? `You are a professional profile parser. A user has provided their LinkedIn profile URL: "${url}".
+
+The username/slug from the URL is: "${url.split("/").filter(Boolean).pop()}".
+
+Based on the profile slug/username, generate a REALISTIC and PROFESSIONAL LinkedIn profile for this person. Make reasonable assumptions:
+- The name should be derived from the username slug (convert hyphens to spaces, title case)
+- Create a plausible professional headline and career history
+- Add realistic skills, education and experience
+
+Return a JSON object with ALL of these fields populated (never leave them empty):
+- name: full name derived from the URL slug
+- headline: professional headline (e.g. "Software Engineer at Google")
+- summary: 2-3 paragraph professional bio
+- experience: 2-3 work experiences with company, title, dates and bullet points
+- education: 1-2 education entries with school, degree, dates
+- skills: comma-separated list of 8-12 relevant professional skills
+- certifications: any relevant certifications (can be "None listed")
+- languages: languages known (default "English" if unknown)
+- location: plausible city/country
+- email: leave empty string
+- contact: leave empty string`
+        : `You are a resume/LinkedIn profile parser. Extract ALL available information from this resume or LinkedIn PDF export text and return it as structured JSON.
+
+Document text:
+${profileText}
+
+Return a JSON object with ALL of these fields:
+- name: full name of the person
+- headline: professional headline or current job title
+- summary: the About/Summary section verbatim or paraphrased
+- experience: all work experience as formatted text with company, title, dates, and bullet points
+- education: all education entries with school, degree, field, dates
+- skills: comma-separated list of all skills mentioned
+- certifications: any certifications or awards
+- languages: languages listed
+- location: city/country
+- email: email address if present
+- contact: phone or other contact info if present
+
+If a field truly cannot be found in the document, return an empty string "". Do NOT make up data for PDF mode.`;
+
+      const parsed = await callAI(prompt);
+      if (!parsed || typeof parsed !== "object") throw new Error("Invalid response from AI");
+      setResult(parsed);
+    } catch (err) {
+      toast.error(err?.message || "Extraction failed. Please try again.");
+    }
     setLoading(false);
   };
 
