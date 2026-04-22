@@ -47,16 +47,13 @@ export default function CoverLetterBuilder() {
     setResult(null);
     setSavedId(null);
     const data = await call("generateCoverLetter", {
-      jobTitle: form.jobTitle,
-      company: form.company,
-      name: form.name,
-      experience: form.experience,
-      qualifications: form.qualifications,
+      jobDescription: `${form.jobTitle} position at ${form.company}`,
+      resumeData: { name: form.name, qualifications: form.qualifications, experience: form.experience },
+      contactInfo: form.name,
       tone: form.tone,
-      language: langName,
     });
-    if (data?.letter) {
-      setResult(data.letter);
+    if (typeof data === "string" && data) {
+      setResult(data);
     }
   };
 
