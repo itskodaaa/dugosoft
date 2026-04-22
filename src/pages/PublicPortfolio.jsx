@@ -4,7 +4,8 @@ import {
   MapPin, Mail, Linkedin, Github, Globe, ExternalLink,
   Star, Briefcase, Code, Eye, Loader2, Link2
 } from "lucide-react";
-import { base44 } from "@/api/base44Client";
+import { API_BASE } from "@/api/config";
+import { useParams } from "react-router-dom";
 
 const THEME_STYLES = {
   minimal: {
@@ -60,22 +61,21 @@ export default function PublicPortfolio() {
   const [portfolio, setPortfolio] = useState(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const params = useParams();
 
   useEffect(() => {
-    const pathParts = window.location.pathname.split("/");
-    const slug = pathParts[pathParts.length - 1];
+    const slug = params.slug || window.location.pathname.split("/").pop();
     loadPortfolio(slug);
   }, []);
 
   const loadPortfolio = async (slug) => {
     try {
-      const list = await base44.entities.Portfolio.filter({ slug });
-      if (list.length === 0 || !list[0].is_public) {
+      const res = await fetch(`${API_BASE}/api/portfolios/public/${slug}`);
+      if (!res.ok) {
         setNotFound(true);
       } else {
-        setPortfolio(list[0]);
-        // increment view count
-        base44.entities.Portfolio.update(list[0].id, { view_count: (list[0].view_count || 0) + 1 }).catch(() => {});
+        const data = await res.json();
+        setPortfolio(data.portfolio);
       }
     } catch {
       setNotFound(true);

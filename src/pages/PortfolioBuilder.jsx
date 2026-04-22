@@ -8,10 +8,9 @@ import {
   Sparkles, Save, CheckCircle2, Copy, ExternalLink, Palette,
   Loader2
 } from "lucide-react";
-import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
+import { API_BASE } from "@/api/config";
 
 const THEMES = [
   { id: "minimal",      label: "Minimal",      bg: "bg-white", preview: "from-gray-50 to-white" },
@@ -38,7 +37,6 @@ function SectionHeader({ icon: Icon, title, subtitle }) {
 
 export default function PortfolioBuilder() {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const [portfolio, setPortfolio] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -49,6 +47,10 @@ export default function PortfolioBuilder() {
   const [newExp, setNewExp] = useState({ title: "", company: "", period: "", description: "" });
   const [portfolioUrl, setPortfolioUrl] = useState("");
 
+  const authHeader = () => {
+    const t = localStorage.getItem("auth_token");
+    return t ? { Authorization: `Bearer ${t}`, "Content-Type": "application/json" } : { "Content-Type": "application/json" };
+  };
   useEffect(() => {
     loadPortfolio();
   }, []);
@@ -56,30 +58,34 @@ export default function PortfolioBuilder() {
   const loadPortfolio = async () => {
     setLoading(true);
     try {
-      const list = await base44.entities.Portfolio.filter({ created_by: user?.email });
-      if (list.length > 0) {
-        setPortfolio(list[0]);
-        setPortfolioUrl(`${window.location.origin}/portfolio/${list[0].slug}`);
-      } else {
-        const slug = `${(user?.full_name || "user").toLowerCase().replace(/\s+/g, "-")}-${Math.random().toString(36).slice(2, 7)}`;
-        setPortfolio({
-          name: user?.full_name || "",
-          headline: user?.job_title || "",
-          bio: "",
-          location: "",
-          email: user?.email || "",
-          linkedin_url: "",
-          github_url: "",
-          website_url: "",
-          skills: [],
-          skill_endorsements: [],
-          projects: [],
-          experience: [],
-          theme: "minimal",
-          is_public: true,
-          slug,
-        });
-        setPortfolioUrl(`${window.location.origin}/portfolio/${slug}`);
+      const res = await fetch(`${API_BASE}/api/portfolios/me`, { headers: authHeader() });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.portfolio) {
+          setPortfolio(data.portfolio);
+          setPortfolioUrl(`${window.location.origin}/portfolio/${data.portfolio.slug}`);
+        } else {
+          // No portfolio yet — initialize defaults
+          const slug = `user-${Math.random().toString(36).slice(2, 8)}`;
+          setPortfolio({
+            name: (user?.firstName ? `${user.firstName} ${user.lastName || ""}`.trim() : ""),
+            headline: "",
+            bio: "",
+            location: "",
+            email: user?.email || "",
+            linkedin_url: "",
+            github_url: "",
+            website_url: "",
+            skills: [],
+            skill_endorsements: [],
+            projects: [],
+            experience: [],
+            theme: "minimal",
+            is_public: true,
+            slug,
+          });
+          setPortfolioUrl(`${window.location.origin}/portfolio/${slug}`);
+        }
       }
     } catch {
       toast.error("Failed to load portfolio.");
@@ -90,16 +96,27 @@ export default function PortfolioBuilder() {
   const savePortfolio = async () => {
     setSaving(true);
     try {
+      let res;
       if (portfolio.id) {
-        await base44.entities.Portfolio.update(portfolio.id, portfolio);
+        res = await fetch(`${API_BASE}/api/portfolios/${portfolio.id}`, {
+          method: "PUT",
+          headers: authHeader(),
+          body: JSON.stringify(portfolio),
+        });
       } else {
-        const created = await base44.entities.Portfolio.create(portfolio);
-        setPortfolio(created);
-        setPortfolioUrl(`${window.location.origin}/portfolio/${created.slug}`);
+        res = await fetch(`${API_BASE}/api/portfolios`, {
+          method: "POST",
+          headers: authHeader(),
+          body: JSON.stringify(portfolio),
+        });
       }
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+      setPortfolio(data.portfolio);
+      setPortfolioUrl(`${window.location.origin}/portfolio/${data.portfolio.slug}`);
       toast.success("Portfolio saved!");
-    } catch {
-      toast.error("Failed to save portfolio.");
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to save portfolio.");
     }
     setSaving(false);
   };
@@ -108,14 +125,20 @@ export default function PortfolioBuilder() {
     if (!portfolio.headline) { toast.warning("Add a headline first."); return; }
     setGenerating(true);
     try {
-      const res = await base44.integrations.Core.InvokeLLM({
-        prompt: `Write a compelling 3-sentence professional bio for a portfolio page.
+      const res = await fetch(`${API_BASE}/api/ai/invoke`, {
+        method: "POST",
+        headers: authHeader(),
+        body: JSON.stringify({
+          action: "generateText",
+          prompt: `Write a compelling 3-sentence professional bio for a portfolio page.
 Name: ${portfolio.name}
 Headline: ${portfolio.headline}
-Skills: ${portfolio.skills?.join(", ") || "various"}
-Keep it energetic, professional, and in first person. Under 80 words.`,
+Skills: ${(portfolio.skills || []).join(", ") || "various"}
+Keep it energetic, professional, and in first person. Under 80 words. Return only the bio text.`,
+        }),
       });
-      setPortfolio(p => ({ ...p, bio: res }));
+      const data = await res.json();
+      if (data.success) setPortfolio(p => ({ ...p, bio: data.result }));
     } catch {
       toast.error("Failed to generate bio.");
     }
