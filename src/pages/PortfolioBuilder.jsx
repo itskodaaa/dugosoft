@@ -203,6 +203,23 @@ Keep it energetic, professional, and in first person. Under 80 words. Return onl
     { id: "theme", label: "Theme", icon: Palette },
   ];
 
+  if (!user) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 gap-4 text-center">
+        <div className="w-14 h-14 rounded-2xl bg-accent/10 flex items-center justify-center">
+          <Globe className="w-7 h-7 text-accent" />
+        </div>
+        <div>
+          <p className="text-base font-bold text-foreground">Sign in to build your portfolio</p>
+          <p className="text-sm text-muted-foreground mt-1">Create a shareable public page for recruiters.</p>
+        </div>
+        <a href="/auth" className="px-5 py-2 rounded-full bg-accent text-white text-sm font-semibold hover:bg-accent/90 transition-colors">
+          Sign In
+        </a>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
