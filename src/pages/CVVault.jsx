@@ -10,8 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
+import { API_BASE } from "@/api/config";
 
 const INDUSTRY_TAGS = [
   { id: "tech",       label: "Technology",   icon: Code,         color: "bg-blue-100 text-blue-700 border-blue-200" },
@@ -114,12 +114,25 @@ function AddVersionModal({ onClose, onAdd }) {
     if (lang === "en") { save(); return; }
     setTranslating(true);
     const langObj = SUPPORTED_LANGS.find(l => l.code === lang);
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `Translate this resume/CV into ${langObj.name}. Preserve all formatting and professional tone.\n\n${content}`,
-    });
-    setContent(result);
+    try {
+      const token = localStorage.getItem("auth_token");
+      const res = await fetch(`${API_BASE}/api/ai/invoke`, {
+        method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        body: JSON.stringify({
+          action: "translateText",
+          text: content,
+          targetLanguage: langObj.name,
+          tone: "professional"
+        })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error("Translation failed");
+      setContent(data.result.translation || "");
+      toast.success("Translated! Review and save.");
+    } catch {
+      toast.error("Failed to translate.");
+    }
     setTranslating(false);
-    toast.success("Translated! Review and save.");
   };
 
   return (
@@ -176,7 +189,7 @@ function AddVersionModal({ onClose, onAdd }) {
 
 // ── Main Page ──────────────────────────────────────────────────────────────────
 export default function CVVault() {
-  const [cvs, setCvs]                 = useState(INITIAL_CVS);
+  const [cvs, setCvs]                 = useState([]);
   const [filterIndustry, setFilter]   = useState("all");
   const [previewCV, setPreviewCV]     = useState(null);
   const [comparing, setComparing]     = useState(false);
@@ -184,9 +197,23 @@ export default function CVVault() {
   const [shareTarget, setShareTarget] = useState(null);
   const [photoMap, setPhotoMap]       = useState({}); // cvId -> dataURL
 
+  React.useEffect(() => {
+    const token = localStorage.getItem("auth_token");
+    if (!token) return;
+    fetch(`${API_BASE}/api/vault`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.ok ? r.json() : { cvs: [] })
+      .then(d => setCvs(d.cvs || []))
+      .catch(() => {});
+  }, []);
+
   const filtered = filterIndustry === "all" ? cvs : cvs.filter(c => c.industry === filterIndustry);
 
-  const deleteCV = (id) => { setCvs(p => p.filter(c => c.id !== id)); toast.success("Deleted."); };
+  const deleteCV = async (id) => {
+    const token = localStorage.getItem("auth_token");
+    await fetch(`${API_BASE}/api/vault/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+    setCvs(p => p.filter(c => c.id !== id));
+    toast.success("Deleted.");
+  };
 
   const handlePhotoUpload = (cvId, file) => {
     const reader = new FileReader();
@@ -361,7 +388,21 @@ export default function CVVault() {
         {addingNew && (
           <AddVersionModal
             onClose={() => setAddingNew(false)}
-            onAdd={(cv) => { setCvs(p => [...p, cv]); toast.success("CV version saved!"); }}
+            onAdd={async (cv) => {
+              const token = localStorage.getItem("auth_token");
+              try {
+                const res = await fetch(`${API_BASE}/api/vault`, {
+                  method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                  body: JSON.stringify(cv)
+                });
+                if (!res.ok) throw new Error();
+                const d = await res.json();
+                setCvs(p => [...p, d.cv]);
+                toast.success("CV version saved!");
+              } catch {
+                toast.error("Failed to save CV.");
+              }
+            }}
           />
         )}
       </AnimatePresence>

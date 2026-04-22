@@ -128,7 +128,7 @@ export default function ResumeTranslator() {
     try {
       // Create new vault entry directly without needing a separate upload
       const token = localStorage.getItem('auth_token');
-      const res = await fetch(`${API_BASE}/api/portfolios/vault`, {
+      const res = await fetch(`${API_BASE}/api/vault`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
         body: JSON.stringify({
