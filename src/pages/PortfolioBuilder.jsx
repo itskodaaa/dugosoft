@@ -115,7 +115,7 @@ export default function PortfolioBuilder() {
       setPortfolio(data.portfolio);
       setPortfolioUrl(`${window.location.origin}/portfolio/${data.portfolio.slug}`);
       toast.success("Portfolio saved!");
-    } catch (e: any) {
+    } catch (e) {
       toast.error(e?.message || "Failed to save portfolio.");
     }
     setSaving(false);
