@@ -1,97 +1,85 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FileText, ChevronDown, ChevronUp, Eye,
-  Send, RefreshCw, PenLine, Inbox
+import {
+  FileText, ChevronDown, ChevronUp, Eye,
+  RefreshCw, PenLine, Inbox, File, Globe, Cpu, ScanText, Merge
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { Link } from "react-router-dom";
+import { API_BASE } from "@/api/config";
 
-const TYPE_COLORS = {
-  note:     "bg-blue-100 text-blue-700",
-  feedback: "bg-amber-100 text-amber-700",
-  action:   "bg-purple-100 text-purple-700",
+const CATEGORY_ICONS = {
+  Resume:     { icon: FileText,  color: "text-accent",       bg: "bg-accent/10" },
+  Translation:{ icon: Globe,     color: "text-green-500",    bg: "bg-green-500/10" },
+  Conversion: { icon: File,      color: "text-blue-500",     bg: "bg-blue-500/10" },
+  OCR:        { icon: ScanText,  color: "text-purple-500",   bg: "bg-purple-500/10" },
+  Merge:      { icon: Merge,     color: "text-orange-500",   bg: "bg-orange-500/10" },
+  Sharing:    { icon: PenLine,   color: "text-pink-500",     bg: "bg-pink-500/10" },
+  AI:         { icon: Cpu,       color: "text-indigo-500",   bg: "bg-indigo-500/10" },
 };
 
-function CommentThread({ docName }) {
-  const [comments, setComments] = useState([]);
-  const [text, setText]         = useState("");
-  const [type, setType]         = useState("note");
-  const [loading, setLoading]   = useState(true);
-  const [posting, setPosting]   = useState(false);
+function formatBytes(b) {
+  if (!b) return "";
+  if (b < 1024) return `${b} B`;
+  if (b < 1024 * 1024) return `${(b / 1024).toFixed(1)} KB`;
+  return `${(b / (1024 * 1024)).toFixed(1)} MB`;
+}
 
-  useEffect(() => {
-    base44.entities.DocComment.filter({ doc_name: docName })
-      .then(setComments)
-      .finally(() => setLoading(false));
-  }, [docName]);
-
-  const post = async () => {
-    if (!text.trim()) return;
-    setPosting(true);
-    const user = await base44.auth.me();
-    const c = await base44.entities.DocComment.create({
-      doc_name: docName,
-      version: 1,
-      author_email: user.email,
-      author_name: user.full_name || user.email,
-      text: text.trim(),
-      type,
-    });
-    setComments(p => [...p, c]);
-    setText("");
-    setPosting(false);
-  };
+function DocRow({ doc }) {
+  const [open, setOpen] = useState(false);
+  const cfg = CATEGORY_ICONS[doc.category] || CATEGORY_ICONS.Conversion;
+  const Icon = cfg.icon;
+  const date = new Date(doc.createdAt).toLocaleDateString();
 
   return (
-    <div className="mt-3 space-y-3">
-      {loading ? (
-        <p className="text-xs text-muted-foreground">Loading comments...</p>
-      ) : (
-        <div className="space-y-2">
-          {comments.length === 0 && (
-            <p className="text-xs text-muted-foreground italic">No comments yet.</p>
-          )}
-          {comments.map(c => (
-            <div key={c.id} className="flex gap-2">
-              <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center text-xs font-bold text-accent shrink-0">
-                {(c.author_name || "?")[0].toUpperCase()}
-              </div>
-              <div className="flex-1 bg-muted/40 rounded-xl px-3 py-2">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs font-semibold text-foreground">{c.author_name}</span>
-                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${TYPE_COLORS[c.type]}`}>{c.type}</span>
-                  <span className="text-[10px] text-muted-foreground ml-auto">{new Date(c.created_date).toLocaleString()}</span>
-                </div>
-                <p className="text-xs text-foreground">{c.text}</p>
-              </div>
-            </div>
-          ))}
+    <div className="bg-card ink-border rounded-2xl overflow-hidden">
+      <button onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center gap-4 px-5 py-4 hover:bg-muted/30 transition-colors text-left">
+        <div className={`w-9 h-9 rounded-xl ${cfg.bg} flex items-center justify-center shrink-0`}>
+          <Icon className={`w-4 h-4 ${cfg.color}`} />
         </div>
-      )}
-      <div className="flex gap-2 items-end">
-        <select value={type} onChange={e => setType(e.target.value)}
-          className="h-8 text-xs rounded-lg border border-input bg-background px-2 focus:outline-none">
-          <option value="note">Note</option>
-          <option value="feedback">Feedback</option>
-          <option value="action">Action</option>
-        </select>
-        <input value={text} onChange={e => setText(e.target.value)}
-          onKeyDown={e => e.key === "Enter" && post()}
-          placeholder="Leave a comment..."
-          className="flex-1 h-8 rounded-lg border border-input bg-background px-3 text-xs focus:outline-none focus:ring-1 focus:ring-ring" />
-        <button onClick={post} disabled={posting || !text.trim()}
-          className="w-8 h-8 rounded-lg bg-accent hover:bg-accent/90 flex items-center justify-center shrink-0 disabled:opacity-50">
-          <Send className="w-3.5 h-3.5 text-white" />
-        </button>
-      </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-foreground truncate">{doc.name}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {doc.category} · {doc.type} {doc.size ? `· ${formatBytes(doc.size)}` : ""}
+          </p>
+        </div>
+        <span className={`text-xs font-bold px-2 py-0.5 rounded-full shrink-0 ${
+          doc.status === "ready" ? "bg-green-100 text-green-700" : "bg-muted text-muted-foreground"
+        }`}>{doc.status}</span>
+        <span className="text-xs text-muted-foreground shrink-0 hidden sm:block">{date}</span>
+        {open ? <ChevronUp className="w-4 h-4 text-muted-foreground shrink-0" /> : <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />}
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }}
+            className="overflow-hidden border-t border-border px-5 py-4 space-y-3">
+            <div className="flex gap-2 flex-wrap">
+              <Link to="/dashboard/my-documents">
+                <Button size="sm" variant="outline" className="rounded-full h-8 text-xs gap-1">
+                  <Eye className="w-3 h-3" /> View in My Documents
+                </Button>
+              </Link>
+              {doc.shareToken && (
+                <a href={`/download/${doc.shareToken}`} target="_blank" rel="noreferrer">
+                  <Button size="sm" variant="outline" className="rounded-full h-8 text-xs gap-1">
+                    <File className="w-3 h-3" /> Download
+                  </Button>
+                </a>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
-function ResumeRow({ resume, onComment }) {
+function ResumeRow({ resume }) {
   const [open, setOpen] = useState(false);
+  const date = new Date(resume.updatedAt || resume.createdAt).toLocaleDateString();
+
   return (
     <div className="bg-card ink-border rounded-2xl overflow-hidden">
       <button onClick={() => setOpen(o => !o)}
@@ -102,21 +90,17 @@ function ResumeRow({ resume, onComment }) {
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-foreground truncate">{resume.title}</p>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Template: {resume.template_name || resume.template_id || "—"} · {resume.target_region ? `Region: ${resume.target_region}` : "No region"}
+            Template: {resume.templateId || "—"} {resume.targetRegion ? `· ${resume.targetRegion}` : ""}
           </p>
         </div>
-        <span className={`text-xs font-bold px-2 py-0.5 rounded-full shrink-0 ${
-          resume.status === "complete" ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"
-        }`}>{resume.status || "draft"}</span>
-        <span className="text-xs text-muted-foreground shrink-0 hidden sm:block">
-          {new Date(resume.updated_date || resume.created_date).toLocaleDateString()}
-        </span>
+        <span className="text-xs font-bold px-2 py-0.5 rounded-full shrink-0 bg-green-100 text-green-700">saved</span>
+        <span className="text-xs text-muted-foreground shrink-0 hidden sm:block">{date}</span>
         {open ? <ChevronUp className="w-4 h-4 text-muted-foreground shrink-0" /> : <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />}
       </button>
       <AnimatePresence>
         {open && (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }}
-            className="overflow-hidden border-t border-border px-5 py-4 space-y-3">
+            className="overflow-hidden border-t border-border px-5 py-4">
             <div className="flex gap-2">
               <Link to="/dashboard/resume-builder-v2">
                 <Button size="sm" variant="outline" className="rounded-full h-8 text-xs gap-1">
@@ -124,7 +108,6 @@ function ResumeRow({ resume, onComment }) {
                 </Button>
               </Link>
             </div>
-            <CommentThread docName={resume.title} />
           </motion.div>
         )}
       </AnimatePresence>
@@ -132,67 +115,60 @@ function ResumeRow({ resume, onComment }) {
   );
 }
 
-function CoverLetterRow({ letter }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="bg-card ink-border rounded-2xl overflow-hidden">
-      <button onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center gap-4 px-5 py-4 hover:bg-muted/30 transition-colors text-left">
-        <div className="w-9 h-9 rounded-xl bg-purple-500/10 flex items-center justify-center shrink-0">
-          <PenLine className="w-4 h-4 text-purple-500" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="font-semibold text-foreground truncate">{letter.job_title} @ {letter.company}</p>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {letter.applicant_name || "—"} · {letter.tone} · {letter.language}
-          </p>
-        </div>
-        <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700 shrink-0">Saved</span>
-        <span className="text-xs text-muted-foreground shrink-0 hidden sm:block">
-          {new Date(letter.created_date).toLocaleDateString()}
-        </span>
-        {open ? <ChevronUp className="w-4 h-4 text-muted-foreground shrink-0" /> : <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />}
-      </button>
-      <AnimatePresence>
-        {open && (
-          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }}
-            className="overflow-hidden border-t border-border px-5 py-4">
-            <pre className="text-xs text-foreground leading-relaxed whitespace-pre-wrap font-inter max-h-60 overflow-auto bg-muted/30 rounded-xl p-3">
-              {letter.content || "No content saved."}
-            </pre>
-            <CommentThread docName={`${letter.job_title}-${letter.company}`} />
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
+const CATEGORY_ORDER = ["Resume", "Translation", "Conversion", "OCR", "Merge", "Sharing"];
 
 export default function History() {
   const { user } = useAuth();
-  const [resumes,  setResumes]  = useState([]);
-  const [letters,  setLetters]  = useState([]);
-  const [loading,  setLoading]  = useState(true);
+  const [resumes,   setResumes]   = useState([]);
+  const [documents, setDocuments] = useState([]);
+  const [loading,   setLoading]   = useState(true);
+  const [activeTab, setActiveTab] = useState("all");
+
+  const authHeader = () => {
+    const t = localStorage.getItem("auth_token");
+    return t ? { Authorization: `Bearer ${t}` } : {};
+  };
 
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id) { setLoading(false); return; }
     Promise.all([
-      base44.entities.ResumeProject.list("-updated_date", 20),
-      base44.entities.CoverLetter.list("-created_date", 20),
-    ]).then(([r, l]) => {
-      setResumes(r);
-      setLetters(l);
+      fetch(`${API_BASE}/api/resumes`, { headers: authHeader() }).then(r => r.ok ? r.json() : { resumes: [] }),
+      fetch(`${API_BASE}/api/documents`, { headers: authHeader() }).then(r => r.ok ? r.json() : { documents: [] }),
+    ]).then(([rd, dd]) => {
+      setResumes(rd.resumes || []);
+      setDocuments(dd.documents || []);
     }).finally(() => setLoading(false));
   }, [user?.id]);
 
-  const isEmpty = !loading && resumes.length === 0 && letters.length === 0;
+  // Group documents by category
+  const byCategory = {};
+  for (const doc of documents) {
+    if (!byCategory[doc.category]) byCategory[doc.category] = [];
+    byCategory[doc.category].push(doc);
+  }
+
+  const isEmpty = !loading && resumes.length === 0 && documents.length === 0;
+
+  const TABS = ["all", "resumes", ...CATEGORY_ORDER.filter(c => byCategory[c]?.length)];
 
   return (
     <div className="max-w-3xl space-y-6">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-2xl font-extrabold tracking-tight text-foreground mb-1">History</h1>
-        <p className="text-muted-foreground text-sm">Your saved resumes and cover letters.</p>
+        <p className="text-muted-foreground text-sm">Your saved resumes and all processed documents.</p>
       </motion.div>
+
+      {/* Tabs */}
+      {!loading && !isEmpty && (
+        <div className="flex gap-2 flex-wrap">
+          {TABS.map(tab => (
+            <button key={tab} onClick={() => setActiveTab(tab)}
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all capitalize ${activeTab === tab ? "bg-accent text-accent-foreground border-accent" : "bg-card border-border text-muted-foreground hover:border-accent/40"}`}>
+              {tab === "all" ? `All (${resumes.length + documents.length})` : tab === "resumes" ? `Resumes (${resumes.length})` : `${tab} (${byCategory[tab]?.length || 0})`}
+            </button>
+          ))}
+        </div>
+      )}
 
       {loading && (
         <div className="flex items-center justify-center py-16">
@@ -207,20 +183,21 @@ export default function History() {
           </div>
           <p className="text-sm font-semibold text-foreground">No history yet</p>
           <p className="text-xs text-muted-foreground max-w-xs">
-            Build a resume or generate a cover letter — they'll appear here automatically.
+            Build a resume or process files using the tools — they'll appear here automatically.
           </p>
-          <div className="flex gap-2 mt-2">
+          <div className="flex gap-2 mt-2 flex-wrap justify-center">
             <Link to="/dashboard/resume-builder-v2">
               <Button size="sm" variant="outline" className="rounded-full text-xs">Build Resume</Button>
             </Link>
-            <Link to="/dashboard/cover-letter">
-              <Button size="sm" variant="outline" className="rounded-full text-xs">Cover Letter</Button>
+            <Link to="/dashboard/file-converter">
+              <Button size="sm" variant="outline" className="rounded-full text-xs">Convert File</Button>
             </Link>
           </div>
         </div>
       )}
 
-      {!loading && resumes.length > 0 && (
+      {/* Resumes section */}
+      {!loading && resumes.length > 0 && (activeTab === "all" || activeTab === "resumes") && (
         <div className="space-y-3">
           <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Resumes ({resumes.length})</h2>
           {resumes.map((r, i) => (
@@ -231,16 +208,20 @@ export default function History() {
         </div>
       )}
 
-      {!loading && letters.length > 0 && (
-        <div className="space-y-3">
-          <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Cover Letters ({letters.length})</h2>
-          {letters.map((l, i) => (
-            <motion.div key={l.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
-              <CoverLetterRow letter={l} />
+      {/* Processed documents by category */}
+      {!loading && (activeTab === "all"
+        ? CATEGORY_ORDER.filter(c => byCategory[c]?.length)
+        : activeTab !== "resumes" ? [activeTab] : []
+      ).map(cat => (
+        <div key={cat} className="space-y-3">
+          <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">{cat} ({byCategory[cat].length})</h2>
+          {byCategory[cat].map((doc, i) => (
+            <motion.div key={doc.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
+              <DocRow doc={doc} />
             </motion.div>
           ))}
         </div>
-      )}
+      ))}
     </div>
   );
 }

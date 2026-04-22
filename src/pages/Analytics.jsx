@@ -3,19 +3,15 @@ import { Button } from "@/components/ui/button";
 import { Download, RefreshCw } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/lib/AuthContext";
-import FeatureGate from "@/components/shared/FeatureGate";
-import { base44 } from "@/api/base44Client";
+import { API_BASE } from "@/api/config";
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis,
   CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from "recharts";
-import {
-  FileText, Zap,
-  Crown, ScanText
-} from "lucide-react";
+import { FileText, Zap, Crown, ScanText, Globe, File } from "lucide-react";
 import { toast } from "sonner";
 
-const PIE_COLORS = ["#4f8ef7", "#10b981", "#f97316", "#8b5cf6"];
+const PIE_COLORS = ["#4f8ef7", "#10b981", "#f97316", "#8b5cf6", "#ec4899", "#06b6d4"];
 
 function StatCard({ icon: Icon, label, value, sub, color }) {
   return (
@@ -47,64 +43,74 @@ function LimitBar({ label, icon: Icon, used, limit, color }) {
         </span>
       </div>
       <div className="h-2 rounded-full bg-muted overflow-hidden">
-        <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: warn ? "#f97316" : color }} />
+        <div className="h-full rounded-full transition-all duration-500" style={{ width: `${limit === null ? 100 : pct}%`, background: warn ? "#f97316" : color }} />
       </div>
       <p className="text-xs text-muted-foreground mt-2">
-        {limit === null ? "Unlimited on your plan" : `${limit - used} remaining today`}
+        {limit === null ? "Unlimited on your plan" : `${Math.max(0, limit - used)} remaining this month`}
       </p>
     </div>
   );
 }
 
+const PLAN_LIMITS = {
+  free:     { ai_requests: 10, file_conversions: 5,   translations: 3,  ocr_requests: 3,  pdf_processing: 5 },
+  pro:      { ai_requests: 200, file_conversions: 100, translations: 50, ocr_requests: 50, pdf_processing: 100 },
+  business: { ai_requests: null, file_conversions: null, translations: null, ocr_requests: null, pdf_processing: null },
+};
+
 export default function Analytics() {
   const { user } = useAuth();
-  const [logs, setLogs] = useState([]);
-  const [loadingLogs, setLoadingLogs] = useState(true);
+  const [documents, setDocuments] = useState([]);
+  const [loadingDocs, setLoadingDocs] = useState(true);
 
   const plan = user?.plan || "free";
+  const limits = PLAN_LIMITS[plan] || PLAN_LIMITS.free;
 
   useEffect(() => {
-    if (user?.id) {
-      base44.entities.UsageLog.filter({ user_id: user.id })
-        .then(data => {
-          // Sort by date, take last 30 days
-          const sorted = [...data].sort((a, b) => a.date.localeCompare(b.date)).slice(-30);
-          setLogs(sorted);
-        })
-        .finally(() => setLoadingLogs(false));
-    }
+    const t = localStorage.getItem("auth_token");
+    if (!t || !user?.id) { setLoadingDocs(false); return; }
+    fetch(`${API_BASE}/api/documents`, { headers: { Authorization: `Bearer ${t}` } })
+      .then(r => r.ok ? r.json() : { documents: [] })
+      .then(d => setDocuments(d.documents || []))
+      .finally(() => setLoadingDocs(false));
   }, [user?.id]);
 
-  // Build chart data from logs (group by week for clarity)
-  const chartData = logs.length > 0 ? logs.map(l => ({
-    date: l.date.slice(5), // MM-DD
-    PDFs: l.pdf_count || 0,
-    "AI Requests": l.ai_requests || 0,
-    OCR: l.ocr_count || 0,
-    Conversions: l.conversions || 0,
-  })) : [
-    { date: "Today", PDFs: user?.pdf_count || 0, "AI Requests": user?.ai_requests || 0, OCR: user?.ocr_count || 0, Conversions: 0 }
-  ];
+  // Build chart data: group documents by date (last 14 days)
+  const now = new Date();
+  const dayMap = {};
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(5, 10); // MM-DD
+    dayMap[key] = { date: key, Conversions: 0, OCR: 0, Translations: 0, AI: 0 };
+  }
+  for (const doc of documents) {
+    const key = new Date(doc.createdAt).toISOString().slice(5, 10);
+    if (!dayMap[key]) continue;
+    if (doc.category === "Conversion") dayMap[key].Conversions++;
+    else if (doc.category === "OCR") dayMap[key].OCR++;
+    else if (doc.category === "Translation") dayMap[key].Translations++;
+    else if (doc.category === "AI") dayMap[key].AI++;
+  }
+  const chartData = Object.values(dayMap);
 
-  const totalPDF = logs.reduce((s, l) => s + (l.pdf_count || 0), user?.pdf_count || 0);
-  const totalAI  = logs.reduce((s, l) => s + (l.ai_requests || 0), user?.ai_requests || 0);
-  const totalOCR = logs.reduce((s, l) => s + (l.ocr_count || 0), user?.ocr_count || 0);
+  // Category breakdown for pie
+  const catCounts = {};
+  for (const doc of documents) {
+    catCounts[doc.category] = (catCounts[doc.category] || 0) + 1;
+  }
+  const pieData = Object.entries(catCounts).map(([name, value], i) => ({ name, value, color: PIE_COLORS[i % PIE_COLORS.length] }));
 
-  const pieData = [
-    { name: "PDFs", value: totalPDF || 1, color: "#4f8ef7" },
-    { name: "AI Requests", value: totalAI || 1, color: "#10b981" },
-    { name: "OCR", value: totalOCR || 1, color: "#8b5cf6" },
-  ];
-
-  const PLAN_LIMITS = {
-    free:     { pdf: 5,   ai: 10,  ocr: 3 },
-    pro:      { pdf: 100, ai: 200, ocr: 50 },
-    business: { pdf: null, ai: null, ocr: null },
-  };
-  const limits = PLAN_LIMITS[plan];
+  // Totals from real user counters (db)
+  const totalAI   = user?.aiRequests || 0;
+  const totalConv = user?.fileConversions || 0;
+  const totalOCR  = user?.ocrRequests || 0;
+  const totalTrans= user?.translations || 0;
+  const totalPDF  = user?.pdfProcessing || 0;
 
   const exportCSV = () => {
-    const rows = [["Date", "PDF Count", "AI Requests", "OCR Count"], ...chartData.map(r => [r.date, r.PDFs, r["AI Requests"], r.OCR])];
+    const rows = [["Date", "Conversions", "OCR", "Translations", "AI"],
+      ...chartData.map(r => [r.date, r.Conversions, r.OCR, r.Translations, r.AI])];
     const csv = rows.map(r => r.join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
@@ -114,7 +120,6 @@ export default function Analytics() {
   };
 
   return (
-    <FeatureGate requiredPlan="business" message="Full Analytics is available on the Business plan.">
     <div className="max-w-6xl space-y-8">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
         <div className="flex items-center justify-between mb-1 flex-wrap gap-3">
@@ -129,88 +134,102 @@ export default function Analytics() {
             </Button>
           </div>
         </div>
-        <p className="text-muted-foreground text-sm">Your usage history and daily limits.</p>
+        <p className="text-muted-foreground text-sm">Your usage history and monthly limits.</p>
       </motion.div>
 
-      {/* Today's usage stats */}
+      {/* Monthly usage limit bars */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-        <LimitBar label="PDF Conversions"  icon={FileText}  used={user?.pdf_count || 0} limit={limits.pdf}  color="#4f8ef7" />
-        <LimitBar label="AI Requests"      icon={Zap}       used={user?.ai_requests || 0} limit={limits.ai} color="#10b981" />
-        <LimitBar label="OCR Usage"        icon={ScanText}  used={user?.ocr_count || 0} limit={limits.ocr}  color="#8b5cf6" />
+        <LimitBar label="AI Requests"      icon={Zap}       used={totalAI}    limit={limits.ai_requests}    color="#10b981" />
+        <LimitBar label="File Conversions" icon={File}      used={totalConv}  limit={limits.file_conversions} color="#4f8ef7" />
+        <LimitBar label="Translations"     icon={Globe}     used={totalTrans} limit={limits.translations}   color="#f97316" />
+        <LimitBar label="OCR Requests"     icon={ScanText}  used={totalOCR}   limit={limits.ocr_requests}   color="#8b5cf6" />
+        <LimitBar label="PDF Processing"   icon={FileText}  used={totalPDF}   limit={limits.pdf_processing} color="#ec4899" />
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-        <StatCard icon={FileText}  label="Total PDFs (30d)"       value={totalPDF}  sub="all time tracked" color="#4f8ef7" />
-        <StatCard icon={Zap}       label="Total AI Requests (30d)"value={totalAI}   sub="all time tracked" color="#10b981" />
-        <StatCard icon={ScanText}  label="Total OCR (30d)"        value={totalOCR}  sub="all time tracked" color="#8b5cf6" />
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <StatCard icon={Zap}       label="AI Requests"   value={totalAI}    sub="this month" color="#10b981" />
+        <StatCard icon={File}      label="Conversions"   value={totalConv}  sub="this month" color="#4f8ef7" />
+        <StatCard icon={ScanText}  label="OCR"           value={totalOCR}   sub="this month" color="#8b5cf6" />
+        <StatCard icon={Globe}     label="Translations"  value={totalTrans} sub="this month" color="#f97316" />
       </div>
 
       {/* Area chart */}
       <div className="bg-card ink-border rounded-2xl p-6">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-base font-bold text-foreground">Usage Over Time</h2>
-          {loadingLogs && <RefreshCw className="w-4 h-4 text-muted-foreground animate-spin" />}
+          <h2 className="text-base font-bold text-foreground">Activity — Last 14 Days</h2>
+          {loadingDocs && <RefreshCw className="w-4 h-4 text-muted-foreground animate-spin" />}
         </div>
-        <ResponsiveContainer width="100%" height={280}>
+        <ResponsiveContainer width="100%" height={260}>
           <AreaChart data={chartData}>
             <defs>
-              {[["PDFs","#4f8ef7"],["AI Requests","#10b981"],["OCR","#8b5cf6"]].map(([key, color]) => (
+              {[["Conversions","#4f8ef7"],["OCR","#8b5cf6"],["Translations","#f97316"],["AI","#10b981"]].map(([key, color]) => (
                 <linearGradient key={key} id={`grad-${key}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={color} stopOpacity={0.2} />
+                  <stop offset="5%"  stopColor={color} stopOpacity={0.2} />
                   <stop offset="95%" stopColor={color} stopOpacity={0} />
                 </linearGradient>
               ))}
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
             <XAxis dataKey="date" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} allowDecimals={false} />
             <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, fontSize: 12 }} />
             <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
-            <Area type="monotone" dataKey="PDFs" stroke="#4f8ef7" fill="url(#grad-PDFs)" strokeWidth={2} dot={false} />
-            <Area type="monotone" dataKey="AI Requests" stroke="#10b981" fill="url(#grad-AI Requests)" strokeWidth={2} dot={false} />
-            <Area type="monotone" dataKey="OCR" stroke="#8b5cf6" fill="url(#grad-OCR)" strokeWidth={2} dot={false} />
+            <Area type="monotone" dataKey="Conversions" stroke="#4f8ef7" fill="url(#grad-Conversions)" strokeWidth={2} dot={false} />
+            <Area type="monotone" dataKey="OCR"         stroke="#8b5cf6" fill="url(#grad-OCR)"         strokeWidth={2} dot={false} />
+            <Area type="monotone" dataKey="Translations"stroke="#f97316" fill="url(#grad-Translations)" strokeWidth={2} dot={false} />
+            <Area type="monotone" dataKey="AI"          stroke="#10b981" fill="url(#grad-AI)"          strokeWidth={2} dot={false} />
           </AreaChart>
         </ResponsiveContainer>
       </div>
 
-      {/* Bar + Pie */}
+      {/* Bar + Pie row */}
       <div className="grid lg:grid-cols-5 gap-6">
         <div className="lg:col-span-3 bg-card ink-border rounded-2xl p-6">
           <h2 className="text-base font-bold text-foreground mb-6">Daily Breakdown</h2>
           <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={chartData.slice(-14)} barGap={2}>
+            <BarChart data={chartData} barGap={2}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
               <XAxis dataKey="date" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} allowDecimals={false} />
               <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 10, fontSize: 11 }} />
-              <Bar dataKey="PDFs" fill="#4f8ef7" radius={[4,4,0,0]} />
-              <Bar dataKey="AI Requests" fill="#10b981" radius={[4,4,0,0]} />
-              <Bar dataKey="OCR" fill="#8b5cf6" radius={[4,4,0,0]} />
+              <Bar dataKey="Conversions" fill="#4f8ef7" radius={[4,4,0,0]} />
+              <Bar dataKey="OCR"         fill="#8b5cf6" radius={[4,4,0,0]} />
+              <Bar dataKey="Translations" fill="#f97316" radius={[4,4,0,0]} />
+              <Bar dataKey="AI"          fill="#10b981" radius={[4,4,0,0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
+
         <div className="lg:col-span-2 bg-card ink-border rounded-2xl p-6">
-          <h2 className="text-base font-bold text-foreground mb-4">Usage Split</h2>
-          <ResponsiveContainer width="100%" height={160}>
-            <PieChart>
-              <Pie data={pieData} cx="50%" cy="50%" innerRadius={45} outerRadius={70} paddingAngle={3} dataKey="value">
-                {pieData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
-              </Pie>
-              <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 10, fontSize: 11 }} />
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="space-y-2 mt-2">
-            {pieData.map((d, i) => (
-              <div key={i} className="flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full" style={{ background: d.color }} />
-                  <span className="text-muted-foreground">{d.name}</span>
-                </div>
-                <span className="font-semibold text-foreground">{d.value}</span>
+          <h2 className="text-base font-bold text-foreground mb-4">Document Split</h2>
+          {pieData.length > 0 ? (
+            <>
+              <ResponsiveContainer width="100%" height={160}>
+                <PieChart>
+                  <Pie data={pieData} cx="50%" cy="50%" innerRadius={45} outerRadius={70} paddingAngle={3} dataKey="value">
+                    {pieData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                  </Pie>
+                  <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 10, fontSize: 11 }} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="space-y-2 mt-2">
+                {pieData.map((d, i) => (
+                  <div key={i} className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2.5 h-2.5 rounded-full" style={{ background: d.color }} />
+                      <span className="text-muted-foreground">{d.name}</span>
+                    </div>
+                    <span className="font-semibold text-foreground">{d.value}</span>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </>
+          ) : (
+            <div className="flex items-center justify-center h-40 text-sm text-muted-foreground">
+              No documents processed yet.
+            </div>
+          )}
         </div>
       </div>
 
@@ -232,6 +251,5 @@ export default function Analytics() {
         </div>
       )}
     </div>
-    </FeatureGate>
   );
 }
