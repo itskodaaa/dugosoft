@@ -10,7 +10,8 @@ import {
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/AuthContext";
-import { base44 } from "@/api/base44Client";
+import { paymentsApi } from "@/api/payments";
+import { authApi } from "@/api/auth";
 import { useGeoPrice, REGION_PRICES } from "@/lib/useGeoPrice";
 
 const PLAN_FEATURES = [
@@ -139,26 +140,19 @@ function PaymentModal({ plan, region, prices, cycle, onClose }) {
     setLoading(true);
     try {
       if (provider === "flutterwave") {
-        const res = await base44.functions.invoke("createFlutterwavePayment", { plan: plan.id, region, billing_cycle: cycle });
-        if (res.data?.error === "billing_not_configured") {
+        const res = await paymentsApi.createFlutterwavePayment({ plan: plan.id, region, billing_cycle: cycle });
+        if (res.error === "billing_not_configured") {
           toast.error("Flutterwave is not configured yet. Set FLUTTERWAVE_SECRET_KEY in environment secrets.", { duration: 7000 });
-        } else if (res.data?.payment_link) {
-          window.location.href = res.data.payment_link;
+        } else if (res.payment_link) {
+          window.location.href = res.payment_link;
         } else {
-          toast.error(res.data?.message || "Failed to create payment link.");
+          toast.error(res.message || res.error || "Failed to create payment link.");
         }
       } else {
-        const res = await base44.functions.invoke("createStripeCheckout", { plan: plan.id, region, billing_cycle: cycle });
-        if (res.data?.error === "billing_not_configured") {
-          toast.error("Stripe price IDs are not configured. Set STRIPE_PRICE_PRO_GLOBAL and STRIPE_PRICE_BUSINESS_GLOBAL secrets.", { duration: 7000 });
-        } else if (res.data?.checkout_url) {
-          window.location.href = res.data.checkout_url;
-        } else {
-          toast.error(res.data?.message || "Failed to create Stripe checkout.");
-        }
+        toast.error("Stripe is not implemented on the new backend yet. Please use Flutterwave.");
       }
     } catch (e) {
-      toast.error(e?.response?.data?.message || e?.response?.data?.error || "Payment failed. Please try again.");
+      toast.error(e?.message || "Payment failed. Please try again.");
     }
     setLoading(false);
   };
@@ -270,17 +264,17 @@ export default function PricingSettings() {
     if (status === "success" && plan) {
       if (providerParam === "stripe") {
         toast.success(`Payment successful! Your ${plan} plan is now active.`);
-        base44.auth.me().then(u => setUser(u));
+        authApi.getMe().then(data => setUser(data.user));
       } else if (txRef) {
         const txId = params.get("transaction_id");
         if (txId) {
-          base44.functions.invoke("verifyFlutterwavePayment", { transaction_id: txId, plan })
-            .then(() => { toast.success(`Payment verified! ${plan} plan activated.`); return base44.auth.me(); })
-            .then(u => setUser(u))
+          paymentsApi.verifyFlutterwavePayment({ transaction_id: txId, plan })
+            .then(() => { toast.success(`Payment verified! ${plan} plan activated.`); return authApi.getMe(); })
+            .then(data => setUser(data.user))
             .catch(() => toast.error("Verification failed. Contact support."));
         } else {
           toast.success(`Payment successful! Activating ${plan} plan...`);
-          setTimeout(() => base44.auth.me().then(u => setUser(u)), 3000);
+          setTimeout(() => authApi.getMe().then(data => setUser(data.user)), 3000);
         }
       }
       window.history.replaceState({}, "", window.location.pathname);
@@ -293,9 +287,9 @@ export default function PricingSettings() {
   const handleCancel = async () => {
     setCancelling(true);
     try {
-      await base44.functions.invoke("cancelSubscription", {});
-      const u = await base44.auth.me();
-      setUser(u);
+      await paymentsApi.cancelSubscription();
+      const data = await authApi.getMe();
+      setUser(data.user);
       toast.success("Subscription cancelled. Moved to Free plan.");
     } catch {
       toast.error("Failed to cancel subscription.");
