@@ -374,7 +374,7 @@ export default function ResumeBuilderV2() {
   }
 
   return (
-    <div className="max-w-7xl">
+    <div className="max-w-7xl mx-auto w-full">
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => setStep("template")} className="rounded-full h-9 w-9">
@@ -403,7 +403,7 @@ export default function ResumeBuilderV2() {
 
       <div className="grid lg:grid-cols-5 gap-6">
         {/* Editor panel */}
-        <div className="lg:col-span-2 space-y-4">
+        <div className="lg:col-span-2 space-y-4 min-w-0">
           {/* Tabs */}
           <div className="flex gap-1 bg-muted rounded-lg p-1">
             {[
@@ -427,15 +427,15 @@ export default function ResumeBuilderV2() {
                     <User className="w-3.5 h-3.5 text-accent" />
                     <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Personal Info</p>
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <Input placeholder="Full Name" value={resume.name} onChange={e => setResume(p => ({...p, name: e.target.value}))} className="text-xs h-8 bg-background" />
                     <Input placeholder="Job Title" value={resume.title} onChange={e => setResume(p => ({...p, title: e.target.value}))} className="text-xs h-8 bg-background" />
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <Input placeholder="Email" value={resume.email} onChange={e => setResume(p => ({...p, email: e.target.value}))} className="text-xs h-8 bg-background" />
                     <Input placeholder="Phone" value={resume.phone} onChange={e => setResume(p => ({...p, phone: e.target.value}))} className="text-xs h-8 bg-background" />
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <Input placeholder="Location" value={resume.location} onChange={e => setResume(p => ({...p, location: e.target.value}))} className="text-xs h-8 bg-background" />
                     <Input placeholder="LinkedIn" value={resume.linkedin} onChange={e => setResume(p => ({...p, linkedin: e.target.value}))} className="text-xs h-8 bg-background" />
                   </div>
@@ -525,7 +525,7 @@ export default function ResumeBuilderV2() {
         </div>
 
         {/* Preview */}
-        <div className="lg:col-span-3">
+        <div className="lg:col-span-3 min-w-0">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <FileText className="w-4 h-4 text-muted-foreground" />
@@ -533,8 +533,8 @@ export default function ResumeBuilderV2() {
             </div>
             <p className="text-[10px] text-muted-foreground italic">What you see is what gets exported</p>
           </div>
-          <div className="sticky top-4 overflow-y-auto max-h-[85vh] rounded-2xl shadow-2xl bg-muted/30 p-4 flex justify-center custom-scrollbar border border-border">
-            <div style={{ zoom: 0.72 }} className="shadow-[0_20px_50px_rgba(0,0,0,0.2)]">
+          <div className="sticky top-4 overflow-auto max-h-[85vh] rounded-2xl shadow-2xl bg-muted/30 p-4 custom-scrollbar border border-border">
+            <div style={{ zoom: 0.72 }} className="shadow-[0_20px_50px_rgba(0,0,0,0.2)] w-fit mx-auto origin-top">
               <ResumePreview ref={previewRef} data={resume} template={selectedTemplate} />
             </div>
           </div>
