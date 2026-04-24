@@ -7,6 +7,8 @@ import { toast } from "sonner";
 import { useParams, useNavigate } from "react-router-dom";
 import SignerModal from "../components/esign/SignerModal";
 import RemindersPanel from "../components/esign/RemindersPanel";
+import SignaturePadModal from "../components/esign/SignaturePadModal";
+import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
 
 const FIELD_TYPES = [
   { type: "signature", label: "Signature", icon: PenLine, color: "bg-blue-500" },
@@ -22,6 +24,7 @@ export default function ESignEditor() {
   const [draggingField, setDraggingField] = useState(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [showSignerModal, setShowSignerModal] = useState(false);
+  const [activeField, setActiveField] = useState(null);
   const previewRef = useRef();
 
   useEffect(() => {
@@ -54,14 +57,90 @@ export default function ESignEditor() {
 
   const onMouseUp = () => setDraggingField(null);
 
+  const handleFieldClick = (e, field) => {
+    e.stopPropagation();
+    if (draggingField) return;
+    setActiveField(field);
+  };
+
+  const updateFieldContent = (content) => {
+    setFields(f => f.map(field => field.id === activeField.id ? { ...field, content } : field));
+    setActiveField(null);
+  };
+
+  const generateSignedPDF = async () => {
+    if (!doc?.file_data) return;
+    try {
+      const existingPdfBytes = Uint8Array.from(atob(doc.file_data), c => c.charCodeAt(0));
+      const pdfDoc = await PDFDocument.load(existingPdfBytes);
+      const pages = pdfDoc.getPages();
+      const firstPage = pages[0];
+      const { width, height } = firstPage.getSize();
+      
+      const previewWidth = previewRef.current.offsetWidth;
+      const previewHeight = previewRef.current.offsetHeight;
+      const scaleX = width / previewWidth;
+      const scaleY = height / previewHeight;
+
+      const font = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+      const italicFont = await pdfDoc.embedFont(StandardFonts.TimesRomanItalic);
+
+      for (const field of fields) {
+        if (!field.content) continue;
+
+        // PDF coordinates start from bottom-left
+        const x = field.x * scaleX;
+        const y = height - (field.y * scaleY) - (field.h * scaleY);
+
+        if (field.type === "signature" && field.content.startsWith("data:")) {
+          const imgData = field.content.split(",")[1];
+          const imgBytes = Uint8Array.from(atob(imgData), c => c.charCodeAt(0));
+          const image = await pdfDoc.embedPng(imgBytes);
+          firstPage.drawImage(image, {
+            x, y,
+            width: field.w * scaleX,
+            height: field.h * scaleY,
+          });
+        } else {
+          const text = field.content.replace("typed:", "");
+          firstPage.drawText(text, {
+            x: x + (5 * scaleX),
+            y: y + (field.h * scaleY / 4),
+            size: 12 * scaleY,
+            font: field.type === "signature" ? italicFont : font,
+            color: rgb(0, 0, 0),
+          });
+        }
+      }
+
+      const pdfBytes = await pdfDoc.save();
+      const blob = new Blob([pdfBytes], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `Signed_${doc.title || "Document"}.pdf`;
+      link.click();
+      toast.success("PDF generated and downloaded!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to generate PDF.");
+    }
+  };
+
   const handleSave = async () => {
     const token = localStorage.getItem("auth_token");
-    await fetch(`${API_BASE}/api/esign/${id}`, {
+    const res = await fetch(`${API_BASE}/api/esign/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ fields }),
     });
-    toast.success("Fields saved!");
+    
+    if (res.ok) {
+      toast.success("Fields saved to cloud!");
+      await generateSignedPDF();
+    } else {
+      toast.error("Failed to save fields.");
+    }
   };
 
   const FIELD_COLORS = { signature: "#3b82f6", name: "#22c55e", date: "#a855f7" };
@@ -151,14 +230,28 @@ export default function ESignEditor() {
               <div
                 key={f.id}
                 onMouseDown={e => onMouseDown(e, f.id)}
+                onClick={e => handleFieldClick(e, f)}
                 style={{ left: f.x, top: f.y, width: f.w, height: f.h, borderColor: FIELD_COLORS[f.type] }}
-                className="absolute border-2 border-dashed rounded-lg flex items-center justify-center cursor-move group"
+                className={`absolute border-2 border-dashed rounded-lg flex items-center justify-center cursor-move group transition-colors ${f.content ? "bg-white/50 backdrop-blur-[2px]" : "bg-white/10"}`}
               >
-                <span className="text-xs font-bold capitalize" style={{ color: FIELD_COLORS[f.type] }}>{f.type}</span>
+                {f.content ? (
+                  f.type === "signature" ? (
+                    f.content.startsWith("data:") ? (
+                      <img src={f.content} className="max-w-full max-h-full object-contain pointer-events-none" alt="Signature" />
+                    ) : (
+                      <span className="text-xl italic font-serif pointer-events-none">{f.content.replace("typed:", "")}</span>
+                    )
+                  ) : (
+                    <span className="text-sm font-bold text-foreground pointer-events-none">{f.content}</span>
+                  )
+                ) : (
+                  <span className="text-[10px] font-black uppercase tracking-tighter" style={{ color: FIELD_COLORS[f.type] }}>{f.type}</span>
+                )}
+                
                 <button
                   onMouseDown={e => e.stopPropagation()}
-                  onClick={() => removeField(f.id)}
-                  className="absolute -top-2.5 -right-2.5 w-5 h-5 bg-destructive rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={(e) => { e.stopPropagation(); removeField(f.id); }}
+                  className="absolute -top-2.5 -right-2.5 w-5 h-5 bg-destructive rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10 shadow-lg"
                 >
                   <X className="w-3 h-3 text-white" />
                 </button>
@@ -179,6 +272,38 @@ export default function ESignEditor() {
           onClose={() => setShowSignerModal(false)}
           onSent={() => { setShowSignerModal(false); navigate("/dashboard/esign"); }}
         />
+      )}
+
+      {activeField?.type === "signature" && (
+        <SignaturePadModal onClose={() => setActiveField(null)} onSave={updateFieldContent} />
+      )}
+
+      {activeField?.type === "name" && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setActiveField(null)} />
+          <div className="relative bg-card ink-border rounded-2xl p-6 w-full max-w-xs z-10 shadow-2xl">
+            <h3 className="font-bold mb-4">Enter Full Name</h3>
+            <input autoFocus className="w-full h-10 px-3 rounded-lg border bg-background mb-4" 
+              onKeyDown={e => e.key === "Enter" && updateFieldContent(e.target.value)}
+              onBlur={e => updateFieldContent(e.target.value)}
+            />
+            <Button onClick={() => setActiveField(null)} className="w-full">Cancel</Button>
+          </div>
+        </div>
+      )}
+
+      {activeField?.type === "date" && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setActiveField(null)} />
+          <div className="relative bg-card ink-border rounded-2xl p-6 w-full max-w-xs z-10 shadow-2xl">
+            <h3 className="font-bold mb-4">Set Date</h3>
+            <input type="date" autoFocus className="w-full h-10 px-3 rounded-lg border bg-background mb-4" 
+              defaultValue={new Date().toISOString().split("T")[0]}
+              onBlur={e => updateFieldContent(e.target.value)}
+            />
+            <Button onClick={() => setActiveField(null)} className="w-full">Cancel</Button>
+          </div>
+        </div>
       )}
     </div>
   );
