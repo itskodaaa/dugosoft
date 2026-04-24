@@ -139,17 +139,14 @@ function PaymentModal({ plan, region, prices, cycle, onClose }) {
   const handlePay = async () => {
     setLoading(true);
     try {
-      if (provider === "flutterwave") {
-        const res = await paymentsApi.createFlutterwavePayment({ plan: plan.id, region, billing_cycle: cycle });
-        if (res.error === "billing_not_configured") {
-          toast.error("Flutterwave is not configured yet. Set FLUTTERWAVE_SECRET_KEY in environment secrets.", { duration: 7000 });
-        } else if (res.payment_link) {
-          window.location.href = res.payment_link;
-        } else {
-          toast.error(res.message || res.error || "Failed to create payment link.");
-        }
+      // Route everything to Flutterwave for now
+      const res = await paymentsApi.createFlutterwavePayment({ plan: plan.id, region, billing_cycle: cycle });
+      if (res.error === "billing_not_configured") {
+        toast.error("Flutterwave is not configured yet. Set FLUTTERWAVE_SECRET_KEY in environment secrets.", { duration: 7000 });
+      } else if (res.payment_link) {
+        window.location.href = res.payment_link;
       } else {
-        toast.error("Stripe is not implemented on the new backend yet. Please use Flutterwave.");
+        toast.error(res.message || res.error || "Failed to create payment link.");
       }
     } catch (e) {
       toast.error(e?.message || "Payment failed. Please try again.");
@@ -224,7 +221,7 @@ function PaymentModal({ plan, region, prices, cycle, onClose }) {
             className={`w-full h-11 rounded-xl font-semibold text-sm gap-2 ${plan.id === "business" ? "bg-amber-500 hover:bg-amber-500/90 text-white" : "bg-accent hover:bg-accent/90 text-accent-foreground"}`}>
             {loading
               ? <><Loader2 className="w-4 h-4 animate-spin" /> Redirecting...</>
-              : <><CreditCard className="w-4 h-4" /> Pay {cycle === "annual" ? `$${annualTotal}/year` : `$${amount}/month`} via {provider === "flutterwave" ? "Flutterwave" : "Stripe"}</>}
+              : <><CreditCard className="w-4 h-4" /> Pay {cycle === "annual" ? `$${annualTotal}/year` : `$${amount}/month`} via Flutterwave</>}
           </Button>
         </div>
       </motion.div>
