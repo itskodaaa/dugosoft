@@ -1,49 +1,21 @@
-import React, { useState } from "react";
-import { motion } from "framer-motion";
+import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   FolderOpen, Plus, Users, Shield, Edit3, Eye, MessageSquare,
   Crown, Trash2, FileText, ChevronRight, X,
-  UserPlus
+  UserPlus, Link as LinkIcon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-
-const USER_PLAN = "business";
-const canUse = USER_PLAN === "business";
+import { useAuth } from "@/lib/AuthContext";
+import { API_BASE } from "@/api/config";
 
 const PERMISSIONS = [
   { key: "view", label: "View", icon: Eye, color: "text-blue-500", bg: "bg-blue-100" },
   { key: "comment", label: "Comment", icon: MessageSquare, color: "text-purple-500", bg: "bg-purple-100" },
   { key: "edit", label: "Edit", icon: Edit3, color: "text-green-500", bg: "bg-green-100" },
   { key: "admin", label: "Admin", icon: Shield, color: "text-red-500", bg: "bg-red-100" },
-];
-
-const INITIAL_WORKSPACES = [
-  {
-    id: 1, name: "Q2 Job Applications", color: "#4f8ef7", icon: "🎯",
-    members: [
-      { email: "alex@company.com", role: "admin", name: "Alex Johnson" },
-      { email: "sofia@team.com", role: "edit", name: "Sofia Melo" },
-      { email: "james@work.com", role: "view", name: "James K." },
-    ],
-    documents: [
-      { name: "Senior_Dev_Resume.pdf", type: "Resume", updated: "2h ago" },
-      { name: "Cover_Letter_Google.pdf", type: "Cover Letter", updated: "1d ago" },
-      { name: "Portfolio.pdf", type: "Document", updated: "3d ago" },
-    ]
-  },
-  {
-    id: 2, name: "Marketing Team Docs", color: "#10b981", icon: "📊",
-    members: [
-      { email: "nina@agency.com", role: "admin", name: "Nina Patel" },
-      { email: "tom@agency.com", role: "comment", name: "Tom R." },
-    ],
-    documents: [
-      { name: "Campaign_Brief.docx", type: "Document", updated: "5h ago" },
-      { name: "Q1_Report.xlsx", type: "Spreadsheet", updated: "2d ago" },
-    ]
-  },
 ];
 
 function PermissionBadge({ role }) {
@@ -59,12 +31,19 @@ function PermissionBadge({ role }) {
 function InviteModal({ workspace, onClose, onInvite }) {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("view");
-  const submit = () => {
+  const [submitting, setSubmitting] = useState(false);
+
+  const submit = async () => {
     if (!email.trim()) { toast.warning("Enter an email address."); return; }
-    onInvite(email, role);
-    setEmail("");
-    toast.success(`Invited ${email} as ${role}`);
+    setSubmitting(true);
+    try {
+      await onInvite(email, role);
+      onClose();
+    } finally {
+      setSubmitting(false);
+    }
   };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
@@ -101,8 +80,8 @@ function InviteModal({ workspace, onClose, onInvite }) {
               })}
             </div>
           </div>
-          <Button onClick={submit} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground rounded-xl h-10 gap-2">
-            <UserPlus className="w-4 h-4" />Send Invite
+          <Button onClick={submit} disabled={submitting} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground rounded-xl h-10 gap-2">
+            <UserPlus className="w-4 h-4" />{submitting ? "Sending..." : "Send Invite"}
           </Button>
         </div>
       </motion.div>
@@ -114,8 +93,21 @@ function CreateWorkspaceModal({ onClose, onCreate }) {
   const [name, setName] = useState("");
   const [color, setColor] = useState("#4f8ef7");
   const [icon, setIcon] = useState("🎯");
+  const [submitting, setSubmitting] = useState(false);
   const ICONS = ["🎯","📊","💼","🚀","📁","🔬","💡","🌍","📝","⚡"];
   const COLORS = ["#4f8ef7","#10b981","#f97316","#8b5cf6","#0ea5e9","#ef4444","#059669","#f59e0b"];
+
+  const submit = async () => {
+    if(!name.trim()){ toast.warning("Enter a name."); return; }
+    setSubmitting(true);
+    try {
+      await onCreate({ name, color, icon });
+      onClose();
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
@@ -142,9 +134,9 @@ function CreateWorkspaceModal({ onClose, onCreate }) {
               <button key={c} onClick={() => setColor(c)} className={`w-7 h-7 rounded-full transition-all ${color === c ? "ring-2 ring-offset-2 ring-foreground" : ""}`} style={{ background: c }} />
             ))}</div>
           </div>
-          <Button onClick={() => { if(!name.trim()){ toast.warning("Enter a name."); return; } onCreate({ name, color, icon }); onClose(); }}
+          <Button onClick={submit} disabled={submitting}
             className="w-full bg-accent hover:bg-accent/90 text-accent-foreground rounded-xl h-10 gap-2">
-            <Plus className="w-4 h-4" />Create Workspace
+            <Plus className="w-4 h-4" />{submitting ? "Creating..." : "Create Workspace"}
           </Button>
         </div>
       </motion.div>
@@ -152,41 +144,155 @@ function CreateWorkspaceModal({ onClose, onCreate }) {
   );
 }
 
+function AddDocumentModal({ onClose, onAdd }) {
+  const [docs, setDocs] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const token = localStorage.getItem("auth_token");
+    fetch(`${API_BASE}/api/documents`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(d => setDocs(d.documents || []))
+      .finally(() => setLoading(false));
+  }, []);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+        className="relative bg-card ink-border rounded-2xl p-6 w-full max-w-md z-10 shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
+        <div className="flex items-center justify-between mb-5 shrink-0">
+          <h3 className="font-bold text-foreground">Add Document to Workspace</h3>
+          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-muted"><X className="w-4 h-4 text-muted-foreground" /></button>
+        </div>
+        <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+          {loading ? <p className="text-center py-8 text-muted-foreground animate-pulse">Loading documents...</p> : docs.map(d => (
+            <button key={d.id} onClick={() => onAdd(d.id)}
+              className="w-full flex items-center gap-3 p-3 rounded-xl border border-border hover:border-accent/50 hover:bg-accent/5 transition-all text-left">
+              <div className="w-8 h-8 rounded bg-accent/10 flex items-center justify-center shrink-0">
+                <FileText className="w-4 h-4 text-accent" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-foreground truncate">{d.name}</p>
+                <p className="text-[10px] text-muted-foreground uppercase">{d.type}</p>
+              </div>
+              <Plus className="w-4 h-4 text-muted-foreground ml-auto" />
+            </button>
+          ))}
+          {!loading && docs.length === 0 && <p className="text-center py-8 text-muted-foreground">No documents found.</p>}
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 export default function Workspaces() {
-  const [workspaces, setWorkspaces] = useState(INITIAL_WORKSPACES);
-  const [selected, setSelected] = useState(workspaces[0]);
+  const { user } = useAuth();
+  const [workspaces, setWorkspaces] = useState([]);
+  const [selected, setSelected] = useState(null);
+  const [details, setDetails] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [showInvite, setShowInvite] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
+  const [showAddDoc, setShowAddDoc] = useState(false);
 
-  const handleInvite = (email, role) => {
-    const member = { email, role, name: email.split("@")[0] };
-    const updated = workspaces.map(w => w.id === selected.id ? { ...w, members: [...w.members, member] } : w);
-    setWorkspaces(updated);
-    setSelected(updated.find(w => w.id === selected.id));
+  const canUse = user?.plan === "business" || user?.plan === "admin";
+
+  const fetchWorkspaces = async () => {
+    const token = localStorage.getItem("auth_token");
+    try {
+      const res = await fetch(`${API_BASE}/api/workspaces`, { headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      setWorkspaces(Array.isArray(data) ? data : []);
+      if (data.length > 0 && !selected) setSelected(data[0]);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleCreate = ({ name, color, icon }) => {
-    const ws = { id: Date.now(), name, color, icon, members: [], documents: [] };
-    setWorkspaces(p => [...p, ws]);
-    setSelected(ws);
+  const fetchDetails = async (id) => {
+    const token = localStorage.getItem("auth_token");
+    try {
+      const res = await fetch(`${API_BASE}/api/workspaces/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      setDetails(data);
+    } catch (err) {
+      toast.error("Failed to load workspace details.");
+    }
+  };
+
+  useEffect(() => {
+    if (canUse) fetchWorkspaces();
+  }, [canUse]);
+
+  useEffect(() => {
+    if (selected) fetchDetails(selected.id);
+  }, [selected]);
+
+  const handleCreate = async ({ name, color, icon }) => {
+    const token = localStorage.getItem("auth_token");
+    const res = await fetch(`${API_BASE}/api/workspaces`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ name, color, icon }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message);
     toast.success(`Workspace "${name}" created!`);
+    fetchWorkspaces();
+    setSelected(data);
   };
 
-  const removeMember = (email) => {
-    const updated = workspaces.map(w => w.id === selected.id ? { ...w, members: w.members.filter(m => m.email !== email) } : w);
-    setWorkspaces(updated);
-    setSelected(updated.find(w => w.id === selected.id));
+  const handleInvite = async (email, role) => {
+    const token = localStorage.getItem("auth_token");
+    const res = await fetch(`${API_BASE}/api/workspaces/${selected.id}/invite`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ email, role }),
+    });
+    if (!res.ok) throw new Error("Failed to invite.");
+    toast.success(`Invited ${email}`);
+    fetchDetails(selected.id);
+  };
+
+  const removeMember = async (memberId) => {
+    const token = localStorage.getItem("auth_token");
+    await fetch(`${API_BASE}/api/workspaces/${selected.id}/members/${memberId}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
     toast.success("Member removed.");
+    fetchDetails(selected.id);
+  };
+
+  const addDocument = async (docId) => {
+    const token = localStorage.getItem("auth_token");
+    const res = await fetch(`${API_BASE}/api/workspaces/${selected.id}/documents`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ documentId: docId }),
+    });
+    if (res.ok) {
+      toast.success("Document added to workspace.");
+      setShowAddDoc(false);
+      fetchDetails(selected.id);
+    } else {
+      const data = await res.json();
+      toast.error(data.message || "Failed to add document.");
+    }
   };
 
   if (!canUse) {
     return (
       <div className="max-w-2xl mx-auto">
-        <div className="bg-card ink-border rounded-2xl p-14 text-center mt-8">
-          <Crown className="w-14 h-14 text-amber-400 mx-auto mb-4" />
-          <h2 className="text-2xl font-extrabold text-foreground mb-3">Business Plan Feature</h2>
-          <p className="text-muted-foreground max-w-sm mx-auto mb-6">Workspaces with team collaboration, shared folders, and granular permissions are available on the Business plan ($29/month).</p>
-          <Button className="bg-accent hover:bg-accent/90 text-accent-foreground rounded-full px-10 font-bold">Upgrade to Business</Button>
+        <div className="bg-card ink-border rounded-2xl p-14 text-center mt-8 shadow-xl relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1 bg-amber-400" />
+          <Crown className="w-16 h-16 text-amber-400 mx-auto mb-6 drop-shadow-sm" />
+          <h2 className="text-3xl font-black text-foreground mb-3 tracking-tight">Business Plan Required</h2>
+          <p className="text-muted-foreground max-w-sm mx-auto mb-8 text-sm leading-relaxed">Workspaces enable team collaboration, shared folders, and granular permissions. Upgrade to start collaborating.</p>
+          <Button onClick={() => window.location.href = "/dashboard/pricing"} className="bg-amber-400 hover:bg-amber-500 text-amber-950 rounded-full px-12 h-12 font-black transition-all hover:scale-105 shadow-lg shadow-amber-400/20">Upgrade Now</Button>
         </div>
       </div>
     );
@@ -194,132 +300,162 @@ export default function Workspaces() {
 
   return (
     <div className="max-w-7xl">
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between mb-6">
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-extrabold text-foreground flex items-center gap-2">
-            <FolderOpen className="w-6 h-6 text-accent" />Workspaces
+          <h1 className="text-3xl font-black tracking-tight text-foreground flex items-center gap-2">
+            <FolderOpen className="w-7 h-7 text-accent" />Workspaces
           </h1>
-          <p className="text-muted-foreground text-sm mt-0.5">Collaborate with your team on documents, resumes, and projects.</p>
+          <p className="text-muted-foreground text-sm mt-0.5 font-medium">Manage team collaboration and shared assets.</p>
         </div>
-        <Button onClick={() => setShowCreate(true)} className="bg-accent hover:bg-accent/90 text-accent-foreground rounded-full h-9 text-sm gap-2">
+        <Button onClick={() => setShowCreate(true)} className="bg-accent hover:bg-accent/90 text-accent-foreground rounded-full h-10 px-6 font-bold shadow-lg shadow-accent/20 gap-2">
           <Plus className="w-4 h-4" />New Workspace
         </Button>
       </motion.div>
 
-      <div className="grid lg:grid-cols-4 gap-6">
+      <div className="grid lg:grid-cols-4 gap-8">
         {/* Sidebar list */}
-        <div className="lg:col-span-1 space-y-2">
-          {workspaces.map(ws => (
+        <div className="lg:col-span-1 space-y-2.5">
+          {loading ? [1,2,3].map(i => <div key={i} className="h-16 bg-muted/40 animate-pulse rounded-2xl" />) : workspaces.map(ws => (
             <button key={ws.id} onClick={() => setSelected(ws)}
-              className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${selected?.id === ws.id ? "border-accent bg-accent/5" : "border-border bg-card hover:border-accent/30"}`}>
-              <div className="w-9 h-9 rounded-lg flex items-center justify-center text-lg shrink-0" style={{ background: ws.color + "20" }}>
+              className={`w-full flex items-center gap-3.5 p-4 rounded-2xl border transition-all duration-200 text-left ${selected?.id === ws.id ? "border-accent bg-accent/5 ring-1 ring-accent/20" : "border-border bg-card hover:border-accent/30 shadow-sm"}`}>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0 shadow-sm" style={{ background: ws.color + "15" }}>
                 {ws.icon}
               </div>
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-foreground truncate">{ws.name}</p>
-                <p className="text-xs text-muted-foreground">{ws.members.length} members · {ws.documents.length} files</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-bold text-foreground truncate leading-tight">{ws.name}</p>
+                <p className="text-[11px] text-muted-foreground font-medium mt-0.5">{ws.members} members · {ws.documents} files</p>
               </div>
-              <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+              <ChevronRight className={`w-4 h-4 transition-transform ${selected?.id === ws.id ? "text-accent translate-x-1" : "text-muted-foreground"}`} />
             </button>
           ))}
+          {!loading && workspaces.length === 0 && (
+            <div className="p-8 text-center bg-muted/20 rounded-3xl border-2 border-dashed">
+              <Plus className="w-6 h-6 text-muted-foreground mx-auto mb-2 opacity-50" />
+              <p className="text-xs font-bold text-muted-foreground">No workspaces</p>
+            </div>
+          )}
         </div>
 
         {/* Main content */}
-        {selected && (
-          <div className="lg:col-span-3 space-y-5">
-            {/* Header */}
-            <div className="bg-card ink-border rounded-2xl p-5 flex items-center justify-between flex-wrap gap-3">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" style={{ background: selected.color + "20" }}>
-                  {selected.icon}
+        <div className="lg:col-span-3 space-y-6">
+          {selected && details ? (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+              {/* Header Card */}
+              <div className="bg-card ink-border rounded-[32px] p-8 flex items-center justify-between flex-wrap gap-4 shadow-sm relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-1" style={{ background: details.color }} />
+                <div className="flex items-center gap-5">
+                  <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shadow-inner" style={{ background: details.color + "15" }}>
+                    {details.icon}
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-black text-foreground tracking-tight">{details.name}</h2>
+                    <div className="flex items-center gap-3 mt-1">
+                      <span className="flex items-center gap-1 text-xs font-bold text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-md">
+                        <Users className="w-3 h-3" /> {details.members?.length || 0} Members
+                      </span>
+                      <span className="flex items-center gap-1 text-xs font-bold text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-md">
+                        <FileText className="w-3 h-3" /> {details.documents?.length || 0} Documents
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="text-lg font-extrabold text-foreground">{selected.name}</h2>
-                  <p className="text-xs text-muted-foreground">{selected.members.length} members · {selected.documents.length} documents</p>
-                </div>
+                <Button onClick={() => setShowInvite(true)} className="bg-foreground text-background hover:bg-foreground/90 rounded-full h-10 px-6 font-bold text-xs gap-2 shadow-xl shadow-foreground/10 transition-transform hover:scale-105 active:scale-95">
+                  <UserPlus className="w-4 h-4" />Invite Member
+                </Button>
               </div>
-              <Button onClick={() => setShowInvite(true)} variant="outline" className="rounded-full h-9 text-xs gap-2">
-                <UserPlus className="w-3.5 h-3.5" />Invite Member
-              </Button>
-            </div>
 
-            {/* Members */}
-            <div className="bg-card ink-border rounded-2xl p-5">
-              <h3 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2"><Users className="w-4 h-4" />Team Members</h3>
-              <div className="space-y-3">
-                {selected.members.map((m, i) => (
-                  <div key={i} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/40 group">
-                    <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center text-xs font-bold text-accent shrink-0">
-                      {m.name?.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground">{m.name}</p>
-                      <p className="text-xs text-muted-foreground">{m.email}</p>
-                    </div>
-                    <PermissionBadge role={m.role} />
-                    {m.role !== "admin" && (
-                      <button onClick={() => removeMember(m.email)}
-                        className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center rounded hover:bg-destructive/10 ml-1">
-                        <Trash2 className="w-3 h-3 text-destructive" />
-                      </button>
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* Members Section */}
+                <div className="bg-card ink-border rounded-[32px] p-6 shadow-sm flex flex-col">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-sm font-black text-foreground flex items-center gap-2 uppercase tracking-widest"><Users className="w-4 h-4 text-accent" />Team Members</h3>
+                  </div>
+                  <div className="space-y-4 flex-1">
+                    {details.members?.map((m, i) => (
+                      <div key={m.id} className="flex items-center gap-3.5 p-3 rounded-2xl hover:bg-muted/30 transition-all group border border-transparent hover:border-border">
+                        <div className="w-10 h-10 rounded-full bg-accent/10 border-2 border-background flex items-center justify-center text-xs font-black text-accent shrink-0 shadow-sm">
+                          {m.email?.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold text-foreground truncate">{m.email}</p>
+                          <p className="text-[10px] text-muted-foreground font-black uppercase tracking-tight">{m.status}</p>
+                        </div>
+                        <PermissionBadge role={m.role} />
+                        {m.role !== "admin" && (
+                          <button onClick={() => removeMember(m.id)}
+                            className="opacity-0 group-hover:opacity-100 w-8 h-8 flex items-center justify-center rounded-xl hover:bg-destructive/10 transition-all text-destructive">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                    {details.members?.length === 0 && (
+                      <div className="text-center py-12">
+                        <div className="w-12 h-12 bg-muted/30 rounded-full flex items-center justify-center mx-auto mb-3">
+                          <Users className="w-6 h-6 text-muted-foreground/50" />
+                        </div>
+                        <p className="text-xs font-bold text-muted-foreground">No members invited yet.</p>
+                      </div>
                     )}
                   </div>
-                ))}
-                {selected.members.length === 0 && (
-                  <p className="text-sm text-muted-foreground text-center py-4">No members yet. Invite someone!</p>
-                )}
-              </div>
-            </div>
+                </div>
 
-            {/* Documents */}
-            <div className="bg-card ink-border rounded-2xl p-5">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-bold text-foreground flex items-center gap-2"><FileText className="w-4 h-4" />Shared Documents</h3>
-                <button onClick={() => toast.info("Upload functionality connects to My Documents")}
-                  className="text-xs text-accent font-semibold hover:underline flex items-center gap-1"><Plus className="w-3.5 h-3.5" />Add</button>
-              </div>
-              <div className="space-y-2">
-                {selected.documents.map((doc, i) => (
-                  <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors">
-                    <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center shrink-0">
-                      <FileText className="w-4 h-4 text-accent" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate">{doc.name}</p>
-                      <p className="text-xs text-muted-foreground">{doc.type} · updated {doc.updated}</p>
-                    </div>
-                    <div className="flex gap-1">
-                      <button className="w-7 h-7 rounded hover:bg-muted flex items-center justify-center"><Eye className="w-3.5 h-3.5 text-muted-foreground" /></button>
-                      <button className="w-7 h-7 rounded hover:bg-muted flex items-center justify-center"><Edit3 className="w-3.5 h-3.5 text-muted-foreground" /></button>
-                    </div>
+                {/* Documents Section */}
+                <div className="bg-card ink-border rounded-[32px] p-6 shadow-sm flex flex-col">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-sm font-black text-foreground flex items-center gap-2 uppercase tracking-widest"><FileText className="w-4 h-4 text-accent" />Shared Documents</h3>
+                    <button onClick={() => setShowAddDoc(true)}
+                      className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center text-accent hover:bg-accent transition-all hover:text-white shadow-sm">
+                      <Plus className="w-4 h-4" />
+                    </button>
                   </div>
-                ))}
-                {selected.documents.length === 0 && (
-                  <p className="text-sm text-muted-foreground text-center py-4">No documents yet.</p>
-                )}
+                  <div className="space-y-3 flex-1">
+                    {details.documents?.map((doc, i) => (
+                      <div key={doc.id} className="flex items-center gap-3.5 p-4 rounded-2xl bg-muted/20 hover:bg-muted/40 transition-all border border-transparent hover:border-border group">
+                        <div className="w-10 h-10 rounded-xl bg-background border border-border flex items-center justify-center shrink-0 shadow-sm group-hover:scale-110 transition-transform">
+                          <FileText className="w-5 h-5 text-accent" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold text-foreground truncate">{doc.name}</p>
+                          <p className="text-[10px] text-muted-foreground font-black uppercase tracking-tight">{doc.type}</p>
+                        </div>
+                        <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-all">
+                          <button className="w-8 h-8 rounded-xl bg-card border border-border flex items-center justify-center hover:bg-muted shadow-sm"><Eye className="w-3.5 h-3.5 text-muted-foreground" /></button>
+                          <button className="w-8 h-8 rounded-xl bg-card border border-border flex items-center justify-center hover:bg-muted shadow-sm text-destructive"><X className="w-3.5 h-3.5" /></button>
+                        </div>
+                      </div>
+                    ))}
+                    {details.documents?.length === 0 && (
+                      <div className="text-center py-12">
+                        <div className="w-12 h-12 bg-muted/30 rounded-full flex items-center justify-center mx-auto mb-3">
+                          <FileText className="w-6 h-6 text-muted-foreground/50" />
+                        </div>
+                        <p className="text-xs font-bold text-muted-foreground">Add files to share with the team.</p>
+                        <Button onClick={() => setShowAddDoc(true)} variant="link" className="text-xs font-black text-accent mt-1">Link a Document</Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
-            </div>
-
-            {/* Permission legend */}
-            <div className="bg-muted/30 rounded-xl p-4">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Permission Levels</p>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {PERMISSIONS.map(p => {
-                  const Icon = p.icon;
-                  return (
-                    <div key={p.key} className={`flex items-center gap-1.5 text-xs rounded-lg px-2.5 py-1.5 ${p.bg} ${p.color} font-medium`}>
-                      <Icon className="w-3.5 h-3.5" />{p.label}
-                    </div>
-                  );
-                })}
+            </motion.div>
+          ) : !loading ? (
+            <div className="h-[500px] bg-card ink-border rounded-[32px] flex flex-col items-center justify-center text-center p-8 border-2 border-dashed">
+              <div className="w-20 h-20 bg-accent/5 rounded-full flex items-center justify-center mb-6">
+                <FolderOpen className="w-10 h-10 text-accent/40" />
               </div>
+              <h3 className="text-xl font-black text-foreground mb-2">No workspace selected</h3>
+              <p className="text-sm text-muted-foreground max-w-xs mb-8 font-medium">Select a workspace from the sidebar or create a new one to start collaborating.</p>
+              <Button onClick={() => setShowCreate(true)} className="bg-accent text-accent-foreground rounded-full px-8 h-11 font-bold">Get Started</Button>
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="h-[500px] bg-card ink-border rounded-[32px] animate-pulse" />
+          )}
+        </div>
       </div>
 
       {showInvite && selected && <InviteModal workspace={selected} onClose={() => setShowInvite(false)} onInvite={handleInvite} />}
       {showCreate && <CreateWorkspaceModal onClose={() => setShowCreate(false)} onCreate={handleCreate} />}
+      {showAddDoc && <AddDocumentModal onClose={() => setShowAddDoc(false)} onAdd={addDocument} />}
     </div>
   );
 }
