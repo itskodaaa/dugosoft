@@ -168,11 +168,11 @@ function PaymentModal({ plan, region, prices, cycle, onClose }) {
             <h2 className="font-bold text-foreground text-lg">Upgrade to {plan.name}</h2>
             <div className="flex items-center gap-2 mt-0.5 flex-wrap">
               <p className="text-2xl font-extrabold text-foreground">
-                ${amount}<span className="text-sm font-normal text-muted-foreground">/month</span>
+                {prices.symbol}{amount}<span className="text-sm font-normal text-muted-foreground">/month</span>
               </p>
               {cycle === "annual" && (
                 <span className="text-xs text-green-700 bg-green-100 border border-green-200 px-2 py-0.5 rounded-full font-semibold flex items-center gap-1">
-                  <Tag className="w-3 h-3" /> ${annualTotal}/year (Save 20%)
+                  <Tag className="w-3 h-3" /> {prices.symbol}{annualTotal}/year (Save 20%)
                 </span>
               )}
               {isRegional && (
@@ -221,7 +221,7 @@ function PaymentModal({ plan, region, prices, cycle, onClose }) {
             className={`w-full h-11 rounded-xl font-semibold text-sm gap-2 ${plan.id === "business" ? "bg-amber-500 hover:bg-amber-500/90 text-white" : "bg-accent hover:bg-accent/90 text-accent-foreground"}`}>
             {loading
               ? <><Loader2 className="w-4 h-4 animate-spin" /> Redirecting...</>
-              : <><CreditCard className="w-4 h-4" /> Pay {cycle === "annual" ? `$${annualTotal}/year` : `$${amount}/month`} via Flutterwave</>}
+              : <><CreditCard className="w-4 h-4" /> Pay {cycle === "annual" ? `${prices.symbol}${annualTotal}/year` : `${prices.symbol}${amount}/month`} via Flutterwave</>}
           </Button>
         </div>
       </motion.div>
@@ -342,7 +342,7 @@ export default function PricingSettings() {
                 <h2 className="text-xl font-extrabold text-foreground">{activePlanDef.name}</h2>
                 <div className="flex items-center gap-3 flex-wrap mt-0.5">
                   <p className="text-sm text-muted-foreground">
-                    {currentPlanId === "free" ? "Free forever" : `$${prices[currentPlanId]}/month`}
+                    {currentPlanId === "free" ? "Free forever" : `${prices.symbol}${prices[currentPlanId]}/month`}
                   </p>
                   {expiresAt && (
                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -414,7 +414,7 @@ export default function PricingSettings() {
           const price = billingCycle === "annual" && plan.id !== "free"
             ? Math.round(monthlyPrice * (1 - YEARLY_DISCOUNT))
             : monthlyPrice;
-          const globalPrice = globalPrices[plan.id] || 0;
+          const globalPrice = REGION_PRICES.global[plan.id] || 0;
           const hasDiscount = isAfrica && monthlyPrice !== globalPrice && plan.id !== "free";
 
           return (
@@ -451,7 +451,7 @@ export default function PricingSettings() {
 
               <div className="mb-1">
                 <span className="text-3xl font-extrabold text-foreground">
-                  {plan.id === "free" ? "Free" : `$${price}`}
+                  {plan.id === "free" ? "Free" : `${prices.symbol}${price}`}
                 </span>
                 {plan.id !== "free" && (
                   <span className="text-sm text-muted-foreground ml-1">
@@ -464,7 +464,7 @@ export default function PricingSettings() {
               <div className="flex flex-wrap items-center gap-1.5 mb-3">
                 {billingCycle === "annual" && plan.id !== "free" && (
                   <span className="text-green-700 font-semibold bg-green-100 border border-green-200 px-2 py-0.5 rounded-full text-[10px] flex items-center gap-1">
-                    <Tag className="w-2.5 h-2.5" /> Save 20% — ${getYearlyPrice(monthlyPrice)}/yr
+                    <Tag className="w-2.5 h-2.5" /> Save 20% — {prices.symbol}{getYearlyPrice(monthlyPrice)}/yr
                   </span>
                 )}
                 {isAfrica && hasDiscount && (

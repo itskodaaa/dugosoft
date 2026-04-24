@@ -4,8 +4,8 @@ import { base44 } from "@/api/base44Client";
 
 // Pricing by region
 export const REGION_PRICES = {
-  global: { pro: 12, business: 29, currency: "USD", label: "Global" },
-  africa: { pro: 4,  business: 12, currency: "USD", label: "Africa" },
+  global: { pro: 12, business: 29, currency: "USD", symbol: "$", label: "Global" },
+  africa: { pro: 6000, business: 18000, currency: "NGN", symbol: "₦", label: "Africa" },
 };
 
 // Countries classified as "africa" region
