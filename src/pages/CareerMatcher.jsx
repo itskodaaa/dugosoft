@@ -15,9 +15,6 @@ import { API_BASE } from "@/api/config";
 import { useAuth } from "@/lib/AuthContext";
 import { useEffect } from "react";
 
-const USER_PLAN = "business"; // "free" | "premium" | "business"
-const canUse = USER_PLAN !== "free";
-
 const MOCK_RESUME = `Alex Johnson — Senior Software Engineer
 Skills: React, Node.js, TypeScript, Python, PostgreSQL, AWS, Docker
 Experience: 6+ years building scalable web apps, led teams, SaaS products
@@ -38,6 +35,7 @@ const SCORE_COLOR = (s) => s >= 75 ? "text-green-600" : s >= 50 ? "text-amber-60
 const SCORE_BG = (s) => s >= 75 ? "bg-green-500" : s >= 50 ? "bg-amber-500" : "bg-red-500";
 
 export default function CareerMatcher() {
+  const { user } = useAuth();
   const [inputMode, setInputMode] = useState("text"); // text | url
   const [jobText, setJobText] = useState("");
   const [jobUrl, setJobUrl] = useState("");
@@ -116,7 +114,6 @@ Return a JSON object with:
   };
 
   const analyze = async () => {
-    if (!canUse) { toast.warning("AI Career Matcher is available on Premium and Business plans."); return; }
     const jd = inputMode === "url" ? jobUrl : jobText;
     if (!jd.trim()) { toast.warning("Please enter a job description or URL."); return; }
     if (!resume.trim()) { toast.warning("Please enter your resume summary."); return; }
@@ -124,39 +121,49 @@ Return a JSON object with:
     setResult(null);
     setAllJobs([]);
     setVisibleCount(5);
-    const res = await base44.integrations.Core.InvokeLLM({
-      prompt: buildPrompt(jd),
-      response_json_schema: SCHEMA,
-    });
-    setResult(res);
-    
-    // Merge AI jobs with DB jobs
-    const aiJobs = res.suggested_jobs || [];
-    const merged = [...aiJobs];
-    dbJobs.forEach(dbj => {
-      if (!merged.find(j => j.company === dbj.company && j.title === dbj.title)) {
-        merged.push({ ...dbj, match_pct: Math.floor(Math.random() * 20) + 60 }); // Mock match pct for DB jobs
-      }
-    });
-    setAllJobs(merged);
-
-    // Save this scanned job to DB
     try {
-      const token = localStorage.getItem("auth_token");
-      fetch(`${API_BASE}/api/jobs/shared`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-        body: JSON.stringify({
-          title: res.job_title_guess || "Job Opportunity",
-          company: res.company_guess || "Company",
-          url: inputMode === "url" ? jobUrl : "",
-          description: jd.slice(0, 5000),
-          board: inputMode === "url" ? "LinkedIn/Indeed" : "Direct Paste"
-        })
+      const res = await base44.integrations.Core.InvokeLLM({
+        prompt: buildPrompt(jd),
+        response_json_schema: SCHEMA,
       });
-    } catch (e) {}
+      setResult(res);
+      
+      // Merge AI jobs with DB jobs
+      const aiJobs = res.suggested_jobs || [];
+      const merged = [...aiJobs];
+      dbJobs.forEach(dbj => {
+        if (!merged.find(j => j.company === dbj.company && j.title === dbj.title)) {
+          merged.push({ ...dbj, match_pct: Math.floor(Math.random() * 20) + 60 }); // Mock match pct for DB jobs
+        }
+      });
+      setAllJobs(merged);
 
-    setLoading(false);
+      // Save this scanned job to DB
+      try {
+        const token = localStorage.getItem("auth_token");
+        fetch(`${API_BASE}/api/jobs/shared`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+          body: JSON.stringify({
+            title: res.job_title_guess || "Job Opportunity",
+            company: res.company_guess || "Company",
+            url: inputMode === "url" ? jobUrl : "",
+            description: jd.slice(0, 5000),
+            board: inputMode === "url" ? "LinkedIn/Indeed" : "Direct Paste"
+          })
+        });
+      } catch (e) {}
+    } catch (err) {
+      if (err.message.includes("upgrade")) {
+        toast.error("Limit Reached: Please upgrade to the Premium or Business plan to continue using AI features.", {
+          action: { label: "Upgrade", onClick: () => window.location.href = "/dashboard/pricing" }
+        });
+      } else {
+        toast.error(err.message || "AI Analysis failed.");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const refreshJobs = async () => {
@@ -172,8 +179,12 @@ Return a JSON object with:
       setAllJobs(res.suggested_jobs || []);
       setVisibleCount(5);
       toast.success("Loaded fresh job openings!");
-    } catch {
-      toast.error("Failed to refresh jobs.");
+    } catch (err) {
+      if (err.message.includes("upgrade")) {
+        toast.error("Limit Reached: Please upgrade to continue.");
+      } else {
+        toast.error("Failed to refresh jobs.");
+      }
     }
     setRefreshing(false);
   };
@@ -197,8 +208,12 @@ Return a JSON object with:
       setAllJobs(prev => [...prev, ...newJobs]);
       setVisibleCount(v => v + 5);
       toast.success(`Loaded ${newJobs.length} more job openings!`);
-    } catch {
-      toast.error("Failed to load more jobs.");
+    } catch (err) {
+      if (err.message.includes("upgrade")) {
+        toast.error("Limit Reached: Please upgrade to continue.");
+      } else {
+        toast.error("Failed to load more jobs.");
+      }
     }
     setLoadingMore(false);
   };
@@ -213,23 +228,13 @@ Return a JSON object with:
             </h1>
             <p className="text-muted-foreground text-sm mt-1">Match your resume to any job description, get an ATS score, improvement suggestions, and global job openings.</p>
           </div>
-          {!canUse && (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-xs text-amber-700 font-medium">
-              <Crown className="w-3.5 h-3.5" /> Premium & Business Plan only
-            </div>
-          )}
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/5 border border-accent/20 text-[10px] text-accent font-black uppercase tracking-widest">
+             Plan: {user?.plan || "Free"}
+          </div>
         </div>
       </motion.div>
 
-      {!canUse ? (
-        <div className="bg-card ink-border rounded-2xl p-12 text-center">
-          <Crown className="w-12 h-12 text-amber-400 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-foreground mb-2">Premium Feature</h2>
-          <p className="text-muted-foreground mb-6 max-w-md mx-auto">AI Career Matcher is available on Premium ($12/mo) and Business ($29/mo) plans.</p>
-          <Button className="bg-accent hover:bg-accent/90 text-accent-foreground rounded-full px-8">Upgrade Now</Button>
-        </div>
-      ) : (
-        <div className="grid lg:grid-cols-5 gap-6">
+      <div className="grid lg:grid-cols-5 gap-6">
           {/* Input Panel */}
           <div className="lg:col-span-2 space-y-5">
             {/* Job URL Parser */}

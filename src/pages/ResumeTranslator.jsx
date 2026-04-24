@@ -31,8 +31,8 @@ const LANGUAGES = [
 ];
 
 export default function ResumeTranslator() {
+  const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
   const [source, setSource] = useState("vault"); // "vault" | "paste" | "upload"
   const [vaultCVs, setVaultCVs] = useState([]);
   const [selectedCVId, setSelectedCVId] = useState("");
@@ -128,7 +128,13 @@ export default function ResumeTranslator() {
         setTranslated(data.result);
         toast.success(`Resume translated to ${targetLang.name}!`);
       } else {
-        toast.error(data.message || "Translation failed");
+        if (data.error === "upgrade_required") {
+          toast.error("Limit Reached: Please upgrade to Premium or Business to continue using Resume Translator.", {
+            action: { label: "Upgrade", onClick: () => window.location.href = "/dashboard/pricing" }
+          });
+        } else {
+          toast.error(data.message || "Translation failed");
+        }
       }
     } catch (e) {
       toast.error("Failed to connect to AI service");
@@ -197,9 +203,15 @@ export default function ResumeTranslator() {
   return (
     <div className="max-w-5xl space-y-6">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-2xl font-extrabold tracking-tight text-foreground mb-1 flex items-center gap-2">
-          <Languages className="w-6 h-6 text-accent" /> Resume Translator
-        </h1>
+        <div className="flex items-center justify-between flex-wrap gap-3 mb-1">
+          <div className="flex items-center gap-2">
+            <Languages className="w-6 h-6 text-accent" />
+            <h1 className="text-2xl font-extrabold tracking-tight text-foreground">Resume Translator</h1>
+          </div>
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/5 border border-accent/20 text-[10px] text-accent font-black uppercase tracking-widest">
+             Plan: {user?.plan || "Free"}
+          </div>
+        </div>
         <p className="text-muted-foreground text-sm">
           AI-powered resume translation that adapts tone, formatting, and conventions for each country's job market.
         </p>

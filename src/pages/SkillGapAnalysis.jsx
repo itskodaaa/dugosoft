@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
+import { useAuth } from "@/lib/AuthContext";
+import { API_BASE } from "@/api/config";
 
 const INDUSTRIES = [
   "Software Engineering", "Data Science & AI", "Product Management",
@@ -24,6 +26,7 @@ const COURSE_PLATFORMS = {
 };
 
 export default function SkillGapAnalysis() {
+  const { user } = useAuth();
   const [resumeText, setResumeText] = useState("");
   const [targetIndustry, setTargetIndustry] = useState(INDUSTRIES[0]);
   const [loading, setLoading] = useState(false);
@@ -36,8 +39,9 @@ export default function SkillGapAnalysis() {
     setLoading(true);
     setResult(null);
 
-    const response = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are a career skills analyst. Analyze this resume/skills profile against requirements for the "${targetIndustry}" industry.
+    try {
+      const response = await base44.integrations.Core.InvokeLLM({
+        prompt: `You are a career skills analyst. Analyze this resume/skills profile against requirements for the "${targetIndustry}" industry.
 
 RESUME/SKILLS:
 ${resumeText}
@@ -50,41 +54,51 @@ Return a JSON with:
 - "summary": 2-3 sentence overall analysis
 
 Return pure JSON only.`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          match_score: { type: "number" },
-          present_skills: { type: "array", items: { type: "string" } },
-          skill_gaps: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                skill: { type: "string" },
-                importance: { type: "string" },
-                description: { type: "string" },
+        response_json_schema: {
+          type: "object",
+          properties: {
+            match_score: { type: "number" },
+            present_skills: { type: "array", items: { type: "string" } },
+            skill_gaps: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  skill: { type: "string" },
+                  importance: { type: "string" },
+                  description: { type: "string" },
+                },
               },
             },
-          },
-          courses: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                title: { type: "string" },
-                provider: { type: "string" },
-                duration: { type: "string" },
-                why: { type: "string" },
-                skill_covered: { type: "string" },
+            courses: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  title: { type: "string" },
+                  provider: { type: "string" },
+                  duration: { type: "string" },
+                  why: { type: "string" },
+                  skill_covered: { type: "string" },
+                },
               },
             },
+            summary: { type: "string" },
           },
-          summary: { type: "string" },
         },
-      },
-    });
-    setResult(response);
-    setLoading(false);
+      });
+      setResult(response);
+    } catch (err) {
+      if (err.message.includes("upgrade")) {
+        toast.error("Limit Reached: Please upgrade to Premium or Business to continue using Skill Gap Analysis.", {
+          action: { label: "Upgrade", onClick: () => window.location.href = "/dashboard/pricing" }
+        });
+      } else {
+        toast.error(err.message || "Analysis failed.");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const copy = (text, key) => {
@@ -110,11 +124,16 @@ Return pure JSON only.`,
     <div className="max-w-5xl space-y-6">
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-        <div className="flex items-center gap-3 mb-1">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-accent to-purple-600 flex items-center justify-center">
-            <Target className="w-5 h-5 text-white" />
+        <div className="flex items-center justify-between flex-wrap gap-3 mb-1">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-accent to-purple-600 flex items-center justify-center">
+              <Target className="w-5 h-5 text-white" />
+            </div>
+            <h1 className="text-2xl font-extrabold tracking-tight text-foreground">Skill Gap Analysis</h1>
           </div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-foreground">Skill Gap Analysis</h1>
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/5 border border-accent/20 text-[10px] text-accent font-black uppercase tracking-widest">
+             Plan: {user?.plan || "Free"}
+          </div>
         </div>
         <p className="text-muted-foreground text-sm">Compare your skills to your target industry — get personalized course recommendations to bridge the gap.</p>
       </motion.div>

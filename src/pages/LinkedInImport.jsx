@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { API_BASE } from "@/api/config";
+import { useAuth } from "@/lib/AuthContext";
 
 const TABS = [
   { key: "url", label: "LinkedIn URL", icon: Link2 },
@@ -29,6 +30,7 @@ const FIELD_SECTIONS = [
 ];
 
 export default function LinkedInImport() {
+  const { user } = useAuth();
   const [tab, setTab] = useState("url");
   const [url, setUrl] = useState("");
   const [file, setFile] = useState(null);
@@ -125,7 +127,13 @@ If a field truly cannot be found in the document, return an empty string "". Do 
       if (!parsed || typeof parsed !== "object") throw new Error("Invalid response from AI");
       setResult(parsed);
     } catch (err) {
-      toast.error(err?.message || "Extraction failed. Please try again.");
+      if (err.message.includes("upgrade")) {
+        toast.error("Limit Reached: Please upgrade to Premium or Business to continue using LinkedIn Import.", {
+          action: { label: "Upgrade", onClick: () => window.location.href = "/dashboard/pricing" }
+        });
+      } else {
+        toast.error(err?.message || "Extraction failed. Please try again.");
+      }
     }
     setLoading(false);
   };
@@ -209,8 +217,8 @@ If a field truly cannot be found in the document, return an empty string "". Do 
             </h1>
             <p className="text-muted-foreground text-sm mt-0.5">Extract your LinkedIn profile into a structured resume in seconds.</p>
           </div>
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-xs text-amber-700 font-medium">
-            <Crown className="w-3.5 h-3.5" /> Premium Feature
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/5 border border-accent/20 text-[10px] text-accent font-black uppercase tracking-widest">
+             Plan: {user?.plan || "Free"}
           </div>
         </div>
       </motion.div>

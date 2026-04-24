@@ -10,6 +10,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { base44 } from "@/api/base44Client";
 import ReactMarkdown from "react-markdown";
 
+import { useAuth } from "@/lib/AuthContext";
+import { toast } from "sonner";
+
 const SUGGESTED_PROMPTS = [
   { icon: BookOpen, label: "Summarize this document", prompt: "Please summarize this document in 3-5 clear paragraphs." },
   { icon: List, label: "Extract key insights", prompt: "What are the 5 most important insights or findings in this document?" },
@@ -20,6 +23,7 @@ const SUGGESTED_PROMPTS = [
 ];
 
 export default function ChatWithDocument() {
+  const { user } = useAuth();
   const [file, setFile] = useState(null);
   const [docText, setDocText] = useState("");
   const [messages, setMessages] = useState([]);
@@ -38,13 +42,23 @@ export default function ChatWithDocument() {
     setUploading(true);
     setMessages([]);
     // Extract text from file via LLM
-    const uploadResult = await base44.integrations.Core.UploadFile({ file: f });
-    const extracted = await base44.integrations.Core.ExtractDataFromUploadedFile({
-      file_url: uploadResult.file_url,
-      json_schema: { type: "object", properties: { text: { type: "string" } } }
-    });
-    const text = extracted?.output?.text || `[Document: ${f.name}]`;
-    setDocText(text);
+    try {
+      const uploadResult = await base44.integrations.Core.UploadFile({ file: f });
+      const extracted = await base44.integrations.Core.ExtractDataFromUploadedFile({
+        file_url: uploadResult.file_url,
+        json_schema: { type: "object", properties: { text: { type: "string" } } }
+      });
+      const text = extracted?.output?.text || `[Document: ${f.name}]`;
+      setDocText(text);
+    } catch (err) {
+      if (err.message.includes("upgrade")) {
+        toast.error("Limit Reached: Please upgrade to Premium or Business to continue.", {
+          action: { label: "Upgrade", onClick: () => window.location.href = "/dashboard/pricing" }
+        });
+      } else {
+        toast.error("Failed to read document.");
+      }
+    }
     setUploading(false);
     setMessages([{
       role: "assistant",
@@ -61,16 +75,26 @@ export default function ChatWithDocument() {
     setInput("");
     setLoading(true);
 
-    const history = messages.slice(-6);
-    const res = await base44.functions.invoke("aiService", {
-      action: "chatWithDocument",
-      documentText: docText,
-      question: text,
-      history,
-    });
+    try {
+      const history = messages.slice(-6);
+      const res = await base44.functions.invoke("aiService", {
+        action: "chatWithDocument",
+        documentText: docText,
+        question: text,
+        history,
+      });
 
-    const answer = res.data?.result?.answer || res.data?.message || "Sorry, I couldn't answer that. Please try again.";
-    setMessages(p => [...p, { role: "assistant", content: answer }]);
+      const answer = res.data?.result?.answer || res.data?.message || "Sorry, I couldn't answer that. Please try again.";
+      setMessages(p => [...p, { role: "assistant", content: answer }]);
+    } catch (err) {
+      if (err.message.includes("upgrade")) {
+        toast.error("Limit Reached: Please upgrade to continue.", {
+          action: { label: "Upgrade", onClick: () => window.location.href = "/dashboard/pricing" }
+        });
+      } else {
+        toast.error("Failed to send message.");
+      }
+    }
     setLoading(false);
   };
 
@@ -90,8 +114,8 @@ export default function ChatWithDocument() {
           </h1>
           <p className="text-muted-foreground text-sm mt-0.5">Upload a PDF, Word, or text file and have a conversation with its content.</p>
         </div>
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-xs text-amber-700 font-medium">
-          <Crown className="w-3.5 h-3.5" /> Premium Feature
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/5 border border-accent/20 text-[10px] text-accent font-black uppercase tracking-widest">
+           Plan: {user?.plan || "Free"}
         </div>
       </motion.div>
 

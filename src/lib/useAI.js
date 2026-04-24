@@ -43,8 +43,8 @@ export function useAI() {
           return null;
         }
 
-        if (data?.error === "limit_exceeded") {
-          toast.error(data.message, {
+        if (data?.error === "limit_exceeded" || data?.error === "upgrade_required") {
+          toast.error(data.message || "Limit Reached: Please upgrade to continue.", {
             action: { label: "Upgrade", onClick: () => window.location.href = "/dashboard/pricing" }
           });
           setError({ type: "limit_exceeded", message: data.message });

@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
+import { useAuth } from "@/lib/AuthContext";
+import { API_BASE } from "@/api/config";
 
 const TONES = [
   { id: "assertive",   label: "Assertive",   desc: "Confident & direct",  color: "from-orange-500 to-red-500" },
@@ -43,6 +45,7 @@ function PainPointCard({ point, addressed }) {
 }
 
 export default function CoverLetterArchitect() {
+  const { user } = useAuth();
   const [jobUrl, setJobUrl] = useState("");
   const [jobDescription, setJobDescription] = useState("");
   const [selectedResume, setSelectedResume] = useState(RESUME_VERSIONS[0]);
@@ -59,8 +62,9 @@ export default function CoverLetterArchitect() {
     if (!jd) { toast.warning("Please provide a job URL or paste the job description."); return; }
     if (isRegen) setRegenerating(true); else setLoading(true);
 
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are an expert career coach and professional writer. Generate a personalized, compelling cover letter.
+    try {
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `You are an expert career coach and professional writer. Generate a personalized, compelling cover letter.
 
 RESUME VERSION: ${selectedResume.label}
 TONE: ${selectedTone.label} (${selectedTone.desc})
@@ -79,47 +83,66 @@ Return JSON with:
   ],
   "score": number from 0-100 representing how well the cover letter matches the job
 }`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          cover_letter: { type: "string" },
-          pain_points: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                label: { type: "string" },
-                note: { type: "string" },
-                addressed: { type: "boolean" }
+        response_json_schema: {
+          type: "object",
+          properties: {
+            cover_letter: { type: "string" },
+            pain_points: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  label: { type: "string" },
+                  note: { type: "string" },
+                  addressed: { type: "boolean" }
+                }
               }
-            }
-          },
-          score: { type: "number" }
+            },
+            score: { type: "number" }
+          }
         }
-      }
-    });
+      });
 
-    setCoverLetter(result.cover_letter || "");
-    setPainPoints(result.pain_points || []);
-    setScore(result.score || null);
-    setLoading(false);
-    setRegenerating(false);
-    toast.success("Cover letter generated!");
+      setCoverLetter(result.cover_letter || "");
+      setPainPoints(result.pain_points || []);
+      setScore(result.score || null);
+      toast.success("Cover letter generated!");
+    } catch (err) {
+      if (err.message.includes("upgrade")) {
+        toast.error("Limit Reached: Please upgrade to Premium or Business to continue using Cover Letter Architect.", {
+          action: { label: "Upgrade", onClick: () => window.location.href = "/dashboard/pricing" }
+        });
+      } else {
+        toast.error(err.message || "Generation failed.");
+      }
+    } finally {
+      setLoading(false);
+      setRegenerating(false);
+    }
   };
 
   const handleToneChange = async (tone) => {
     setSelectedTone(tone);
     if (coverLetter) {
       setRegenerating(true);
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Rewrite the following cover letter in a "${tone.label}" tone (${tone.desc}). Keep the same content and facts, only change the writing style and voice. Return only the rewritten cover letter text.
+      try {
+        const result = await base44.integrations.Core.InvokeLLM({
+          prompt: `Rewrite the following cover letter in a "${tone.label}" tone (${tone.desc}). Keep the same content and facts, only change the writing style and voice. Return only the rewritten cover letter text.
 
 ORIGINAL:
 ${coverLetter}`,
-      });
-      setCoverLetter(result || "");
-      setRegenerating(false);
-      toast.success(`Tone changed to ${tone.label}!`);
+        });
+        setCoverLetter(result || "");
+        toast.success(`Tone changed to ${tone.label}!`);
+      } catch (err) {
+        if (err.message.includes("upgrade")) {
+          toast.error("Limit Reached: Please upgrade to continue.");
+        } else {
+          toast.error("Failed to rewrite.");
+        }
+      } finally {
+        setRegenerating(false);
+      }
     }
   };
 
@@ -132,13 +155,18 @@ ${coverLetter}`,
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
         <div className="relative overflow-hidden rounded-2xl p-6 mb-2" style={{ background: "linear-gradient(135deg, #4f46e5 0%, #4f8ef7 50%, #10b981 100%)" }}>
           <div className="absolute inset-0 opacity-20" style={{ backgroundImage: "radial-gradient(circle at 80% 50%, rgba(255,255,255,0.2) 0%, transparent 60%)" }} />
-          <div className="relative flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center">
-              <Sparkles className="w-6 h-6 text-white" />
+          <div className="relative flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center">
+                <Sparkles className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-extrabold text-white">AI Cover Letter Architect</h1>
+                <p className="text-white/80 text-sm">Generate personalized cover letters cross-referenced with your resume and the job description.</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-2xl font-extrabold text-white">AI Cover Letter Architect</h1>
-              <p className="text-white/80 text-sm">Generate personalized cover letters cross-referenced with your resume and the job description.</p>
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/20 border border-white/20 text-[10px] text-white font-black uppercase tracking-widest">
+               Plan: {user?.plan || "Free"}
             </div>
           </div>
         </div>

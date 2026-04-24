@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 import { useAI } from "@/lib/useAI";
+import { useAuth } from "@/lib/AuthContext";
 
 const QUESTION_TYPES = [
   { id: "behavioral",  label: "Behavioral",   color: "bg-blue-100 text-blue-700" },
@@ -88,8 +89,14 @@ Evaluate on: clarity (how clearly ideas are communicated), tone (professional an
         }
       });
       setFeedback(res);
-    } catch {
-      toast.error("Failed to get AI feedback.");
+    } catch (err) {
+      if (err.message.includes("upgrade")) {
+        toast.error("Limit Reached: Please upgrade to Premium or Business to continue using AI Feedback.", {
+          action: { label: "Upgrade", onClick: () => window.location.href = "/dashboard/pricing" }
+        });
+      } else {
+        toast.error("Failed to get AI feedback.");
+      }
     }
     setLoading(false);
   };
@@ -246,6 +253,7 @@ Evaluate on: clarity (how clearly ideas are communicated), tone (professional an
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function InterviewPrep() {
+  const { user } = useAuth();
   const { call, loading: generating } = useAI();
   const [step, setStep]           = useState("setup");
   const [jobDesc, setJobDesc]     = useState("");
@@ -272,10 +280,17 @@ export default function InterviewPrep() {
   return (
     <div className="max-w-3xl space-y-6">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-2xl font-extrabold text-foreground flex items-center gap-2">
-          <Brain className="w-6 h-6 text-accent" /> AI Interview Prep
-        </h1>
-        <p className="text-muted-foreground text-sm mt-1">Upload a job description and get tailored interview questions with a real-time practice mode.</p>
+        <div className="flex items-start justify-between flex-wrap gap-3 mb-1">
+          <div>
+            <h1 className="text-2xl font-extrabold text-foreground flex items-center gap-2">
+              <Brain className="w-6 h-6 text-accent" /> AI Interview Prep
+            </h1>
+            <p className="text-muted-foreground text-sm mt-1">Upload a job description and get tailored interview questions with a real-time practice mode.</p>
+          </div>
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/5 border border-accent/20 text-[10px] text-accent font-black uppercase tracking-widest">
+             Plan: {user?.plan || "Free"}
+          </div>
+        </div>
       </motion.div>
 
       <AnimatePresence mode="wait">

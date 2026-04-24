@@ -10,7 +10,8 @@ import { API_BASE } from "@/api/config";
 import { useDocumentTracker } from "@/lib/useDocumentTracker";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-const isPremiumUser = false;
+import { useAuth } from "@/lib/AuthContext";
+
 const FREE_LIMIT_MB = 10;
 
 const TABS = [
@@ -100,7 +101,7 @@ function UploadZone({ onFile, accept = "*", label = "Any file" }) {
   const handle = useCallback((f) => {
     if (!f) return;
     const mb = f.size / (1024 * 1024);
-    if (!isPremiumUser && mb > FREE_LIMIT_MB) {
+    if (mb > FREE_LIMIT_MB) {
       toast.error(`Free plan: max ${FREE_LIMIT_MB}MB per file. Upgrade for larger uploads.`);
       return;
     }
@@ -139,11 +140,13 @@ function UploadZone({ onFile, accept = "*", label = "Any file" }) {
 
 // ─── OCR Panel ────────────────────────────────────────────────────────────────
 function OCRPanel() {
+  const { user } = useAuth();
   const { track } = useDocumentTracker();
   const [file, setFile] = useState(null);
   const [processing, setProcessing] = useState(false);
   const [result, setResult] = useState(null);
   const [lang, setLang] = useState("English");
+  const isPremiumUser = user?.plan !== "free";
 
   const run = async () => {
     if (!file) { toast.warning("Please upload a file first."); return; }
@@ -168,7 +171,13 @@ function OCRPanel() {
         setResult(data.text);
         track({ name: file.name, size: file.size, category: "OCR" });
       } else {
-        toast.error(data.message || "OCR failed");
+        if (data.error === "upgrade_required") {
+          toast.error("Limit Reached: Please upgrade to Premium or Business to continue.", {
+            action: { label: "Upgrade", onClick: () => window.location.href = "/dashboard/pricing" }
+          });
+        } else {
+          toast.error(data.message || "OCR failed");
+        }
       }
     } catch (err) {
       toast.error("OCR request failed");
@@ -291,6 +300,8 @@ function OCRPanel() {
 
 // ─── Conversion Panel ─────────────────────────────────────────────────────────
 function ConversionPanel({ tabKey }) {
+  const { user } = useAuth();
+  const isPremiumUser = user?.plan !== "free";
   const { track } = useDocumentTracker();
   const options = CONVERSION_MATRIX[tabKey] || [];
   const [selected, setSelected] = useState(null);
@@ -302,7 +313,6 @@ function ConversionPanel({ tabKey }) {
   const run = async () => {
     if (!file) { toast.warning("Upload a file first."); return; }
     if (!selected) { toast.warning("Select a conversion type."); return; }
-    if (!selected.free && !isPremiumUser) { toast.warning("This conversion requires a Pro plan."); return; }
 
     const mapping = CONVERSION_TYPE_MAP[selected.label];
     if (!mapping) {
@@ -330,7 +340,13 @@ function ConversionPanel({ tabKey }) {
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        toast.error(err.message || "Conversion failed");
+        if (err.error === "upgrade_required") {
+          toast.error("Limit Reached: Please upgrade to Premium or Business to continue.", {
+            action: { label: "Upgrade", onClick: () => window.location.href = "/dashboard/pricing" }
+          });
+        } else {
+          toast.error(err.message || "Conversion failed");
+        }
         return;
       }
 
@@ -403,7 +419,9 @@ function ConversionPanel({ tabKey }) {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function OCRTools() {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("ocr");
+  const isPremiumUser = user?.plan !== "free";
 
   return (
     <div className="max-w-6xl space-y-6">
@@ -413,12 +431,9 @@ export default function OCRTools() {
             <h1 className="text-2xl font-extrabold tracking-tight text-foreground">File Conversion & OCR Suite</h1>
             <p className="text-muted-foreground text-sm">Convert files, extract text, and process documents with AI-powered OCR.</p>
           </div>
-          {!isPremiumUser && (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-xs text-amber-700 font-medium">
-              <Crown className="w-3.5 h-3.5" />
-              Free Plan · <button className="underline font-bold">Upgrade for full access</button>
-            </div>
-          )}
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/5 border border-accent/20 text-[10px] text-accent font-black uppercase tracking-widest">
+             Plan: {user?.plan || "Free"}
+          </div>
         </div>
 
         <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 rounded-lg px-4 py-2.5 mt-3">

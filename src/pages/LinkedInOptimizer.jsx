@@ -10,8 +10,10 @@ import { useLang } from "@/lib/i18n";
 import { useAI } from "@/lib/useAI";
 import { API_BASE } from "@/api/config";
 import SectionShareBar from "@/components/shared/SectionShareBar";
+import { useAuth } from "@/lib/AuthContext";
 
 export default function LinkedInOptimizer() {
+  const { user } = useAuth();
   const { lang } = useLang();
   const { call, loading } = useAI();
   const [resumeText, setResumeText] = useState("");
@@ -42,7 +44,13 @@ export default function LinkedInOptimizer() {
       if (!res.ok) throw new Error(data.message || "Extraction failed");
       setResumeText(data.text || "");
     } catch (err) {
-      toast.error(err?.message || "Failed to parse file.");
+      if (err.message.includes("upgrade")) {
+        toast.error("Limit Reached: Please upgrade to Premium or Business to continue using LinkedIn Optimizer.", {
+          action: { label: "Upgrade", onClick: () => window.location.href = "/dashboard/pricing" }
+        });
+      } else {
+        toast.error(err?.message || "Failed to parse file.");
+      }
       setUploadedFile(null);
     }
   };
@@ -67,11 +75,16 @@ export default function LinkedInOptimizer() {
   return (
     <div className="max-w-5xl">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-        <div className="flex items-center gap-3 mb-1">
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "#0A66C2" }}>
-            <Linkedin className="w-5 h-5 text-white" />
+        <div className="flex items-center justify-between flex-wrap gap-3 mb-1">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "#0A66C2" }}>
+              <Linkedin className="w-5 h-5 text-white" />
+            </div>
+            <h1 className="text-2xl font-extrabold tracking-tight text-foreground">LinkedIn Optimizer</h1>
           </div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-foreground">LinkedIn Optimizer</h1>
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/5 border border-accent/20 text-[10px] text-accent font-black uppercase tracking-widest">
+             Plan: {user?.plan || "Free"}
+          </div>
         </div>
         <p className="text-muted-foreground text-sm mb-8">
           Paste your resume and target role — get AI-optimized headlines, skill keywords, and an About section rewrite.

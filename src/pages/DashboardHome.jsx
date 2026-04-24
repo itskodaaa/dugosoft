@@ -124,11 +124,11 @@ export default function DashboardHome() {
   // Real stats from user entity
   const realStats = [
     { label: "AI Requests Today", value: todayAI, icon: Zap, color: "text-accent", bg: "bg-accent/10",
-      trend: `${limits?.ai_requests === Infinity ? "∞" : limits?.ai_requests || 10} limit` },
+      trend: `${plan === 'free' ? '10 limit' : 'Unlimited'}` },
     { label: "PDFs Processed", value: user?.pdf_count || 0, icon: FileText, color: "text-orange-500", bg: "bg-orange-500/10",
-      trend: `${limits?.pdf_count === Infinity ? "∞" : limits?.pdf_count || 5} limit` },
+      trend: `${plan === 'free' ? '5 limit' : 'Unlimited'}` },
     { label: "OCR Requests", value: user?.ocr_count || 0, icon: ScanText, color: "text-purple-500", bg: "bg-purple-500/10",
-      trend: `${limits?.ocr_count === Infinity ? "∞" : limits?.ocr_count || 3} limit` },
+      trend: `${plan === 'free' ? '3 limit' : 'Unlimited'}` },
     { label: "Resumes Saved", value: recentResumes.length, icon: FileText, color: "text-green-500", bg: "bg-green-500/10",
       trend: "in your library" },
   ];
