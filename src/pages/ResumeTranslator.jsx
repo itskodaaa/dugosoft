@@ -12,6 +12,9 @@ import { jsPDF } from "jspdf";
 import DiffView from "@/components/resume-translator/DiffView";
 import AIGradePanel from "@/components/resume-translator/AIGradePanel";
 
+import { vaultApi } from "@/api/vault";
+import { useAuth } from "@/lib/AuthContext";
+
 const LANGUAGES = [
   { code: "en", name: "English",    flag: "🇬🇧", tone: "Clear, ATS-optimised, action-verb driven" },
   { code: "fr", name: "French",     flag: "🇫🇷", tone: "Formal, concise, structured (French CV norms)" },
@@ -27,15 +30,12 @@ const LANGUAGES = [
   { code: "ja", name: "Japanese",   flag: "🇯🇵", tone: "Formal, detailed, Rirekisho-inspired" },
 ];
 
-const INITIAL_CVS = [
-  { id: "1", title: "Senior Dev — Tech Focus", content: `Alex Johnson — Senior Software Engineer\nEmail: alex@example.com | +1 (555) 234-5678\n\nSUMMARY\nPassionate software engineer with 6+ years building scalable web applications. Expert in React, Node.js, AWS.\n\nEXPERIENCE\nSenior Engineer — TechCorp Inc. (2022–Present)\n• Led team of 5 engineers, built microservices serving 2M users\n• Reduced infrastructure costs by 40% via AWS optimization\n\nSKILLS\nReact, Node.js, TypeScript, Python, PostgreSQL, AWS, Docker, Kubernetes` },
-  { id: "2", title: "Finance Sector CV",        content: `Alex Johnson — Software Engineer — Financial Systems\nEmail: alex@example.com | +1 (555) 234-5678\n\nSUMMARY\nSoftware engineer with 6+ years experience building high-availability financial systems, trading platforms, and data pipelines.\n\nEXPERIENCE\nSenior Engineer — TechCorp Inc. (2022–Present)\n• Built real-time data pipelines processing $2B+ daily transactions\n• Ensured SOC2 and PCI-DSS compliance across systems\n\nSKILLS\nPython, SQL, AWS, Kafka, Data Engineering, Compliance, Fintech APIs` },
-];
-
 export default function ResumeTranslator() {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const [source, setSource] = useState("vault"); // "vault" | "paste" | "upload"
-  const [selectedCVId, setSelectedCVId] = useState(INITIAL_CVS[0].id);
+  const [vaultCVs, setVaultCVs] = useState([]);
+  const [selectedCVId, setSelectedCVId] = useState("");
   const [pasteContent, setPasteContent] = useState("");
   const [uploadedContent, setUploadedContent] = useState("");
   const [uploadedFileName, setUploadedFileName] = useState("");
@@ -50,8 +50,26 @@ export default function ResumeTranslator() {
   const [copied, setCopied] = useState(false);
   const [showDiff, setShowDiff] = useState(false);
 
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchVaultCVs();
+    }
+  }, [isAuthenticated]);
+
+  const fetchVaultCVs = async () => {
+    try {
+      const data = await vaultApi.getAll();
+      if (Array.isArray(data)) {
+        setVaultCVs(data);
+        if (data.length > 0) setSelectedCVId(data[0].id);
+      }
+    } catch (error) {
+      console.error("Failed to fetch vault CVs:", error);
+    }
+  };
+
   const sourceContent = source === "vault"
-    ? INITIAL_CVS.find(c => c.id === selectedCVId)?.content || ""
+    ? vaultCVs.find(c => c.id === selectedCVId)?.content || ""
     : source === "upload"
     ? uploadedContent
     : pasteContent;
@@ -123,7 +141,7 @@ export default function ResumeTranslator() {
     if (!translated) return;
     setSaving(true);
     const sourceCVTitle = source === "vault"
-      ? INITIAL_CVS.find(c => c.id === selectedCVId)?.title
+      ? vaultCVs.find(c => c.id === selectedCVId)?.title
       : "Pasted Resume";
     try {
       // Create new vault entry directly without needing a separate upload
@@ -208,9 +226,13 @@ export default function ResumeTranslator() {
                 <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">Select CV from Vault</label>
                 <select value={selectedCVId} onChange={e => setSelectedCVId(e.target.value)}
                   className="w-full h-10 rounded-xl border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring">
-                  {INITIAL_CVS.map(cv => (
-                    <option key={cv.id} value={cv.id}>{cv.title}</option>
-                  ))}
+                  {vaultCVs.length > 0 ? (
+                    vaultCVs.map(cv => (
+                      <option key={cv.id} value={cv.id}>{cv.title}</option>
+                    ))
+                  ) : (
+                    <option value="" disabled>No CVs found in Vault</option>
+                  )}
                 </select>
                 {sourceContent && (
                   <div className="mt-3 bg-muted/40 rounded-xl p-3 max-h-40 overflow-auto">

@@ -100,10 +100,20 @@ export default function DashboardHome() {
   const [recentResumes, setRecentResumes] = useState([]);
   const [recentLetters, setRecentLetters] = useState([]);
 
+  const [todayAI, setTodayAI] = useState(0);
+
   useEffect(() => {
     if (!user?.id) return;
+    const t = localStorage.getItem("auth_token");
+    const h = t ? { Authorization: `Bearer ${t}` } : {};
+
     resumesApi.getAll().then(setRecentResumes).catch(() => {});
     base44.entities.CoverLetter.list("-created_date", 2).then(setRecentLetters).catch(() => {});
+    
+    fetch(`${API_BASE}/api/analytics/today`, { headers: h })
+      .then(r => r.ok ? r.json() : { ai_requests_today: 0 })
+      .then(d => setTodayAI(d.ai_requests_today || 0))
+      .catch(() => {});
   }, [user?.id]);
 
   const planLabel = { free: "Free Plan", pro: "Pro Plan", business: "Business" }[plan] || "Free Plan";
@@ -112,7 +122,7 @@ export default function DashboardHome() {
 
   // Real stats from user entity
   const realStats = [
-    { label: "AI Requests Today", value: user?.ai_requests || 0, icon: Zap, color: "text-accent", bg: "bg-accent/10",
+    { label: "AI Requests Today", value: todayAI, icon: Zap, color: "text-accent", bg: "bg-accent/10",
       trend: `${limits?.ai_requests === Infinity ? "∞" : limits?.ai_requests || 10} limit` },
     { label: "PDFs Processed", value: user?.pdf_count || 0, icon: FileText, color: "text-orange-500", bg: "bg-orange-500/10",
       trend: `${limits?.pdf_count === Infinity ? "∞" : limits?.pdf_count || 5} limit` },

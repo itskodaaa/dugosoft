@@ -98,7 +98,7 @@ function JobCard({ job, colDef, onEdit, onAIEmail, isDragging }) {
   );
 }
 
-function JobModal({ job, onSave, onClose, onDelete }) {
+function JobModal({ job, onSave, onClose, onDelete, resumeVersions, coverLetters }) {
   const [form, setForm] = useState(job || { company: "", role: "", location: "", url: "", resume: "", coverLetter: "", reminder: "", notes: "", stage: "saved" });
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
@@ -133,14 +133,14 @@ function JobModal({ job, onSave, onClose, onDelete }) {
           <div><label className="text-xs font-bold text-gray-500 block mb-1.5">Linked Resume</label>
             <select value={form.resume} onChange={e => set("resume", e.target.value)}
               className="w-full h-10 rounded-xl border border-input bg-background px-3 text-sm text-foreground">
-              <option value="">None</option>
-              {RESUME_VERSIONS.map(r => <option key={r}>{r}</option>)}
+               <option value="">None</option>
+              {resumeVersions.map(r => <option key={r}>{r}</option>)}
             </select></div>
           <div><label className="text-xs font-bold text-gray-500 block mb-1.5">Linked Cover Letter</label>
             <select value={form.coverLetter} onChange={e => set("coverLetter", e.target.value)}
               className="w-full h-10 rounded-xl border border-input bg-background px-3 text-sm text-foreground">
               <option value="">None</option>
-              {COVER_LETTERS.map(c => <option key={c}>{c}</option>)}
+              {coverLetters.map(c => <option key={c}>{c}</option>)}
             </select></div>
           <div><label className="text-xs font-bold text-gray-500 block mb-1.5">Interview Reminder</label>
             <Input type="date" value={form.reminder} onChange={e => set("reminder", e.target.value)} className="rounded-xl" /></div>
@@ -256,11 +256,22 @@ export default function JobTracker() {
   const [aiJob, setAiJob] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
+  const [resumeVersions, setResumeVersions] = useState([]);
+  const [coverLetters, setCoverLetters] = useState([]);
+
   useEffect(() => {
     fetch(`${API_BASE}/api/jobs`, { headers: authH() })
       .then(r => r.ok ? r.json() : { jobs: [] })
       .then(d => setColumns(jobsToColumns(d.jobs || [])))
       .catch(() => {});
+
+    fetch(`${API_BASE}/api/vault`, { headers: authH() })
+      .then(r => r.ok ? r.json() : { cvs: [] })
+      .then(d => setResumeVersions(d.cvs?.map(c => c.title) || []))
+      .catch(() => {});
+    
+    // We'll also fetch cover letters when available
+    // For now we can keep them empty or fetch from cover letters table if it exists
   }, []);
 
   const allJobs = Object.values(columns).flat();
@@ -418,7 +429,14 @@ export default function JobTracker() {
       {/* Modals */}
       <AnimatePresence>
         {showModal && (
-          <JobModal job={editJob} onSave={saveJob} onClose={() => { setShowModal(false); setEditJob(null); }} onDelete={deleteJob} />
+          <JobModal 
+            job={editJob} 
+            onSave={saveJob} 
+            onClose={() => { setShowModal(false); setEditJob(null); }} 
+            onDelete={deleteJob} 
+            resumeVersions={resumeVersions}
+            coverLetters={coverLetters}
+          />
         )}
         {aiJob && (
           <AIEmailModal job={aiJob} onClose={() => setAiJob(null)} />

@@ -147,18 +147,50 @@ If a field truly cannot be found in the document, return an empty string "". Do 
     navigate("/dashboard/career-matcher");
   };
 
-  const sendToVault = () => {
-    toast.success("Profile saved to CV Vault!");
-    navigate("/dashboard/cv-vault");
+  const sendToVault = async () => {
+    if (!result) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/vault`, {
+        method: "POST",
+        headers: authHeader(),
+        body: JSON.stringify({
+          title: `LinkedIn: ${result.name}`,
+          industry: "Imported",
+          content: `NAME: ${result.name}\nHEADLINE: ${result.headline}\nSUMMARY: ${result.summary}\nEXPERIENCE: ${result.experience}\nEDUCATION: ${result.education}\nSKILLS: ${result.skills}`,
+          lang: "en",
+          flag: "🇬🇧"
+        })
+      });
+      if (!res.ok) throw new Error("Failed to save to vault");
+      toast.success("Profile saved to CV Vault!");
+      navigate("/dashboard/cv-vault");
+    } catch (err) {
+      toast.error("Failed to save to vault.");
+    }
   };
 
   const syncToVault = async () => {
     if (!result) return;
     setSyncing(true);
-    await new Promise(r => setTimeout(r, 1500));
+    try {
+      const res = await fetch(`${API_BASE}/api/vault`, {
+        method: "POST",
+        headers: authHeader(),
+        body: JSON.stringify({
+          title: `Sync: ${result.name} (${new Date().toLocaleDateString()})`,
+          industry: "Sync",
+          content: `NAME: ${result.name}\nHEADLINE: ${result.headline}\nSUMMARY: ${result.summary}\nEXPERIENCE: ${result.experience}\nEDUCATION: ${result.education}\nSKILLS: ${result.skills}`,
+          lang: "en",
+          flag: "🇬🇧"
+        })
+      });
+      if (!res.ok) throw new Error("Sync failed");
+      toast.success("Profile synced to CV Vault!");
+      navigate("/dashboard/cv-vault");
+    } catch (err) {
+      toast.error("Sync failed.");
+    }
     setSyncing(false);
-    toast.success("Profile synced to CV Vault! Work history, skills & endorsements updated.");
-    navigate("/dashboard/cv-vault");
   };
 
   const handlePhotoUpload = (file) => {

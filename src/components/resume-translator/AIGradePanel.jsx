@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Sparkles, Loader2, TrendingUp, CheckCircle2, AlertCircle, Lightbulb } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { base44 } from "@/api/base44Client";
+import { API_BASE } from "@/api/config";
 import { motion, AnimatePresence } from "framer-motion";
 
 function ScoreRing({ score }) {
@@ -48,8 +48,17 @@ export default function AIGradePanel({ resumeText, targetLang, jobTarget }) {
   const handleGrade = async () => {
     setGrading(true);
     setGrade(null);
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are an expert ATS analyst and career coach. Grade this translated resume.
+    try {
+      const token = localStorage.getItem("auth_token");
+      const res = await fetch(`${API_BASE}/api/ai/invoke`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          action: "invokeLLM",
+          prompt: `You are an expert ATS analyst and career coach. Grade this translated resume.
 
 Language: ${targetLang.name}
 ${jobTarget ? `Target Role: ${jobTarget}` : ""}
@@ -72,20 +81,31 @@ Return ONLY valid JSON in this exact format:
   "improvements": ["string", "string"],
   "tip": "string"
 }`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          overall: { type: "number" },
-          ats_score: { type: "number" },
-          clarity_score: { type: "number" },
-          effectiveness_score: { type: "number" },
-          strengths: { type: "array", items: { type: "string" } },
-          improvements: { type: "array", items: { type: "string" } },
-          tip: { type: "string" }
-        }
+          response_json_schema: {
+            type: "object",
+            properties: {
+              overall: { type: "number" },
+              ats_score: { type: "number" },
+              clarity_score: { type: "number" },
+              effectiveness_score: { type: "number" },
+              strengths: { type: "array", items: { type: "string" } },
+              improvements: { type: "array", items: { type: "string" } },
+              tip: { type: "string" }
+            },
+            required: ["overall", "ats_score", "clarity_score", "effectiveness_score", "strengths", "improvements", "tip"]
+          }
+        })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setGrade(data.result);
+      } else {
+        throw new Error(data.message || "Grading failed");
       }
-    });
-    setGrade(result);
+    } catch (error) {
+      console.error("Grading failed:", error);
+    }
     setGrading(false);
   };
 
