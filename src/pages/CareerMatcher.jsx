@@ -11,6 +11,9 @@ import { Input } from "@/components/ui/input";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 import JobUrlParser from "../components/shared/JobUrlParser";
+import { API_BASE } from "@/api/config";
+import { useAuth } from "@/lib/AuthContext";
+import { useEffect } from "react";
 
 const USER_PLAN = "business"; // "free" | "premium" | "business"
 const canUse = USER_PLAN !== "free";
@@ -44,7 +47,22 @@ export default function CareerMatcher() {
   const [refreshing, setRefreshing] = useState(false);
   const [result, setResult] = useState(null);
   const [allJobs, setAllJobs] = useState([]);
+  const [dbJobs, setDbJobs] = useState([]);
   const [visibleCount, setVisibleCount] = useState(5);
+
+  const fetchSharedJobs = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/jobs/shared`);
+      const data = await res.json();
+      setDbJobs(data.jobs || []);
+    } catch (e) {
+      console.error("Failed to fetch shared jobs", e);
+    }
+  };
+
+  useEffect(() => {
+    fetchSharedJobs();
+  }, []);
 
   const buildPrompt = (jd, seedOffset = 0) => `You are an expert ATS and career coach. Given the job description and resume below, provide a detailed analysis.
 
@@ -65,6 +83,7 @@ Return a JSON object with:
 - strengths: array of 3 strengths
 - weaknesses: array of 2-3 gaps
 - job_title_guess: string
+- company_guess: string
 - suggested_jobs: array of 8 objects with { title, company, location, url, board, match_pct } — use varied global companies (LinkedIn, Indeed, Glassdoor, Otta, RemoteOK, Wellfound, EuroJobs, We Work Remotely). Every call should produce DIFFERENT companies and locations.`;
 
   const SCHEMA = {
@@ -78,6 +97,7 @@ Return a JSON object with:
       strengths: { type: "array", items: { type: "string" } },
       weaknesses: { type: "array", items: { type: "string" } },
       job_title_guess: { type: "string" },
+      company_guess: { type: "string" },
       suggested_jobs: {
         type: "array",
         items: {
@@ -109,7 +129,33 @@ Return a JSON object with:
       response_json_schema: SCHEMA,
     });
     setResult(res);
-    setAllJobs(res.suggested_jobs || []);
+    
+    // Merge AI jobs with DB jobs
+    const aiJobs = res.suggested_jobs || [];
+    const merged = [...aiJobs];
+    dbJobs.forEach(dbj => {
+      if (!merged.find(j => j.company === dbj.company && j.title === dbj.title)) {
+        merged.push({ ...dbj, match_pct: Math.floor(Math.random() * 20) + 60 }); // Mock match pct for DB jobs
+      }
+    });
+    setAllJobs(merged);
+
+    // Save this scanned job to DB
+    try {
+      const token = localStorage.getItem("auth_token");
+      fetch(`${API_BASE}/api/jobs/shared`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        body: JSON.stringify({
+          title: res.job_title_guess || "Job Opportunity",
+          company: res.company_guess || "Company",
+          url: inputMode === "url" ? jobUrl : "",
+          description: jd.slice(0, 5000),
+          board: inputMode === "url" ? "LinkedIn/Indeed" : "Direct Paste"
+        })
+      });
+    } catch (e) {}
+
     setLoading(false);
   };
 
