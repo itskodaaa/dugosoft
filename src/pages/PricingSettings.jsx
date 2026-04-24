@@ -261,7 +261,7 @@ export default function PricingSettings() {
     const txRef = params.get("tx_ref");
     const providerParam = params.get("provider");
 
-    if (status === "success" && plan) {
+    if ((status === "success" || status === "successful") && plan) {
       if (providerParam === "stripe") {
         toast.success(`Payment successful! Your ${plan} plan is now active.`);
         authApi.getMe().then(data => setUser(data.user));
@@ -280,6 +280,14 @@ export default function PricingSettings() {
       window.history.replaceState({}, "", window.location.pathname);
     } else if (status === "cancelled") {
       toast.info("Payment cancelled.");
+      window.history.replaceState({}, "", window.location.pathname);
+    } else if (txRef && params.get("transaction_id")) {
+      // Handle cases where status might be missing but IDs are present
+      const txId = params.get("transaction_id");
+      paymentsApi.verifyFlutterwavePayment({ transaction_id: txId, plan })
+        .then(() => { toast.success(`Payment verified! ${plan} plan activated.`); return authApi.getMe(); })
+        .then(data => setUser(data.user))
+        .catch(() => toast.error("Verification failed. Contact support."));
       window.history.replaceState({}, "", window.location.pathname);
     }
   }, []);

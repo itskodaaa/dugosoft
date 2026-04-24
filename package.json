@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"vite\" \"bun run --cwd ../dugosoft-backend src/index.ts\"",
+    "dev": "lsof -ti:5173,3021 | xargs kill -9 2>/dev/null || true; concurrently \"vite\" \"bun run --cwd ../dugosoft-backend src/index.ts\"",
     "build": "vite build",
     "lint": "eslint . --quiet",
     "lint:fix": "eslint . --fix",
