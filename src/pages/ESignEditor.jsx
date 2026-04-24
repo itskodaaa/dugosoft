@@ -122,19 +122,29 @@ export default function ESignEditor() {
             className="relative bg-white min-h-[700px] select-none cursor-crosshair"
             style={{ userSelect: "none" }}
           >
-            {/* Placeholder document */}
-            <div className="absolute inset-0 flex flex-col p-10 gap-3 pointer-events-none opacity-20">
-              <div className="h-3 bg-gray-300 rounded w-1/2" />
-              <div className="h-2 bg-gray-200 rounded w-3/4 mt-4" />
-              <div className="h-2 bg-gray-200 rounded w-full" />
-              <div className="h-2 bg-gray-200 rounded w-5/6" />
-              <div className="h-2 bg-gray-200 rounded w-full mt-4" />
-              <div className="h-2 bg-gray-200 rounded w-2/3" />
-              <div className="h-2 bg-gray-200 rounded w-full" />
-              <div className="h-2 bg-gray-200 rounded w-4/5 mt-6" />
-              <div className="h-2 bg-gray-200 rounded w-full" />
-              <div className="h-2 bg-gray-200 rounded w-3/4" />
-            </div>
+            {/* Document Content */}
+            {doc?.file_data ? (
+              <div className="absolute inset-0 w-full h-full pointer-events-none">
+                <iframe
+                  src={`data:application/pdf;base64,${doc.file_data}#toolbar=0&navpanes=0&scrollbar=0`}
+                  className="w-full h-full border-none pointer-events-none"
+                  title="Document Preview"
+                />
+              </div>
+            ) : (
+              <div className="absolute inset-0 flex flex-col p-10 gap-3 pointer-events-none opacity-20">
+                <div className="h-3 bg-gray-300 rounded w-1/2" />
+                <div className="h-2 bg-gray-200 rounded w-3/4 mt-4" />
+                <div className="h-2 bg-gray-200 rounded w-full" />
+                <div className="h-2 bg-gray-200 rounded w-5/6" />
+                <div className="h-2 bg-gray-200 rounded w-full mt-4" />
+                <div className="h-2 bg-gray-200 rounded w-2/3" />
+                <div className="h-2 bg-gray-200 rounded w-full" />
+                <div className="h-2 bg-gray-200 rounded w-4/5 mt-6" />
+                <div className="h-2 bg-gray-200 rounded w-full" />
+                <div className="h-2 bg-gray-200 rounded w-3/4" />
+              </div>
+            )}
 
             {/* Signature fields */}
             {fields.map(f => (

@@ -34,10 +34,14 @@ export default function ESignUpload() {
     setUploading(true);
     try {
       const token = localStorage.getItem("auth_token");
+      const formData = new FormData();
+      formData.append("title", title.trim());
+      formData.append("file", file);
+
       const res = await fetch(`${API_BASE}/api/esign`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ title: title.trim(), fileName: file.name }),
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
       });
       const doc = await res.json();
       if (!res.ok) throw new Error(doc.message || "Failed to create document");

@@ -124,51 +124,89 @@ export default function ESignSign() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-6">
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-        className="bg-card ink-border rounded-2xl shadow-xl w-full max-w-lg p-8 space-y-6">
-        <div className="text-center">
-          <img src="https://media.base44.com/images/public/69c7f271f712e2f213ac7d0b/3cd00a9ca_Gemini_Generated_Image_6abwj06abwj06abw-removebg-preview.png" alt="Dugosoft" className="h-10 w-10 object-contain mx-auto mb-2" />
-          <h1 className="text-xl font-extrabold text-foreground">Sign Document</h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            {docInfo?.doc?.title ? `Document: ${docInfo.doc.title}` : "You've been requested to sign a document via Dugosoft."}
-          </p>
+    <div className="min-h-screen bg-muted/30 flex flex-col">
+      {/* Header */}
+      <header className="h-14 border-b bg-card px-6 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-2">
+          <img src="https://media.base44.com/images/public/69c7f271f712e2f213ac7d0b/3cd00a9ca_Gemini_Generated_Image_6abwj06abwj06abw-removebg-preview.png" alt="Dugosoft" className="h-7 w-7 object-contain" />
+          <span className="font-black text-sm tracking-tight">DUGOSOFT</span>
+        </div>
+        <div className="text-right">
+          <p className="text-xs font-bold text-foreground truncate max-w-[200px]">{docInfo?.doc?.title || "Sign Document"}</p>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Review & Sign</p>
+        </div>
+      </header>
+
+      <main className="flex-1 flex overflow-hidden">
+        {/* Document Preview */}
+        <div className="flex-1 bg-muted/50 p-4 md:p-8 overflow-y-auto hidden md:block">
+          <div className="max-w-4xl mx-auto bg-card shadow-2xl rounded-xl overflow-hidden min-h-[1000px] relative">
+            {docInfo?.doc?.file_data ? (
+              <iframe
+                src={`data:application/pdf;base64,${docInfo.doc.file_data}#toolbar=0&navpanes=0&scrollbar=0`}
+                className="absolute inset-0 w-full h-full border-none"
+                title="Document"
+              />
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center text-muted-foreground animate-pulse">
+                Loading document preview...
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Tabs */}
-        <div className="flex rounded-xl bg-muted p-1 gap-1">
-          {TABS.map(t => {
-            const Icon = t.icon;
-            return (
-              <button key={t.id} onClick={() => setTab(t.id)}
-                className={`flex-1 flex items-center justify-center gap-1.5 h-9 rounded-lg text-xs font-semibold transition-all ${tab === t.id ? "bg-card shadow text-foreground" : "text-muted-foreground hover:text-foreground"}`}>
-                <Icon className="w-3.5 h-3.5" />{t.label}
-              </button>
-            );
-          })}
+        {/* Sidebar Controls */}
+        <div className="w-full md:w-[420px] bg-card border-l flex flex-col p-8 space-y-6 overflow-y-auto">
+          <div className="space-y-1">
+            <h1 className="text-xl font-extrabold text-foreground">Sign this document</h1>
+            <p className="text-muted-foreground text-sm leading-relaxed">Please review the document on the left and provide your signature below to complete the request.</p>
+          </div>
+
+          <div className="md:hidden bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs text-blue-700 font-medium">
+             Use a desktop browser to view the document full-screen while signing.
+          </div>
+
+          {/* Tabs */}
+          <div className="flex rounded-xl bg-muted p-1 gap-1">
+            {TABS.map(t => {
+              const Icon = t.icon;
+              return (
+                <button key={t.id} onClick={() => setTab(t.id)}
+                  className={`flex-1 flex items-center justify-center gap-1.5 h-10 rounded-lg text-xs font-bold transition-all ${tab === t.id ? "bg-card shadow text-foreground" : "text-muted-foreground hover:text-foreground"}`}>
+                  <Icon className="w-4 h-4" />{t.label}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="flex-1 space-y-6">
+            {tab === "draw" && <DrawPad onCapture={setSigData} />}
+            {tab === "type" && (
+              <div className="space-y-3">
+                <input value={typed} onChange={e => setTyped(e.target.value)} placeholder="Type your full name"
+                  className="w-full h-14 rounded-xl border border-input bg-muted/20 px-4 text-xl italic font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-accent/20 transition-all"
+                  style={{ fontFamily: "Georgia, serif" }} />
+                <p className="text-[10px] text-muted-foreground text-center">Your typed name serves as a legal digital signature.</p>
+              </div>
+            )}
+            {tab === "upload" && (
+              <div className="border-2 border-dashed border-border rounded-2xl p-10 text-center text-sm text-muted-foreground cursor-pointer hover:border-accent/50 transition-colors bg-muted/10">
+                <Upload className="w-10 h-10 mx-auto mb-3 text-muted-foreground/30" />
+                <p className="font-medium text-foreground mb-1">Click to upload signature</p>
+                <p className="text-xs">PNG or JPG with transparent background preferred</p>
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-3 pt-6 border-t">
+            <Button onClick={handleSubmit} disabled={submitting} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground rounded-xl h-12 font-bold text-sm gap-2 shadow-lg shadow-accent/20">
+              {submitting ? <div className="w-4 h-4 border-2 border-accent-foreground/30 border-t-accent-foreground rounded-full animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+              {submitting ? "Submitting..." : "Finish and Sign"}
+            </Button>
+            <p className="text-center text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Secure E-Signature by Dugosoft</p>
+          </div>
         </div>
-
-        {tab === "draw" && <DrawPad onCapture={setSigData} />}
-        {tab === "type" && (
-          <div>
-            <input value={typed} onChange={e => setTyped(e.target.value)} placeholder="Type your full name"
-              className="w-full h-16 rounded-xl border border-input bg-white px-4 text-2xl italic font-semibold text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-              style={{ fontFamily: "Georgia, serif" }} />
-          </div>
-        )}
-        {tab === "upload" && (
-          <div className="border-2 border-dashed border-border rounded-xl p-8 text-center text-sm text-muted-foreground cursor-pointer hover:border-accent/50 transition-colors">
-            <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground/50" />
-            <p>Click to upload signature image (PNG/JPG)</p>
-          </div>
-        )}
-
-        <Button onClick={handleSubmit} disabled={submitting} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground rounded-xl h-11 font-bold gap-2">
-          <CheckCircle2 className="w-4 h-4" />
-          {submitting ? "Submitting..." : "Submit Signature"}
-        </Button>
-        <p className="text-center text-[11px] text-muted-foreground">Secured by <span className="font-bold">DUGOSOFT</span> E-Signature</p>
-      </motion.div>
+      </main>
     </div>
   );
 }
