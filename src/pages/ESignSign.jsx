@@ -1,8 +1,8 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { PenLine, Type, Upload, CheckCircle2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { base44 } from "@/api/base44Client";
+import { API_BASE } from "@/api/config";
 import { toast } from "sonner";
 import { useParams } from "react-router-dom";
 
@@ -62,29 +62,52 @@ export default function ESignSign() {
   const [sigData, setSigData] = useState(null);
   const [signed, setSigned] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [docInfo, setDocInfo] = useState(null);
+  const [alreadySigned, setAlreadySigned] = useState(false);
+  const [tokenInvalid, setTokenInvalid] = useState(false);
+
+  useEffect(() => {
+    if (!token) return;
+    fetch(`${API_BASE}/api/esign/public/sign/${token}`)
+      .then(r => r.json())
+      .then(d => {
+        if (d.already_signed) { setAlreadySigned(true); setSigned(true); }
+        else if (d.message === "Invalid signing link") setTokenInvalid(true);
+        else setDocInfo(d);
+      })
+      .catch(() => setTokenInvalid(true));
+  }, [token]);
 
   const handleSubmit = async () => {
-    if (!sigData && !typed) { toast.error("Please provide your signature."); return; }
+    if (!sigData && !typed.trim()) { toast.error("Please provide your signature."); return; }
     setSubmitting(true);
-    // Find signer by token and update
-    const signers = await base44.entities.ESignSigner.filter({ token });
-    if (signers.length > 0) {
-      await base44.entities.ESignSigner.update(signers[0].id, {
-        status: "signed",
-        signed_at: new Date().toISOString(),
-        signature_data: sigData || `typed:${typed}`,
+    try {
+      const res = await fetch(`${API_BASE}/api/esign/public/sign/${token}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ signature_data: sigData || `typed:${typed}` }),
       });
-      await base44.entities.ESignAuditLog.create({
-        document_id: signers[0].document_id,
-        signer_email: signers[0].email,
-        action: "signed",
-        timestamp: new Date().toISOString(),
-      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to submit");
+      setSigned(true);
+      toast.success("Document signed successfully!");
+    } catch (err) {
+      toast.error(err?.message || "Failed to submit signature.");
+    } finally {
+      setSubmitting(false);
     }
-    setSubmitting(false);
-    setSigned(true);
-    toast.success("Document signed successfully!");
   };
+
+  if (tokenInvalid) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-6">
+        <div className="bg-card ink-border rounded-2xl shadow-xl p-10 text-center max-w-sm">
+          <p className="text-destructive font-bold text-lg mb-2">Invalid Link</p>
+          <p className="text-muted-foreground text-sm">This signing link is invalid or has expired.</p>
+        </div>
+      </div>
+    );
+  }
 
   if (signed) {
     return (
@@ -107,7 +130,9 @@ export default function ESignSign() {
         <div className="text-center">
           <img src="https://media.base44.com/images/public/69c7f271f712e2f213ac7d0b/3cd00a9ca_Gemini_Generated_Image_6abwj06abwj06abw-removebg-preview.png" alt="Dugosoft" className="h-10 w-10 object-contain mx-auto mb-2" />
           <h1 className="text-xl font-extrabold text-foreground">Sign Document</h1>
-          <p className="text-muted-foreground text-sm mt-1">You've been requested to sign a document via Dugosoft.</p>
+          <p className="text-muted-foreground text-sm mt-1">
+            {docInfo?.doc?.title ? `Document: ${docInfo.doc.title}` : "You've been requested to sign a document via Dugosoft."}
+          </p>
         </div>
 
         {/* Tabs */}

@@ -1,34 +1,38 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { X, Plus, Send, Trash2 } from "lucide-react";
+import { X, Plus, Send, Trash2, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { base44 } from "@/api/base44Client";
+import { API_BASE } from "@/api/config";
 import { toast } from "sonner";
 
 export default function SignerModal({ docId, docTitle, onClose, onSent }) {
   const [signers, setSigners] = useState([{ email: "", name: "" }]);
   const [sending, setSending] = useState(false);
+  const [signingLinks, setSigningLinks] = useState([]);
 
   const addSigner = () => setSigners(s => [...s, { email: "", name: "" }]);
   const removeSigner = (i) => setSigners(s => s.filter((_, idx) => idx !== i));
   const update = (i, field, val) => setSigners(s => s.map((sig, idx) => idx === i ? { ...sig, [field]: val } : sig));
 
   const handleSend = async () => {
-    if (signers.some(s => !s.email)) { toast.error("All signers need an email."); return; }
+    if (signers.some(s => !s.email.trim())) { toast.error("All signers need an email."); return; }
     setSending(true);
-    for (const signer of signers) {
-      const token = Math.random().toString(36).slice(2) + Date.now().toString(36);
-      await base44.entities.ESignSigner.create({ document_id: docId, email: signer.email, name: signer.name, token, status: "pending" });
-      await base44.integrations.Core.SendEmail({
-        to: signer.email,
-        subject: `[Dugosoft] Please sign: ${docTitle}`,
-        body: `Hello ${signer.name || ""},\n\nYou have been requested to sign a document on Dugosoft.\n\nDocument: ${docTitle}\n\nClick the link below to sign:\nhttps://dugosoft.com/sign/${token}\n\nThis link is unique to you.\n\n— Dugosoft Team`,
+    try {
+      const token = localStorage.getItem("auth_token");
+      const res = await fetch(`${API_BASE}/api/esign/${docId}/send`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ signers }),
       });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to send");
+      setSigningLinks(data.signers || []);
+      toast.success("Signing links generated!");
+    } catch (err) {
+      toast.error(err?.message || "Failed to send.");
+    } finally {
+      setSending(false);
     }
-    await base44.entities.ESignDocument.update(docId, { status: "pending" });
-    toast.success("Signing request sent to all signers!");
-    setSending(false);
-    onSent();
   };
 
   return (
@@ -41,37 +45,58 @@ export default function SignerModal({ docId, docTitle, onClose, onSent }) {
             <X className="w-4 h-4 text-muted-foreground" />
           </button>
         </div>
-        <p className="text-sm text-muted-foreground">Add signers below. Each will receive an email with a secure signing link.</p>
-
-        <div className="space-y-3">
-          {signers.map((s, i) => (
-            <div key={i} className="flex gap-2 items-start">
-              <div className="flex-1 space-y-2">
-                <input placeholder="Signer email *" value={s.email} onChange={e => update(i, "email", e.target.value)}
-                  className="w-full h-9 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring" />
-                <input placeholder="Name (optional)" value={s.name} onChange={e => update(i, "name", e.target.value)}
-                  className="w-full h-9 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring" />
+        {signingLinks.length > 0 ? (
+          <div className="space-y-3">
+            <p className="text-sm font-semibold text-foreground">Share these links with your signers:</p>
+            {signingLinks.map((s, i) => (
+              <div key={i} className="bg-muted/50 rounded-xl p-3 space-y-1">
+                <p className="text-xs font-semibold text-foreground">{s.name || s.email}</p>
+                <div className="flex items-center gap-2">
+                  <code className="text-xs text-muted-foreground flex-1 truncate">{s.signing_url}</code>
+                  <button
+                    onClick={() => { navigator.clipboard.writeText(s.signing_url); toast.success("Copied!"); }}
+                    className="text-xs text-accent font-semibold hover:underline shrink-0"
+                  >Copy</button>
+                </div>
               </div>
-              {signers.length > 1 && (
-                <button onClick={() => removeSigner(i)} className="w-8 h-8 mt-0.5 rounded-lg hover:bg-destructive/10 flex items-center justify-center shrink-0">
-                  <Trash2 className="w-3.5 h-3.5 text-destructive" />
-                </button>
-              )}
+            ))}
+            <Button onClick={onSent} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground rounded-xl">Done</Button>
+          </div>
+        ) : (
+          <>
+            <p className="text-sm text-muted-foreground">Add signers below. Each will receive a unique signing link.</p>
+
+            <div className="space-y-3">
+              {signers.map((s, i) => (
+                <div key={i} className="flex gap-2 items-start">
+                  <div className="flex-1 space-y-2">
+                    <input placeholder="Signer email *" value={s.email} onChange={e => update(i, "email", e.target.value)}
+                      className="w-full h-9 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring" />
+                    <input placeholder="Name (optional)" value={s.name} onChange={e => update(i, "name", e.target.value)}
+                      className="w-full h-9 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring" />
+                  </div>
+                  {signers.length > 1 && (
+                    <button onClick={() => removeSigner(i)} className="w-8 h-8 mt-0.5 rounded-lg hover:bg-destructive/10 flex items-center justify-center shrink-0">
+                      <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                    </button>
+                  )}
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
 
-        <button onClick={addSigner} className="flex items-center gap-2 text-xs font-semibold text-accent hover:underline">
-          <Plus className="w-3.5 h-3.5" /> Add another signer
-        </button>
-        <p className="text-[11px] text-muted-foreground">Free plan: 1 signer max. <a href="/dashboard/pricing" className="text-accent hover:underline">Upgrade for more.</a></p>
+            <button onClick={addSigner} className="flex items-center gap-2 text-xs font-semibold text-accent hover:underline">
+              <Plus className="w-3.5 h-3.5" /> Add another signer
+            </button>
+            <p className="text-[11px] text-muted-foreground">Free plan: 1 signer max. <a href="/dashboard/pricing" className="text-accent hover:underline">Upgrade for more.</a></p>
 
-        <div className="flex gap-2 pt-1">
-          <Button onClick={handleSend} disabled={sending} className="flex-1 bg-accent hover:bg-accent/90 text-accent-foreground rounded-xl gap-2">
-            <Send className="w-4 h-4" /> {sending ? "Sending..." : "Send for Signature"}
-          </Button>
-          <Button variant="outline" onClick={onClose} className="rounded-xl">Cancel</Button>
-        </div>
+            <div className="flex gap-2 pt-1">
+              <Button onClick={handleSend} disabled={sending} className="flex-1 bg-accent hover:bg-accent/90 text-accent-foreground rounded-xl gap-2">
+                <Send className="w-4 h-4" /> {sending ? "Sending..." : "Send for Signature"}
+              </Button>
+              <Button variant="outline" onClick={onClose} className="rounded-xl">Cancel</Button>
+            </div>
+          </>
+        )}
       </motion.div>
     </div>
   );

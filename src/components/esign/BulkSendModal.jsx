@@ -2,12 +2,13 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { X, Plus, Trash2, Send, Loader2, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { base44 } from "@/api/base44Client";
+import { API_BASE } from "@/api/config";
 import { toast } from "sonner";
 
 export default function BulkSendModal({ doc, onClose, onSent }) {
   const [recipients, setRecipients] = useState([{ email: "", name: "" }]);
   const [sending, setSending] = useState(false);
+  const [signingLinks, setSigningLinks] = useState([]);
 
   const addRecipient = () => setRecipients(r => [...r, { email: "", name: "" }]);
   const removeRecipient = (i) => setRecipients(r => r.filter((_, idx) => idx !== i));
@@ -18,27 +19,22 @@ export default function BulkSendModal({ doc, onClose, onSent }) {
     const valid = recipients.filter(r => r.email.trim());
     if (valid.length === 0) { toast.error("Add at least one recipient email."); return; }
     setSending(true);
-
-    for (const r of valid) {
-      const token = Math.random().toString(36).slice(2) + Date.now().toString(36);
-      await base44.entities.ESignSigner.create({
-        document_id: doc.id,
-        email: r.email.trim(),
-        name: r.name.trim() || r.email,
-        status: "pending",
-        token,
+    try {
+      const token = localStorage.getItem("auth_token");
+      const res = await fetch(`${API_BASE}/api/esign/${doc.id}/send`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ signers: valid }),
       });
-      await base44.integrations.Core.SendEmail({
-        to: r.email.trim(),
-        subject: `Action Required: Please sign "${doc.title}"`,
-        body: `Hello ${r.name || "there"},\n\nYou've been requested to sign the document: "${doc.title}".\n\nClick the link below to review and sign:\n${window.location.origin}/sign/${token}\n\nThis request was sent via Dugosoft E-Signature.\n\nThank you.`,
-      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to send");
+      setSigningLinks(data.signers || []);
+      toast.success(`Signing links generated for ${valid.length} recipient${valid.length > 1 ? "s" : ""}!`);
+    } catch (err) {
+      toast.error(err?.message || "Failed.");
+    } finally {
+      setSending(false);
     }
-
-    await base44.entities.ESignDocument.update(doc.id, { status: "pending" });
-    setSending(false);
-    toast.success(`Signing request sent to ${valid.length} recipient${valid.length > 1 ? "s" : ""}!`);
-    onSent();
   };
 
   return (
@@ -55,37 +51,60 @@ export default function BulkSendModal({ doc, onClose, onSent }) {
           </button>
         </div>
 
-        <div className="p-5 space-y-3 max-h-[60vh] overflow-auto">
-          <p className="text-xs text-muted-foreground">Each recipient will receive a unique signing link via email.</p>
-          {recipients.map((r, i) => (
-            <div key={i} className="flex gap-2 items-center">
-              <span className="text-xs font-bold text-muted-foreground w-5 shrink-0">{i + 1}</span>
-              <input value={r.email} onChange={e => updateRecipient(i, "email", e.target.value)}
-                placeholder="Email address *"
-                className="flex-1 h-9 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring" />
-              <input value={r.name} onChange={e => updateRecipient(i, "name", e.target.value)}
-                placeholder="Name (optional)"
-                className="w-32 h-9 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring" />
-              {recipients.length > 1 && (
-                <button onClick={() => removeRecipient(i)} className="w-8 h-8 rounded-lg hover:bg-destructive/10 flex items-center justify-center shrink-0">
-                  <Trash2 className="w-3.5 h-3.5 text-destructive" />
-                </button>
-              )}
+        {signingLinks.length > 0 ? (
+          <div className="p-5 space-y-3 max-h-[60vh] overflow-auto">
+            <p className="text-sm font-semibold text-foreground">Share these links with your signers:</p>
+            {signingLinks.map((s, i) => (
+              <div key={i} className="bg-muted/50 rounded-xl p-3 space-y-1">
+                <p className="text-xs font-semibold text-foreground">{s.name || s.email}</p>
+                <div className="flex items-center gap-2">
+                  <code className="text-xs text-muted-foreground flex-1 truncate">{s.signing_url}</code>
+                  <button
+                    onClick={() => { navigator.clipboard.writeText(s.signing_url); toast.success("Copied!"); }}
+                    className="text-xs text-accent font-semibold hover:underline shrink-0"
+                  >Copy</button>
+                </div>
+              </div>
+            ))}
+            <div className="pt-2 flex gap-2">
+              <Button onClick={onSent} className="flex-1 bg-accent hover:bg-accent/90 text-accent-foreground rounded-xl">Done</Button>
             </div>
-          ))}
-          <button onClick={addRecipient}
-            className="flex items-center gap-1.5 text-xs font-semibold text-accent hover:underline mt-1">
-            <Plus className="w-3.5 h-3.5" /> Add Another Recipient
-          </button>
-        </div>
+          </div>
+        ) : (
+          <>
+            <div className="p-5 space-y-3 max-h-[60vh] overflow-auto">
+              <p className="text-xs text-muted-foreground">Each recipient will receive a unique signing link.</p>
+              {recipients.map((r, i) => (
+                <div key={i} className="flex gap-2 items-center">
+                  <span className="text-xs font-bold text-muted-foreground w-5 shrink-0">{i + 1}</span>
+                  <input value={r.email} onChange={e => updateRecipient(i, "email", e.target.value)}
+                    placeholder="Email address *"
+                    className="flex-1 h-9 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring" />
+                  <input value={r.name} onChange={e => updateRecipient(i, "name", e.target.value)}
+                    placeholder="Name (optional)"
+                    className="w-32 h-9 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring" />
+                  {recipients.length > 1 && (
+                    <button onClick={() => removeRecipient(i)} className="w-8 h-8 rounded-lg hover:bg-destructive/10 flex items-center justify-center shrink-0">
+                      <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button onClick={addRecipient}
+                className="flex items-center gap-1.5 text-xs font-semibold text-accent hover:underline mt-1">
+                <Plus className="w-3.5 h-3.5" /> Add Another Recipient
+              </button>
+            </div>
 
-        <div className="p-5 border-t border-border flex gap-2">
-          <Button onClick={handleSend} disabled={sending}
-            className="flex-1 bg-accent hover:bg-accent/90 text-accent-foreground rounded-xl gap-2">
-            {sending ? <><Loader2 className="w-4 h-4 animate-spin" /> Sending...</> : <><Send className="w-4 h-4" /> Send to All</>}
-          </Button>
-          <Button variant="outline" onClick={onClose} className="rounded-xl">Cancel</Button>
-        </div>
+            <div className="p-5 border-t border-border flex gap-2">
+              <Button onClick={handleSend} disabled={sending}
+                className="flex-1 bg-accent hover:bg-accent/90 text-accent-foreground rounded-xl gap-2">
+                {sending ? <><Loader2 className="w-4 h-4 animate-spin" /> Sending...</> : <><Send className="w-4 h-4" /> Send to All</>}
+              </Button>
+              <Button variant="outline" onClick={onClose} className="rounded-xl">Cancel</Button>
+            </div>
+          </>
+        )}
       </motion.div>
     </div>
   );

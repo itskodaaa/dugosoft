@@ -1,37 +1,34 @@
 import React, { useState, useEffect } from "react";
-import { Bell, Send, Loader2, Clock, CheckCircle2 } from "lucide-react";
-import { base44 } from "@/api/base44Client";
+import { Bell, Send, Clock, CheckCircle2 } from "lucide-react";
+import { API_BASE } from "@/api/config";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 
 export default function RemindersPanel({ docId, docTitle }) {
   const [signers, setSigners] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [sending, setSending] = useState({});
 
   useEffect(() => {
     if (!docId) return;
-    base44.entities.ESignSigner.filter({ document_id: docId })
-      .then(setSigners)
+    const token = localStorage.getItem("auth_token");
+    fetch(`${API_BASE}/api/esign/${docId}/signers`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(d => setSigners(Array.isArray(d) ? d : []))
+      .catch(() => setSigners([]))
       .finally(() => setLoading(false));
   }, [docId]);
 
-  const sendReminder = async (signer) => {
-    setSending(s => ({ ...s, [signer.id]: true }));
-    await base44.integrations.Core.SendEmail({
-      to: signer.email,
-      subject: `Reminder: Please sign "${docTitle}"`,
-      body: `Hello ${signer.name || "there"},\n\nThis is a friendly reminder that your signature is still required on the document: "${docTitle}".\n\nClick here to sign:\n${window.location.origin}/sign/${signer.token}\n\nPlease sign at your earliest convenience.\n\nThank you,\nDugosoft E-Signature`,
-    });
-    setSending(s => ({ ...s, [signer.id]: false }));
-    toast.success(`Reminder sent to ${signer.email}`);
+  const sendReminder = (signer) => {
+    const signingUrl = `${window.location.origin}/sign/${signer.token}`;
+    navigator.clipboard.writeText(signingUrl);
+    toast.success(`Signing link copied for ${signer.email}`);
   };
 
   const sendAllReminders = async () => {
     const pending = signers.filter(s => s.status === "pending");
     if (pending.length === 0) { toast.info("No pending signers."); return; }
-    for (const s of pending) await sendReminder(s);
-    toast.success(`Reminders sent to ${pending.length} signer${pending.length > 1 ? "s" : ""}!`);
+    for (const s of pending) sendReminder(s);
+    toast.success(`Signing links copied for ${pending.length} signer${pending.length > 1 ? "s" : ""}!`);
   };
 
   const pendingCount = signers.filter(s => s.status === "pending").length;
@@ -73,10 +70,10 @@ export default function RemindersPanel({ docId, docTitle }) {
                 <span className="flex items-center gap-1 text-xs font-semibold text-amber-600">
                   <Clock className="w-3.5 h-3.5" /> Pending
                 </span>
-                <button onClick={() => sendReminder(signer)} disabled={sending[signer.id]}
-                  className="h-7 px-2.5 text-xs font-semibold bg-accent/10 hover:bg-accent/20 text-accent rounded-lg flex items-center gap-1 transition-colors disabled:opacity-50">
-                  {sending[signer.id] ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
-                  Remind
+                <button onClick={() => sendReminder(signer)}
+                  className="h-7 px-2.5 text-xs font-semibold bg-accent/10 hover:bg-accent/20 text-accent rounded-lg flex items-center gap-1 transition-colors">
+                  <Send className="w-3 h-3" />
+                  Copy Link
                 </button>
               </div>
             )}

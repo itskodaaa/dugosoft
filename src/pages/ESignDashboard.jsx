@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
+import { API_BASE } from "@/api/config";
 import { toast } from "sonner";
 import BulkSendModal from "../components/esign/BulkSendModal";
 import TemplatesModal from "../components/esign/TemplatesModal";
@@ -39,15 +39,22 @@ export default function ESignDashboard() {
 
   const loadDocs = () => {
     setLoading(true);
-    base44.entities.ESignDocument.list("-created_date", 50)
-      .then(setDocs)
+    const token = localStorage.getItem("auth_token");
+    fetch(`${API_BASE}/api/esign`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(d => setDocs(Array.isArray(d) ? d : []))
+      .catch(() => setDocs([]))
       .finally(() => setLoading(false));
   };
 
   useEffect(() => { loadDocs(); }, []);
 
   const handleDelete = async (id) => {
-    await base44.entities.ESignDocument.delete(id);
+    const token = localStorage.getItem("auth_token");
+    await fetch(`${API_BASE}/api/esign/${id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
     setDocs(p => p.filter(d => d.id !== id));
     toast.success("Document deleted.");
   };

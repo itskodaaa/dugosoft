@@ -2,7 +2,7 @@ import React, { useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { Upload, FileText, ArrowRight, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { base44 } from "@/api/base44Client";
+import { API_BASE } from "@/api/config";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
@@ -30,16 +30,24 @@ export default function ESignUpload() {
   };
 
   const handleSubmit = async () => {
-    if (!file || !title) { toast.error("Please provide a file and title."); return; }
+    if (!file || !title.trim()) { toast.error("Please provide a file and title."); return; }
     setUploading(true);
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    const doc = await base44.entities.ESignDocument.create({
-      title,
-      file_url,
-      status: "draft",
-    });
-    toast.success("Document uploaded!");
-    navigate(`/dashboard/esign/editor/${doc.id}`);
+    try {
+      const token = localStorage.getItem("auth_token");
+      const res = await fetch(`${API_BASE}/api/esign`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ title: title.trim(), fileName: file.name }),
+      });
+      const doc = await res.json();
+      if (!res.ok) throw new Error(doc.message || "Failed to create document");
+      toast.success("Document created!");
+      navigate(`/dashboard/esign/editor/${doc.id}`);
+    } catch (err) {
+      toast.error(err?.message || "Upload failed.");
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (

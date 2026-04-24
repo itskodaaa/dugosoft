@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { PenLine, Type, Calendar, Send, Save, Plus, X, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { base44 } from "@/api/base44Client";
+import { API_BASE } from "@/api/config";
 import { toast } from "sonner";
 import { useParams, useNavigate } from "react-router-dom";
 import SignerModal from "../components/esign/SignerModal";
@@ -25,7 +25,11 @@ export default function ESignEditor() {
   const previewRef = useRef();
 
   useEffect(() => {
-    if (id) base44.entities.ESignDocument.filter({ id }).then(r => setDoc(r[0]));
+    if (!id) return;
+    const token = localStorage.getItem("auth_token");
+    fetch(`${API_BASE}/api/esign/${id}`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(d => { setDoc(d); setFields(d.fields || []); });
   }, [id]);
 
   const addField = (type) => {
@@ -51,6 +55,12 @@ export default function ESignEditor() {
   const onMouseUp = () => setDraggingField(null);
 
   const handleSave = async () => {
+    const token = localStorage.getItem("auth_token");
+    await fetch(`${API_BASE}/api/esign/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ fields }),
+    });
     toast.success("Fields saved!");
   };
 

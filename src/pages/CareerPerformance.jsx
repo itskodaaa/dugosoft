@@ -1,10 +1,12 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   AreaChart, Area, RadarChart, Radar, PolarGrid, PolarAngleAxis,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from "recharts";
-import { TrendingUp, Target, Zap, Award, ChevronUp, ChevronDown } from "lucide-react";
+import { TrendingUp, Target, Zap, Award, ChevronUp, ChevronDown, Loader2 } from "lucide-react";
+import { API_BASE } from "@/api/config";
+import { useNavigate } from "react-router-dom";
 
 const atsHistory = [
   { month: "Oct", score: 54 },
@@ -69,6 +71,20 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 export default function CareerPerformance() {
+  const navigate = useNavigate();
+  const [jobs, setJobs] = useState([]);
+  const [loadingJobs, setLoadingJobs] = useState(true);
+
+  useEffect(() => {
+    const token = localStorage.getItem("auth_token");
+    if (!token) { setLoadingJobs(false); return; }
+    fetch(`${API_BASE}/api/jobs`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(d => setJobs(d.jobs || []))
+      .catch(() => setJobs([]))
+      .finally(() => setLoadingJobs(false));
+  }, []);
+
   return (
     <div className="max-w-6xl space-y-8">
       {/* Header */}
@@ -93,7 +109,14 @@ export default function CareerPerformance() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard icon={Award} label="Best ATS Score" value="81" sub="March 2026" iconColor="text-orange-500" bgColor="bg-orange-500/10" />
           <StatCard icon={TrendingUp} label="Score Growth" value="+27pts" sub="Since Oct 2025" iconColor="text-green-500" bgColor="bg-green-500/10" />
-          <StatCard icon={Target} label="Applications" value="4" sub="Jobs analyzed" iconColor="text-accent" bgColor="bg-accent/10" />
+          <StatCard
+            icon={Target}
+            label="Total Applications"
+            value={loadingJobs ? "—" : jobs.length}
+            sub={jobs.length > 0 ? "From Job Tracker" : "Start tracking jobs"}
+            iconColor="text-accent"
+            bgColor="bg-accent/10"
+          />
           <StatCard icon={Zap} label="Top Gap" value="TypeScript" sub="Missing in 8 apps" iconColor="text-orange-500" bgColor="bg-orange-500/10" />
         </div>
       </motion.div>
@@ -105,6 +128,7 @@ export default function CareerPerformance() {
           <div className="w-2 h-6 rounded-full bg-green-500" />
           <h2 className="text-base font-bold text-foreground">ATS Score Over Time</h2>
         </div>
+        <p className="text-xs text-muted-foreground/60 italic mb-4">Sample data — run ATS checks to track your real scores</p>
         <ResponsiveContainer width="100%" height={220}>
           <AreaChart data={atsHistory}>
             <defs>
@@ -163,6 +187,7 @@ export default function CareerPerformance() {
             <div className="w-2 h-6 rounded-full bg-accent" />
             <h2 className="text-base font-bold text-foreground">Skill Match Profile</h2>
           </div>
+          <p className="text-xs text-muted-foreground/60 italic mb-4">Sample data — run ATS checks to track your real scores</p>
           <ResponsiveContainer width="100%" height={220}>
             <RadarChart data={skillRadar} cx="50%" cy="50%" outerRadius={80}>
               <PolarGrid stroke="hsl(214 32% 91%)" />
@@ -182,28 +207,42 @@ export default function CareerPerformance() {
           <h2 className="text-base font-bold text-foreground">Recent Applications</h2>
         </div>
         <div className="space-y-3">
-          {recentApps.map((app, i) => (
-            <div key={i} className="flex items-center justify-between p-4 rounded-xl bg-muted/40 hover:bg-muted/70 transition-colors">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-400 to-green-500 flex items-center justify-center text-white font-bold text-sm">
-                  {app.company[0]}
+          {loadingJobs ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : jobs.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-sm font-semibold text-foreground mb-1">No applications yet</p>
+              <p className="text-xs text-muted-foreground mb-4">Start tracking your job applications to see performance data here.</p>
+              <button onClick={() => navigate("/dashboard/job-tracker")}
+                className="text-xs font-bold text-accent hover:underline">
+                Go to Job Tracker →
+              </button>
+            </div>
+          ) : (
+            jobs.slice(0, 5).map((app, i) => (
+              <div key={app.id || i} className="flex items-center justify-between p-4 rounded-xl bg-muted/40 hover:bg-muted/70 transition-colors">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-400 to-green-500 flex items-center justify-center text-white font-bold text-sm">
+                    {app.company?.[0] || "?"}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">{app.company}</p>
+                    <p className="text-xs text-muted-foreground">{app.role} · {new Date(app.created_date).toLocaleDateString("en-US", { month: "short", year: "numeric" })}</p>
+                  </div>
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-foreground">{app.company}</p>
-                  <p className="text-xs text-muted-foreground">{app.role} · {app.date}</p>
+                  <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                    app.stage === "offer" ? "bg-green-100 text-green-700" :
+                    app.stage === "interview" ? "bg-blue-100 text-blue-700" :
+                    app.stage === "applied" ? "bg-amber-100 text-amber-700" :
+                    "bg-muted text-muted-foreground"
+                  }`}>{app.stage || "saved"}</span>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                <div className={`text-2xl font-extrabold ${app.score >= 70 ? "text-green-500" : "text-orange-500"}`}>
-                  {app.score}
-                </div>
-                {app.trend === "up"
-                  ? <ChevronUp className="w-4 h-4 text-green-500" />
-                  : <ChevronDown className="w-4 h-4 text-orange-500" />
-                }
-              </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </motion.div>
     </div>
