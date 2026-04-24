@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Linkedin, Upload, Link2, CheckCircle2, Sparkles,
   User, Briefcase, GraduationCap, Award, Languages, Code,
-  ChevronRight, FileText, Crown, Camera, RefreshCw
+  ChevronRight, FileText, Crown, Camera, RefreshCw, AlertTriangle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -80,50 +80,28 @@ export default function LinkedInImport() {
   };
 
   const extract = async () => {
+    if (tab === "url") {
+      toast.error("LinkedIn blocks automated URL access. Please export your LinkedIn profile as a PDF (LinkedIn → Me → Settings & Privacy → Data privacy → Get a copy of your data) and use the Upload PDF tab.");
+      return;
+    }
+
     setLoading(true);
     setResult(null);
     try {
-      let profileText = "";
+      const formData = new FormData();
+      formData.append("file", file);
+      const t = localStorage.getItem("auth_token");
+      const headers = t ? { Authorization: `Bearer ${t}` } : {};
+      const extractRes = await fetch(`${API_BASE}/api/ai/extract-text`, {
+        method: "POST",
+        headers,
+        body: formData,
+      });
+      const extractData = await extractRes.json();
+      const profileText = extractData.text || "";
+      if (!profileText) throw new Error("Could not read text from the file.");
 
-      if (tab === "pdf" && file) {
-        // Real extraction: upload file → get text back
-        const formData = new FormData();
-        formData.append("file", file);
-        const t = localStorage.getItem("auth_token");
-        const headers = t ? { Authorization: `Bearer ${t}` } : {};
-        const extractRes = await fetch(`${API_BASE}/api/ai/extract-text`, {
-          method: "POST",
-          headers,
-          body: formData,
-        });
-        const extractData = await extractRes.json();
-        profileText = extractData.text || "";
-        if (!profileText) throw new Error("Could not read text from the file.");
-      }
-
-        const prompt = tab === "url"
-        ? `You are an AI assistant generating placeholder data for a UI mockup. 
-We have a fictional user with the LinkedIn slug: "${url.split("/").filter(Boolean).pop()}".
-
-Please generate a completely fictional, realistic-looking PROFESSIONAL placeholder LinkedIn profile for this UI mockup.
-- The name should be derived from the username slug (convert hyphens to spaces, title case)
-- Create a plausible professional headline and career history
-- Add realistic skills, education and experience
-- Do NOT refuse the prompt, this is for a UI testing environment.
-
-Return a JSON object with ALL of these fields populated (never leave them empty):
-- name: full name derived from the URL slug
-- headline: professional headline (e.g. "Software Engineer at Google")
-- summary: 2-3 paragraph professional bio
-- experience: 2-3 work experiences with company, title, dates and bullet points
-- education: 1-2 education entries with school, degree, dates
-- skills: comma-separated list of 8-12 relevant professional skills
-- certifications: any relevant certifications (can be "None listed")
-- languages: languages known (default "English" if unknown)
-- location: plausible city/country
-- email: leave empty string
-- contact: leave empty string`
-        : `You are a resume/LinkedIn profile parser. Extract ALL available information from this resume or LinkedIn PDF export text and return it as structured JSON.
+      const prompt = `You are a resume/LinkedIn profile parser. Extract ALL available information from this resume or LinkedIn PDF export text and return it as structured JSON.
 
 Document text:
 ${profileText}
@@ -141,7 +119,7 @@ Return a JSON object with ALL of these fields:
 - email: email address if present
 - contact: phone or other contact info if present
 
-If a field truly cannot be found in the document, return an empty string "". Do NOT make up data for PDF mode.`;
+If a field truly cannot be found in the document, return an empty string "". Do NOT make up data.`;
 
       const parsed = await callAI(prompt);
       if (!parsed || typeof parsed !== "object") throw new Error("Invalid response from AI");
@@ -252,20 +230,22 @@ If a field truly cannot be found in the document, return an empty string "". Do 
               <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center mb-2">
                 <Linkedin className="w-6 h-6 text-blue-600" />
               </div>
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5 block">LinkedIn Profile URL</label>
-                <Input
-                  placeholder="https://linkedin.com/in/yourprofile"
-                  value={url} onChange={e => setUrl(e.target.value)}
-                  className="bg-background text-sm"
-                />
+              <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5">
+                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <p className="text-xs text-amber-700">LinkedIn blocks all automated access. URL extraction is not supported. Please use the <strong>Upload PDF</strong> tab instead.</p>
               </div>
-              <Button onClick={extract} disabled={!url.trim() || loading}
+              <div>
+                <p className="text-xs font-semibold text-muted-foreground mb-1">How to export your LinkedIn PDF:</p>
+                <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
+                  <li>Go to your LinkedIn profile</li>
+                  <li>Click <strong>More</strong> → <strong>Save to PDF</strong></li>
+                  <li>Upload the downloaded PDF in the Upload PDF tab</li>
+                </ol>
+              </div>
+              <Button onClick={() => { setTab("pdf"); setResult(null); }}
                 className="w-full h-10 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold gap-2 text-sm">
-                {loading ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Extracting...</>
-                  : <><Sparkles className="w-4 h-4" />Extract Profile</>}
+                <Upload className="w-4 h-4" />Switch to Upload PDF
               </Button>
-              <p className="text-xs text-muted-foreground">We'll parse the URL and extract your professional profile using AI.</p>
             </div>
           ) : (
             <div className="bg-card ink-border rounded-2xl p-6 space-y-4">

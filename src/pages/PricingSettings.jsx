@@ -255,38 +255,41 @@ export default function PricingSettings() {
     const params = new URLSearchParams(window.location.search);
     const status = params.get("status");
     const plan = params.get("plan");
+    const txId = params.get("transaction_id");
     const txRef = params.get("tx_ref");
     const providerParam = params.get("provider");
 
-    if ((status === "success" || status === "successful") && plan) {
-      if (providerParam === "stripe") {
-        toast.success(`Payment successful! Your ${plan} plan is now active.`);
-        authApi.getMe().then(data => setUser(data.user));
-      } else if (txRef) {
-        const txId = params.get("transaction_id");
-        if (txId) {
-          paymentsApi.verifyFlutterwavePayment({ transaction_id: txId, plan })
-            .then(() => { toast.success(`Payment verified! ${plan} plan activated.`); return authApi.getMe(); })
-            .then(data => setUser(data.user))
-            .catch(() => toast.error("Verification failed. Contact support."));
-        } else {
-          toast.success(`Payment successful! Activating ${plan} plan...`);
-          setTimeout(() => authApi.getMe().then(data => setUser(data.user)), 3000);
-        }
-      }
-      window.history.replaceState({}, "", window.location.pathname);
-    } else if (status === "cancelled") {
-      toast.info("Payment cancelled.");
-      window.history.replaceState({}, "", window.location.pathname);
-    } else if (txRef && params.get("transaction_id")) {
-      // Handle cases where status might be missing but IDs are present
-      const txId = params.get("transaction_id");
-      paymentsApi.verifyFlutterwavePayment({ transaction_id: txId, plan })
-        .then(() => { toast.success(`Payment verified! ${plan} plan activated.`); return authApi.getMe(); })
-        .then(data => setUser(data.user))
-        .catch(() => toast.error("Verification failed. Contact support."));
-      window.history.replaceState({}, "", window.location.pathname);
+    if (!status && !txId && !txRef) return; // nothing to handle
+
+    window.history.replaceState({}, "", window.location.pathname);
+
+    // Stripe success (no server-side verify needed; webhook handles activation)
+    if (providerParam === "stripe" && (status === "success" || status === "paid")) {
+      toast.success(`Payment successful! Your ${plan} plan is now active.`);
+      setTimeout(() => authApi.getMe().then(data => setUser(data.user)), 2000);
+      return;
     }
+
+    // Flutterwave: ONLY activate if we have a real transaction_id to verify
+    if (txId && plan) {
+      paymentsApi.verifyFlutterwavePayment({ transaction_id: txId, plan })
+        .then(res => {
+          if (res.success) {
+            toast.success(`Payment verified! ${plan} plan activated.`);
+            return authApi.getMe();
+          }
+          throw new Error(res.message || "Verification failed");
+        })
+        .then(data => setUser(data.user))
+        .catch(() => toast.error("Verification failed. Contact support if you were charged."));
+      return;
+    }
+
+    // Cancelled, failed, or redirected without completing
+    if (status === "cancelled" || status === "failed" || status === "error") {
+      toast.info("Payment was not completed.");
+    }
+    // Any other redirect without transaction_id is treated as incomplete — no toast
   }, []);
 
   const handleCancel = async () => {
