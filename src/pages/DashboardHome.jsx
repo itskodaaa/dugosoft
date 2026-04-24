@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/AuthContext";
 import { usePlan } from "@/lib/usePlan";
+import { API_BASE } from "@/api/config";
 import { base44 } from "@/api/base44Client";
 import { resumesApi } from "@/api/resumes";
 import OnboardingChecklist from "@/components/shared/OnboardingChecklist";
