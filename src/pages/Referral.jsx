@@ -51,10 +51,11 @@ export default function Referral() {
     try {
       const res = await fetch(`${API_BASE}/api/referrals/generate`, { method: "POST", headers: authH() });
       const d = await res.json();
-      setReferralCode(d.referral_code || "");
+      if (!res.ok || !d.referral_code) throw new Error(d.message || "No code returned");
+      setReferralCode(d.referral_code);
       toast.success("Referral code generated!");
-    } catch {
-      toast.error("Failed to generate code.");
+    } catch (err) {
+      toast.error(err?.message || "Failed to generate code.");
     }
     setGenerating(false);
   };
