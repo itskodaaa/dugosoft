@@ -1,14 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Bell, X, CheckCircle2, AlertCircle, Clock, Info, Trash2, CheckCheck } from "lucide-react";
-
-const INITIAL_NOTIFICATIONS = [
-  { id: 1, type: "success", title: "Resume analysis complete", message: "Your ATS score improved to 87%.", time: "2m ago", read: false },
-  { id: 2, type: "warning", title: "Plan limit approaching", message: "You've used 9/10 resume builds this month.", time: "1h ago", read: false },
-  { id: 3, type: "info", title: "New feature available", message: "Skill Gap Analysis is now live!", time: "3h ago", read: false },
-  { id: 4, type: "success", title: "File conversion done", message: "Report.pdf was converted to Excel.", time: "1d ago", read: true },
-  { id: 5, type: "info", title: "CV Vault updated", message: "French CV version saved successfully.", time: "2d ago", read: true },
-];
+import { notificationsApi } from "@/api/notifications";
+import { useAuth } from "@/lib/AuthContext";
+import moment from "moment";
 
 const TYPE_CONFIG = {
   success: { icon: CheckCircle2, color: "text-green-500", bg: "bg-green-500/10" },
@@ -18,13 +13,57 @@ const TYPE_CONFIG = {
 
 export default function NotificationPanel() {
   const [open, setOpen] = useState(false);
-  const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
+  const [notifications, setNotifications] = useState([]);
+  const { isAuthenticated } = useAuth();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchNotifications();
+    }
+  }, [isAuthenticated]);
+
+  const fetchNotifications = async () => {
+    try {
+      const data = await notificationsApi.getAll();
+      if (Array.isArray(data)) {
+        setNotifications(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch notifications:", error);
+    }
+  };
 
   const unread = notifications.filter(n => !n.read).length;
 
-  const markAll = () => setNotifications(p => p.map(n => ({ ...n, read: true })));
-  const remove  = (id) => setNotifications(p => p.filter(n => n.id !== id));
-  const markOne = (id) => setNotifications(p => p.map(n => n.id === id ? { ...n, read: true } : n));
+  const markAll = async () => {
+    setNotifications(p => p.map(n => ({ ...n, read: true })));
+    try {
+      await notificationsApi.markAllAsRead();
+    } catch (error) {
+      console.error("Failed to mark all as read:", error);
+    }
+  };
+
+  const remove = async (id) => {
+    setNotifications(p => p.filter(n => n.id !== id));
+    try {
+      await notificationsApi.delete(id);
+    } catch (error) {
+      console.error("Failed to delete notification:", error);
+    }
+  };
+
+  const markOne = async (id) => {
+    const notif = notifications.find(n => n.id === id);
+    if (!notif || notif.read) return;
+
+    setNotifications(p => p.map(n => n.id === id ? { ...n, read: true } : n));
+    try {
+      await notificationsApi.markAsRead(id);
+    } catch (error) {
+      console.error("Failed to mark as read:", error);
+    }
+  };
 
   return (
     <div className="relative">
@@ -84,7 +123,7 @@ export default function NotificationPanel() {
                   </div>
                 ) : (
                   notifications.map(n => {
-                    const cfg = TYPE_CONFIG[n.type];
+                    const cfg = TYPE_CONFIG[n.type] || TYPE_CONFIG.info;
                     const Icon = cfg.icon;
                     return (
                       <div key={n.id}
@@ -98,7 +137,7 @@ export default function NotificationPanel() {
                           <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{n.message}</p>
                           <div className="flex items-center gap-1 mt-1">
                             <Clock className="w-3 h-3 text-muted-foreground/60" />
-                            <span className="text-[10px] text-muted-foreground/60">{n.time}</span>
+                            <span className="text-[10px] text-muted-foreground/60">{moment(n.createdAt).fromNow()}</span>
                           </div>
                         </div>
                         <button onClick={e => { e.stopPropagation(); remove(n.id); }}
