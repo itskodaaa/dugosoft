@@ -49,7 +49,11 @@ export default function Referral() {
   const generateCode = async () => {
     setGenerating(true);
     try {
-      const res = await fetch(`${API_BASE}/api/referrals/generate`, { method: "POST", headers: authH() });
+      const t = localStorage.getItem("auth_token");
+      const res = await fetch(`${API_BASE}/api/referrals/generate`, {
+        method: "POST",
+        headers: t ? { Authorization: `Bearer ${t}` } : {},
+      });
       const d = await res.json();
       if (!res.ok || !d.referral_code) throw new Error(d.message || "No code returned");
       setReferralCode(d.referral_code);
