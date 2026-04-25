@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Upload, X, FileText, Image, RefreshCw, Layers, Scissors, Merge,
+  Upload, X, FileText, Image, RefreshCw,
   Lock, Crown, Download, Eye, CheckCircle2, Zap, Shield
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,6 @@ const TABS = [
   { key: "to-pdf", label: "Convert to PDF", icon: FileText, color: "#f97316" },
   { key: "from-pdf", label: "Convert from PDF", icon: RefreshCw, color: "#10b981" },
   { key: "images", label: "Image Tools", icon: Image, color: "#8b5cf6" },
-  { key: "pdf-tools", label: "PDF Tools", icon: Layers, color: "#0ea5e9" },
 ];
 
 const OCR_FEATURES = [
@@ -63,17 +62,6 @@ const CONVERSION_MATRIX = {
     { from: "WebP", to: "JPG", label: "WebP → JPG", free: true },
     { from: "BMP",  to: "JPG", label: "BMP → JPG",  free: true },
     { from: "GIF",  to: "PNG", label: "GIF → PNG",  free: false },
-  ],
-  "pdf-tools": [
-    { from: "PDF", to: "PDF", label: "Merge PDFs",   free: true,  icon: Merge },
-    { from: "PDF", to: "PDF", label: "Split PDF",    free: true,  icon: Scissors },
-    { from: "PDF", to: "PDF", label: "Compress PDF", free: false },
-    { from: "PDF", to: "PDF", label: "Rotate Pages", free: false },
-    { from: "PDF", to: "PDF", label: "Extract Images",       free: false },
-    { from: "PDF", to: "PDF", label: "Add Watermark",        free: false },
-    { from: "PDF", to: "PDF", label: "Password Protect",     free: false },
-    { from: "PDF", to: "PDF", label: "Unlock PDF (remove password)", free: false, premium: true },
-    { from: "PDF", to: "PDF", label: "Remove Watermark",     free: false, premium: true },
   ],
 };
 
