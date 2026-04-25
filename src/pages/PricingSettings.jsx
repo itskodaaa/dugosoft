@@ -139,14 +139,22 @@ function PaymentModal({ plan, region, prices, cycle, onClose }) {
   const handlePay = async () => {
     setLoading(true);
     try {
-      // Route everything to Flutterwave for now
-      const res = await paymentsApi.createFlutterwavePayment({ plan: plan.id, region, billing_cycle: cycle });
-      if (res.error === "billing_not_configured") {
-        toast.error("Flutterwave is not configured yet. Set FLUTTERWAVE_SECRET_KEY in environment secrets.", { duration: 7000 });
-      } else if (res.payment_link) {
-        window.location.href = res.payment_link;
+      if (provider === "stripe") {
+        const res = await paymentsApi.createStripePayment({ plan: plan.id, billing_cycle: cycle });
+        if (res.url) {
+          window.location.href = res.url;
+        } else {
+          toast.error(res.error || "Failed to create Stripe session.");
+        }
       } else {
-        toast.error(res.message || res.error || "Failed to create payment link.");
+        const res = await paymentsApi.createFlutterwavePayment({ plan: plan.id, region, billing_cycle: cycle });
+        if (res.error === "billing_not_configured") {
+          toast.error("Flutterwave is not configured yet. Set FLUTTERWAVE_SECRET_KEY in environment secrets.", { duration: 7000 });
+        } else if (res.payment_link) {
+          window.location.href = res.payment_link;
+        } else {
+          toast.error(res.message || res.error || "Failed to create payment link.");
+        }
       }
     } catch (e) {
       toast.error(e?.message || "Payment failed. Please try again.");
@@ -221,7 +229,7 @@ function PaymentModal({ plan, region, prices, cycle, onClose }) {
             className={`w-full h-11 rounded-xl font-semibold text-sm gap-2 ${plan.id === "business" ? "bg-amber-500 hover:bg-amber-500/90 text-white" : "bg-accent hover:bg-accent/90 text-accent-foreground"}`}>
             {loading
               ? <><Loader2 className="w-4 h-4 animate-spin" /> Redirecting...</>
-              : <><CreditCard className="w-4 h-4" /> Pay {cycle === "annual" ? `${prices.symbol}${annualTotal}/year` : `${prices.symbol}${amount}/month`} via Flutterwave</>}
+              : <><CreditCard className="w-4 h-4" /> Pay {cycle === "annual" ? `${prices.symbol}${annualTotal}/year` : `${prices.symbol}${amount}/month`} via {provider === "stripe" ? "Stripe" : "Flutterwave"}</>}
           </Button>
         </div>
       </motion.div>
@@ -295,10 +303,19 @@ export default function PricingSettings() {
   const handleCancel = async () => {
     setCancelling(true);
     try {
-      await paymentsApi.cancelSubscription();
-      const data = await authApi.getMe();
-      setUser(data.user);
-      toast.success("Subscription cancelled. Moved to Free plan.");
+      if (provider === "stripe") {
+        const res = await paymentsApi.createStripePortal();
+        if (res.url) {
+          window.location.href = res.url;
+        } else {
+          toast.error(res.error || "Failed to open Stripe portal.");
+        }
+      } else {
+        await paymentsApi.cancelSubscription();
+        const data = await authApi.getMe();
+        setUser(data.user);
+        toast.success("Subscription cancelled. Moved to Free plan.");
+      }
     } catch {
       toast.error("Failed to cancel subscription.");
     }
@@ -363,7 +380,7 @@ export default function PricingSettings() {
                 <Button variant="outline" size="sm" onClick={handleCancel} disabled={cancelling}
                   className="rounded-full gap-1.5 text-xs border-destructive/30 text-destructive hover:bg-destructive/10">
                   {cancelling ? <Loader2 className="w-3 h-3 animate-spin" /> : <ArrowDownLeft className="w-3 h-3" />}
-                  Cancel Plan
+                  {provider === "stripe" ? "Manage Subscription" : "Cancel Plan"}
                 </Button>
               )}
               {currentPlanId === "free" && (

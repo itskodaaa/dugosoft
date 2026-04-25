@@ -39,4 +39,26 @@ export const paymentsApi = {
     });
     return res.json();
   },
+
+  createStripePayment: async (data) => {
+    const res = await fetch(`${API_BASE}/api/payments/stripe/create`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+
+  createStripePortal: async () => {
+    const res = await fetch(`${API_BASE}/api/payments/stripe/portal`, {
+      method: "POST",
+      headers: {
+        ...getAuthHeader(),
+      },
+    });
+    return res.json();
+  },
 };
