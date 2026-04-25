@@ -24,6 +24,7 @@ const PRO_PATHS = new Set([
 const BUSINESS_PATHS = new Set([
   "/dashboard/workspaces",
   "/dashboard/analytics",
+  "/dashboard/vibe-prospecting",
 ]);
 
 const NAV_GROUPS = [
@@ -65,6 +66,12 @@ const NAV_GROUPS = [
       { label: "Career Mentor",     icon: Wand2,          path: "/dashboard/career-mentor" },
       { label: "Career Performance",icon: Activity,       path: "/dashboard/career-performance" },
       { label: "Portfolio",         icon: Globe,          path: "/dashboard/portfolio-builder" },
+    ]
+  },
+  {
+    label: "Sales & Prospecting",
+    items: [
+      { label: "Vibe Prospecting",  icon: Sparkles,       path: "/dashboard/vibe-prospecting" },
     ]
   },
   {

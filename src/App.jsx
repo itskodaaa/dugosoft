@@ -54,6 +54,7 @@ import Referral from './pages/Referral';
 import AuthPage from './pages/AuthPage';
 import ImportResume from './pages/ImportResume';
 import PortfolioBuilder from './pages/PortfolioBuilder';
+import VibeProspecting from './pages/VibeProspecting';
 import PublicPortfolio from './pages/PublicPortfolio';
 import ShareDownload from './pages/ShareDownload';
 
@@ -129,6 +130,7 @@ const AuthenticatedApp = () => {
         <Route path="referral" element={<Referral />} />
         <Route path="import-resume" element={<ImportResume />} />
         <Route path="portfolio-builder" element={<PortfolioBuilder />} />
+        <Route path="vibe-prospecting" element={<VibeProspecting />} />
       </Route>
       <Route path="/portfolio/:slug" element={<PublicPortfolio />} />
       <Route path="/download/:token" element={<ShareDownload />} />
