@@ -444,9 +444,8 @@ Return a JSON object with:
                 </motion.div>
               )}
             </AnimatePresence>
-          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }
