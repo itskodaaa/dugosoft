@@ -41,7 +41,8 @@ export default function VibeProspecting() {
     }
   };
 
-  const handleEnrich = async (leadId) => {
+  const handleEnrich = async (lead) => {
+    const leadId = lead.id;
     setEnriching(leadId);
     try {
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/vibeprospecting/enrich`, {
@@ -50,16 +51,22 @@ export default function VibeProspecting() {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${localStorage.getItem("auth_token")}`
         },
-        body: JSON.stringify({ id: leadId })
+        body: JSON.stringify({ 
+          id: leadId,
+          name: lead.name,
+          company: lead.company
+        })
       });
       const data = await response.json();
       
+      if (data.error) throw new Error(data.error);
+
       setResults(prev => prev.map(l => l.id === leadId ? { ...l, ...data, enriched: true } : l));
       if (selectedLead?.id === leadId) setSelectedLead({ ...selectedLead, ...data, enriched: true });
       
       toast.success("Data enriched successfully!");
     } catch (error) {
-      toast.error("Failed to enrich lead");
+      toast.error(error.message || "Failed to enrich lead");
     } finally {
       setEnriching(null);
     }
@@ -183,7 +190,7 @@ export default function VibeProspecting() {
                       <Button 
                         size="sm" 
                         variant="ghost"
-                        onClick={(e) => { e.stopPropagation(); handleEnrich(lead.id); }}
+                        onClick={(e) => { e.stopPropagation(); handleEnrich(lead); }}
                         disabled={enriching === lead.id}
                         className="h-8 rounded-lg gap-1.5 text-accent hover:bg-accent/10 font-bold"
                       >
