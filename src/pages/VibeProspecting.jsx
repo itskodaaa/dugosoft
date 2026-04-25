@@ -4,7 +4,7 @@ import {
   Search, Users, Building2, Globe, Mail, Phone, 
   Linkedin, Twitter, Zap, ArrowRight, ExternalLink,
   ShieldCheck, Briefcase, MapPin, TrendingUp, Filter,
-  Download, Loader2, Sparkles, Plus
+  Download, Loader2, Sparkles, Plus, RefreshCw
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,11 +18,15 @@ export default function VibeProspecting() {
   const [selectedLead, setSelectedLead] = useState(null);
   const [enriching, setEnriching] = useState(null);
 
-  const handleSearch = async (e) => {
-    if (e) e.preventDefault();
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleSearch = async (e, forceNew = false) => {
+    if (e && e.preventDefault) e.preventDefault();
     if (!query) return;
 
-    setLoading(true);
+    if (forceNew) setRefreshing(true);
+    else setLoading(true);
+
     try {
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/vibeprospecting/search`, {
         method: "POST",
@@ -30,14 +34,19 @@ export default function VibeProspecting() {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${localStorage.getItem("auth_token")}`
         },
-        body: JSON.stringify({ query })
+        body: JSON.stringify({ 
+          query,
+          randomSeed: forceNew ? Math.random().toString() : "stable"
+        })
       });
       const data = await response.json();
       setResults(data.results || []);
+      if (forceNew) toast.success("Refreshed with new leads!");
     } catch (error) {
       toast.error("Failed to fetch leads");
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -147,9 +156,21 @@ export default function VibeProspecting() {
               {results.length > 0 ? `Results (${results.length})` : "Start searching to find leads"}
             </h2>
             {results.length > 0 && (
-              <Button variant="ghost" size="sm" className="text-xs gap-1.5 h-8">
-                <Filter className="w-3.5 h-3.5" /> Filter
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => handleSearch(null, true)}
+                  disabled={refreshing}
+                  className="text-xs gap-1.5 h-8 text-accent"
+                >
+                  {refreshing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                  Refresh Results
+                </Button>
+                <Button variant="ghost" size="sm" className="text-xs gap-1.5 h-8">
+                  <Filter className="w-3.5 h-3.5" /> Filter
+                </Button>
+              </div>
             )}
           </div>
 
