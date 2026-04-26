@@ -15,10 +15,10 @@ export default function VibeProspecting() {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState([]);
-  const [selectedLead, setSelectedLead] = useState(null);
-  const [enriching, setEnriching] = useState(null);
-
   const [refreshing, setRefreshing] = useState(false);
+  const [drafting, setDrafting] = useState(false);
+  const [outreachModal, setOutreachModal] = useState(false);
+  const [outreachData, setOutreachData] = useState(null);
 
   const handleSearch = async (e, forceNew = false) => {
     if (e && e.preventDefault) e.preventDefault();
@@ -78,6 +78,29 @@ export default function VibeProspecting() {
       toast.error(error.message || "Failed to enrich lead");
     } finally {
       setEnriching(null);
+    }
+  };
+
+  const handleDraftOutreach = async () => {
+    if (!selectedLead) return;
+    setDrafting(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/vibeprospecting/outreach`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("auth_token")}`
+        },
+        body: JSON.stringify({ lead: selectedLead })
+      });
+      const data = await response.json();
+      if (data.error) throw new Error(data.error);
+      setOutreachData(data.outreach);
+      setOutreachModal(true);
+    } catch (error) {
+      toast.error(error.message || "Failed to draft outreach");
+    } finally {
+      setDrafting(false);
     }
   };
 
@@ -326,8 +349,13 @@ export default function VibeProspecting() {
                   </div>
                 </div>
 
-                <Button className="w-full bg-accent hover:bg-accent/90 text-accent-foreground gap-2 rounded-xl font-bold h-11">
-                  Draft Outreach <ArrowRight className="w-4 h-4" />
+                <Button 
+                  onClick={handleDraftOutreach}
+                  disabled={drafting}
+                  className="w-full bg-accent hover:bg-accent/90 text-accent-foreground gap-2 rounded-xl font-bold h-11"
+                >
+                  {drafting ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
+                  Draft Outreach
                 </Button>
               </div>
             ) : (
@@ -354,6 +382,80 @@ export default function VibeProspecting() {
           </div>
         </div>
       </div>
+
+      {/* Outreach Modal */}
+      <AnimatePresence>
+        {outreachModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }}
+              onClick={() => setOutreachModal(false)}
+              className="absolute inset-0 bg-background/80 backdrop-blur-sm" 
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-2xl bg-card border border-border shadow-2xl rounded-3xl overflow-hidden"
+            >
+              <div className="p-6 border-b border-border flex items-center justify-between bg-muted/30">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-accent/10 rounded-lg">
+                    <Sparkles className="w-5 h-5 text-accent" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg">AI Outreach Draft</h3>
+                    <p className="text-xs text-muted-foreground">Personalized for {selectedLead?.name}</p>
+                  </div>
+                </div>
+                <Button variant="ghost" size="icon" onClick={() => setOutreachModal(false)} className="rounded-full">
+                  <Plus className="w-5 h-5 rotate-45" />
+                </Button>
+              </div>
+
+              <div className="p-8 space-y-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Subject Line</label>
+                  <div className="p-4 bg-muted/50 rounded-xl font-medium border border-border/50">
+                    {outreachData?.subject}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Message Body</label>
+                  <div className="p-6 bg-muted/30 rounded-2xl border border-border/50 text-sm leading-relaxed whitespace-pre-wrap min-h-[200px]">
+                    {outreachData?.body}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 pt-4">
+                  <Button 
+                    className="flex-1 bg-accent hover:bg-accent/90 text-accent-foreground rounded-xl font-bold h-12"
+                    onClick={() => {
+                      navigator.clipboard.writeText(`${outreachData?.subject}\n\n${outreachData?.body}`);
+                      toast.success("Copied to clipboard!");
+                    }}
+                  >
+                    Copy to Clipboard
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="flex-1 rounded-xl font-bold h-12"
+                    onClick={() => {
+                      const mailto = `mailto:${selectedLead?.email || ""}?subject=${encodeURIComponent(outreachData?.subject)}&body=${encodeURIComponent(outreachData?.body)}`;
+                      window.location.href = mailto;
+                    }}
+                  >
+                    Open in Email App
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
