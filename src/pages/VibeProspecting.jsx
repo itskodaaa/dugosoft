@@ -265,13 +265,34 @@ export default function VibeProspecting() {
                 </div>
 
                 <div className="flex items-center justify-center gap-3">
-                  <Button size="icon" variant="outline" className="rounded-full w-10 h-10 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200">
+                  <Button 
+                    size="icon" 
+                    variant="outline" 
+                    className={`rounded-full w-10 h-10 transition-all ${selectedLead.linkedin ? "hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200" : "opacity-30 cursor-not-allowed"}`}
+                    onClick={() => selectedLead.linkedin && window.open(selectedLead.linkedin, "_blank")}
+                    disabled={!selectedLead.linkedin}
+                    title={selectedLead.linkedin || "LinkedIn not found"}
+                  >
                     <Linkedin className="w-4 h-4" />
                   </Button>
-                  <Button size="icon" variant="outline" className="rounded-full w-10 h-10 hover:bg-sky-50 hover:text-sky-500 hover:border-sky-200">
+                  <Button 
+                    size="icon" 
+                    variant="outline" 
+                    className={`rounded-full w-10 h-10 transition-all ${selectedLead.twitter ? "hover:bg-sky-50 hover:text-sky-500 hover:border-sky-200" : "opacity-30 cursor-not-allowed"}`}
+                    onClick={() => selectedLead.twitter && window.open(selectedLead.twitter, "_blank")}
+                    disabled={!selectedLead.twitter}
+                    title={selectedLead.twitter || "Twitter not found"}
+                  >
                     <Twitter className="w-4 h-4" />
                   </Button>
-                  <Button size="icon" variant="outline" className="rounded-full w-10 h-10">
+                  <Button 
+                    size="icon" 
+                    variant="outline" 
+                    className={`rounded-full w-10 h-10 transition-all ${selectedLead.website ? "hover:bg-muted" : "opacity-30 cursor-not-allowed"}`}
+                    onClick={() => (selectedLead.website || selectedLead.url) && window.open(selectedLead.website || selectedLead.url, "_blank")}
+                    disabled={!selectedLead.website && !selectedLead.url}
+                    title={selectedLead.website || selectedLead.url || "Website not found"}
+                  >
                     <Globe className="w-4 h-4" />
                   </Button>
                 </div>
