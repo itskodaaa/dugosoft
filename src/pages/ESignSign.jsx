@@ -16,27 +16,47 @@ function DrawPad({ onCapture }) {
   const canvasRef = useRef();
   const drawing = useRef(false);
 
+  const getPos = (e) => {
+    const rect = canvasRef.current.getBoundingClientRect();
+    if (e.touches && e.touches[0]) {
+      return {
+        x: e.touches[0].clientX - rect.left,
+        y: e.touches[0].clientY - rect.top
+      };
+    }
+    return {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    };
+  };
+
   const startDraw = (e) => {
     drawing.current = true;
     const ctx = canvasRef.current.getContext("2d");
-    const rect = canvasRef.current.getBoundingClientRect();
+    const pos = getPos(e);
     ctx.beginPath();
-    ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+    ctx.moveTo(pos.x, pos.y);
+    if (e.cancelable) e.preventDefault();
   };
+
   const draw = (e) => {
     if (!drawing.current) return;
     const ctx = canvasRef.current.getContext("2d");
-    const rect = canvasRef.current.getBoundingClientRect();
+    const pos = getPos(e);
     ctx.lineWidth = 2.5;
     ctx.strokeStyle = "#1e3a5f";
     ctx.lineCap = "round";
-    ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+    ctx.lineTo(pos.x, pos.y);
     ctx.stroke();
+    if (e.cancelable) e.preventDefault();
   };
+
   const stopDraw = () => {
+    if (!drawing.current) return;
     drawing.current = false;
     onCapture(canvasRef.current.toDataURL());
   };
+
   const clear = () => {
     const ctx = canvasRef.current.getContext("2d");
     ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
@@ -46,8 +66,9 @@ function DrawPad({ onCapture }) {
   return (
     <div className="space-y-2">
       <canvas ref={canvasRef} width={420} height={160}
-        className="w-full border border-input rounded-xl bg-white cursor-crosshair"
-        onMouseDown={startDraw} onMouseMove={draw} onMouseUp={stopDraw} />
+        className="w-full border border-input rounded-xl bg-white cursor-crosshair touch-none"
+        onMouseDown={startDraw} onMouseMove={draw} onMouseUp={stopDraw} onMouseLeave={stopDraw}
+        onTouchStart={startDraw} onTouchMove={draw} onTouchEnd={stopDraw} />
       <button onClick={clear} className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1">
         <RefreshCw className="w-3 h-3" /> Clear
       </button>
@@ -140,13 +161,47 @@ export default function ESignSign() {
       <main className="flex-1 flex overflow-hidden">
         {/* Document Preview */}
         <div className="flex-1 bg-muted/50 p-4 md:p-8 overflow-y-auto hidden md:block">
-          <div className="max-w-4xl mx-auto bg-card shadow-2xl rounded-xl overflow-hidden min-h-[1000px] relative">
+          <div className="max-w-4xl mx-auto bg-card shadow-2xl rounded-xl overflow-hidden min-h-[800px] relative" id="doc-preview">
             {docInfo?.doc?.file_data ? (
-              <iframe
-                src={`data:application/pdf;base64,${docInfo.doc.file_data}#toolbar=0&navpanes=0&scrollbar=0`}
-                className="absolute inset-0 w-full h-full border-none"
-                title="Document"
-              />
+              <>
+                <iframe
+                  src={`data:application/pdf;base64,${docInfo.doc.file_data}#toolbar=0&navpanes=0&scrollbar=0`}
+                  className="absolute inset-0 w-full h-full border-none pointer-events-none"
+                  title="Document"
+                />
+                <div className="absolute inset-0">
+                  {docInfo.doc.fields?.map(f => (
+                    <div
+                      key={f.id}
+                      onClick={() => {
+                        if (f.type === "signature") setTab("draw");
+                        else if (f.type === "name") setTab("type");
+                        // Scroll sidebar to field?
+                      }}
+                      style={{ 
+                        left: `${f.x}px`, 
+                        top: `${f.y}px`, 
+                        width: `${f.w}px`, 
+                        height: `${f.h}px`,
+                        borderColor: f.type === "signature" ? "#3b82f6" : "#22c55e"
+                      }}
+                      className={`absolute border-2 border-dashed rounded-lg flex items-center justify-center cursor-pointer transition-all hover:bg-accent/5 ${sigData && f.type === "signature" ? "bg-white/80" : "bg-accent/5"}`}
+                    >
+                      {f.type === "signature" && sigData ? (
+                        sigData.startsWith("typed:") ? (
+                          <span className="text-xl italic font-serif text-foreground">{sigData.replace("typed:", "")}</span>
+                        ) : (
+                          <img src={sigData} alt="Sig" className="max-h-full max-w-full object-contain" />
+                        )
+                      ) : f.type === "name" && typed ? (
+                        <span className="text-sm font-bold text-foreground">{typed}</span>
+                      ) : (
+                        <span className="text-[10px] font-black uppercase tracking-tighter text-accent/50">{f.type}</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </>
             ) : (
               <div className="absolute inset-0 flex items-center justify-center text-muted-foreground animate-pulse">
                 Loading document preview...
@@ -180,7 +235,17 @@ export default function ESignSign() {
           </div>
 
           <div className="flex-1 space-y-6">
-            {tab === "draw" && <DrawPad onCapture={setSigData} />}
+            {tab === "draw" && (
+              <div className="space-y-4">
+                <DrawPad onCapture={setSigData} />
+                {sigData && !sigData.startsWith("typed:") && (
+                  <div className="p-3 bg-accent/5 rounded-xl border border-accent/10">
+                    <p className="text-[10px] font-bold text-accent uppercase tracking-widest mb-2">Captured Signature</p>
+                    <img src={sigData} alt="Signature Preview" className="max-h-20 mx-auto" />
+                  </div>
+                )}
+              </div>
+            )}
             {tab === "type" && (
               <div className="space-y-3">
                 <input value={typed} onChange={e => setTyped(e.target.value)} placeholder="Type your full name"
@@ -190,10 +255,35 @@ export default function ESignSign() {
               </div>
             )}
             {tab === "upload" && (
-              <div className="border-2 border-dashed border-border rounded-2xl p-10 text-center text-sm text-muted-foreground cursor-pointer hover:border-accent/50 transition-colors bg-muted/10">
-                <Upload className="w-10 h-10 mx-auto mb-3 text-muted-foreground/30" />
-                <p className="font-medium text-foreground mb-1">Click to upload signature</p>
-                <p className="text-xs">PNG or JPG with transparent background preferred</p>
+              <div className="space-y-4">
+                <input 
+                  type="file" 
+                  id="sig-upload" 
+                  className="hidden" 
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onload = (re) => setSigData(re.target.result);
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                />
+                <label 
+                  htmlFor="sig-upload"
+                  className="block border-2 border-dashed border-border rounded-2xl p-10 text-center text-sm text-muted-foreground cursor-pointer hover:border-accent/50 transition-colors bg-muted/10"
+                >
+                  <Upload className="w-10 h-10 mx-auto mb-3 text-muted-foreground/30" />
+                  <p className="font-medium text-foreground mb-1">Click to upload signature</p>
+                  <p className="text-xs">PNG or JPG with transparent background preferred</p>
+                </label>
+                {sigData && !sigData.startsWith("typed:") && (
+                  <div className="p-3 bg-accent/5 rounded-xl border border-accent/10">
+                    <p className="text-[10px] font-bold text-accent uppercase tracking-widest mb-2">Uploaded Signature</p>
+                    <img src={sigData} alt="Uploaded Preview" className="max-h-20 mx-auto" />
+                  </div>
+                )}
               </div>
             )}
           </div>
