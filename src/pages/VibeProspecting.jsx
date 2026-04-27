@@ -4,7 +4,7 @@ import {
   Search, Users, Building2, Globe, Mail, Phone, 
   Linkedin, Twitter, Zap, ArrowRight, ExternalLink,
   ShieldCheck, Briefcase, MapPin, TrendingUp, Filter,
-  Download, Loader2, Sparkles, Plus, RefreshCw
+  Download, Loader2, Sparkles, Plus, RefreshCw, Facebook
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,8 @@ export default function VibeProspecting() {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState([]);
+  const [selectedLead, setSelectedLead] = useState(null);
+  const [enriching, setEnriching] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [drafting, setDrafting] = useState(false);
   const [outreachModal, setOutreachModal] = useState(false);
@@ -287,40 +289,77 @@ export default function VibeProspecting() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-center gap-3">
-                  <Button 
-                    size="icon" 
-                    variant="outline" 
-                    className={`rounded-full w-10 h-10 transition-all ${selectedLead.linkedin ? "hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200" : "opacity-30 cursor-not-allowed"}`}
-                    onClick={() => selectedLead.linkedin && window.open(selectedLead.linkedin, "_blank")}
-                    disabled={!selectedLead.linkedin}
-                    title={selectedLead.linkedin || "LinkedIn not found"}
-                  >
-                    <Linkedin className="w-4 h-4" />
-                  </Button>
-                  <Button 
-                    size="icon" 
-                    variant="outline" 
-                    className={`rounded-full w-10 h-10 transition-all ${selectedLead.twitter ? "hover:bg-sky-50 hover:text-sky-500 hover:border-sky-200" : "opacity-30 cursor-not-allowed"}`}
-                    onClick={() => selectedLead.twitter && window.open(selectedLead.twitter, "_blank")}
-                    disabled={!selectedLead.twitter}
-                    title={selectedLead.twitter || "Twitter not found"}
-                  >
-                    <Twitter className="w-4 h-4" />
-                  </Button>
-                  <Button 
-                    size="icon" 
-                    variant="outline" 
-                    className={`rounded-full w-10 h-10 transition-all ${selectedLead.website ? "hover:bg-muted" : "opacity-30 cursor-not-allowed"}`}
-                    onClick={() => (selectedLead.website || selectedLead.url) && window.open(selectedLead.website || selectedLead.url, "_blank")}
-                    disabled={!selectedLead.website && !selectedLead.url}
-                    title={selectedLead.website || selectedLead.url || "Website not found"}
-                  >
-                    <Globe className="w-4 h-4" />
-                  </Button>
-                </div>
-
                 <div className="space-y-4 pt-4 border-t border-border">
+                  <div className="space-y-2">
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Personal Socials</p>
+                    <div className="flex items-center justify-center gap-3">
+                      <Button 
+                        size="icon" 
+                        variant="outline" 
+                        className={`rounded-full w-10 h-10 transition-all ${selectedLead.linkedin ? "hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200" : "opacity-30 cursor-not-allowed"}`}
+                        onClick={() => selectedLead.linkedin && window.open(selectedLead.linkedin, "_blank")}
+                        disabled={!selectedLead.linkedin}
+                        title={selectedLead.linkedin || "LinkedIn not found"}
+                      >
+                        <Linkedin className="w-4 h-4" />
+                      </Button>
+                      <Button 
+                        size="icon" 
+                        variant="outline" 
+                        className={`rounded-full w-10 h-10 transition-all ${selectedLead.twitter ? "hover:bg-sky-50 hover:text-sky-500 hover:border-sky-200" : "opacity-30 cursor-not-allowed"}`}
+                        onClick={() => selectedLead.twitter && window.open(selectedLead.twitter, "_blank")}
+                        disabled={!selectedLead.twitter}
+                        title={selectedLead.twitter || "Twitter not found"}
+                      >
+                        <Twitter className="w-4 h-4" />
+                      </Button>
+                      <Button 
+                        size="icon" 
+                        variant="outline" 
+                        className={`rounded-full w-10 h-10 transition-all ${selectedLead.website ? "hover:bg-muted" : "opacity-30 cursor-not-allowed"}`}
+                        onClick={() => (selectedLead.website || selectedLead.url) && window.open(selectedLead.website || selectedLead.url, "_blank")}
+                        disabled={!selectedLead.website && !selectedLead.url}
+                        title={selectedLead.website || selectedLead.url || "Website not found"}
+                      >
+                        <Globe className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  {selectedLead.enriched && (
+                    <div className="space-y-2">
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Company Socials</p>
+                      <div className="flex items-center justify-center gap-3">
+                        <Button 
+                          size="icon" 
+                          variant="outline" 
+                          className={`rounded-full w-10 h-10 transition-all ${selectedLead.companyLinkedin ? "hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200" : "opacity-30 cursor-not-allowed"}`}
+                          onClick={() => selectedLead.companyLinkedin && window.open(selectedLead.companyLinkedin, "_blank")}
+                          disabled={!selectedLead.companyLinkedin}
+                        >
+                          <Linkedin className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          size="icon" 
+                          variant="outline" 
+                          className={`rounded-full w-10 h-10 transition-all ${selectedLead.companyTwitter ? "hover:bg-sky-50 hover:text-sky-500 hover:border-sky-200" : "opacity-30 cursor-not-allowed"}`}
+                          onClick={() => selectedLead.companyTwitter && window.open(selectedLead.companyTwitter, "_blank")}
+                          disabled={!selectedLead.companyTwitter}
+                        >
+                          <Twitter className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          size="icon" 
+                          variant="outline" 
+                          className={`rounded-full w-10 h-10 transition-all ${selectedLead.companyFacebook ? "hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300" : "opacity-30 cursor-not-allowed"}`}
+                          onClick={() => selectedLead.companyFacebook && window.open(selectedLead.companyFacebook, "_blank")}
+                          disabled={!selectedLead.companyFacebook}
+                        >
+                          <Facebook className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                   <div className="space-y-2">
                     <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Company Insights</p>
                     <div className="grid grid-cols-2 gap-3">
