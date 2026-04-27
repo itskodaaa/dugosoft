@@ -173,8 +173,8 @@ export default function ESignSign() {
 
       <main className="flex-1 flex overflow-hidden">
         {/* Document Preview */}
-        <div className="flex-1 bg-muted/50 p-4 md:p-8 overflow-y-auto hidden md:block">
-          <div className="max-w-4xl mx-auto bg-card shadow-2xl rounded-xl overflow-hidden min-h-[1100px] relative" id="doc-preview">
+        <div className="flex-1 bg-muted/50 p-4 md:p-8 pb-32 overflow-y-auto hidden md:block">
+          <div className="max-w-4xl mx-auto bg-card shadow-2xl rounded-xl overflow-hidden min-h-[1200px] relative" id="doc-preview">
             {docInfo?.doc?.file_data ? (
               <>
                 <iframe
