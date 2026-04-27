@@ -15,6 +15,7 @@ const TABS = [
 function DrawPad({ onCapture }) {
   const canvasRef = useRef();
   const drawing = useRef(false);
+  const [strokeWidth, setStrokeWidth] = useState(2.5);
 
   const getPos = (e) => {
     const rect = canvasRef.current.getBoundingClientRect();
@@ -43,7 +44,7 @@ function DrawPad({ onCapture }) {
     if (!drawing.current) return;
     const ctx = canvasRef.current.getContext("2d");
     const pos = getPos(e);
-    ctx.lineWidth = 2.5;
+    ctx.lineWidth = strokeWidth;
     ctx.strokeStyle = "#1e3a5f";
     ctx.lineCap = "round";
     ctx.lineTo(pos.x, pos.y);
@@ -64,13 +65,25 @@ function DrawPad({ onCapture }) {
   };
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Stroke Size</label>
+        <div className="flex items-center gap-2">
+          <input 
+            type="range" min="1" max="8" step="0.5" 
+            value={strokeWidth} 
+            onChange={(e) => setStrokeWidth(parseFloat(e.target.value))}
+            className="w-24 accent-accent"
+          />
+          <span className="text-[10px] font-bold text-foreground w-6">{strokeWidth}</span>
+        </div>
+      </div>
       <canvas ref={canvasRef} width={420} height={160}
-        className="w-full border border-input rounded-xl bg-white cursor-crosshair touch-none"
+        className="w-full border border-input rounded-xl bg-white cursor-crosshair touch-none shadow-inner"
         onMouseDown={startDraw} onMouseMove={draw} onMouseUp={stopDraw} onMouseLeave={stopDraw}
         onTouchStart={startDraw} onTouchMove={draw} onTouchEnd={stopDraw} />
-      <button onClick={clear} className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1">
-        <RefreshCw className="w-3 h-3" /> Clear
+      <button onClick={clear} className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors">
+        <RefreshCw className="w-3 h-3" /> Clear Signature
       </button>
     </div>
   );
@@ -161,7 +174,7 @@ export default function ESignSign() {
       <main className="flex-1 flex overflow-hidden">
         {/* Document Preview */}
         <div className="flex-1 bg-muted/50 p-4 md:p-8 overflow-y-auto hidden md:block">
-          <div className="max-w-4xl mx-auto bg-card shadow-2xl rounded-xl overflow-hidden min-h-[800px] relative" id="doc-preview">
+          <div className="max-w-4xl mx-auto bg-card shadow-2xl rounded-xl overflow-hidden min-h-[1100px] relative" id="doc-preview">
             {docInfo?.doc?.file_data ? (
               <>
                 <iframe
