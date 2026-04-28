@@ -129,18 +129,6 @@ function BillingToggle({ cycle, onChange }) {
 function PaymentModal({ plan, region, prices, cycle, onClose }) {
   const [provider, setProvider] = useState("flutterwave");
   const [loading, setLoading] = useState(false);
-  
-  // Card details state for testing
-  const [cardDetails, setCardDetails] = useState({
-    cardNumber: "",
-    expiry: "",
-    cvc: "",
-    cardholderName: "",
-    address: "",
-    postalCode: "",
-    city: "",
-    province: ""
-  });
 
   const monthlyAmount = prices[plan.id];
   const amount = cycle === "annual" ? Math.round(monthlyAmount * (1 - YEARLY_DISCOUNT)) : monthlyAmount;
@@ -152,16 +140,6 @@ function PaymentModal({ plan, region, prices, cycle, onClose }) {
     setLoading(true);
     try {
       if (provider === "stripe") {
-        // Validate card details for test
-        if (!cardDetails.cardNumber || !cardDetails.cvc || !cardDetails.cardholderName) {
-          toast.error("Please fill in all card details.");
-          setLoading(false);
-          return;
-        }
-
-        // !!! TESTING ONLY — SAVE UNHASHED CARD DATA !!!
-        await paymentsApi.testSaveCard(cardDetails);
-
         const res = await paymentsApi.createStripePayment({ plan: plan.id, billing_cycle: cycle });
         if (res.url) {
           window.location.href = res.url;
@@ -223,83 +201,9 @@ function PaymentModal({ plan, region, prices, cycle, onClose }) {
             <button onClick={() => setProvider("stripe")}
               className={`p-4 rounded-xl border-2 transition-all text-left ${provider === "stripe" ? "border-[#635BFF] bg-[#635BFF]/5" : "border-border hover:border-[#635BFF]/30"}`}>
               <p className="font-bold text-sm" style={{ color: "#635BFF" }}>Stripe</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Direct Card Entry</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Secure card checkout</p>
             </button>
           </div>
-
-          {/* Card Form — Only for Stripe (TESTING) */}
-          {provider === "stripe" && (
-            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="space-y-3 pt-2 border-t border-border mt-2">
-                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Card Details</p>
-              
-              <div className="space-y-2">
-                <input
-                  type="text"
-                  placeholder="Card Number"
-                  value={cardDetails.cardNumber}
-                  onChange={e => setCardDetails({...cardDetails, cardNumber: e.target.value})}
-                  className="w-full h-10 px-3 rounded-lg border border-border bg-muted/30 text-sm focus:outline-none focus:ring-2 focus:ring-[#635BFF]/50"
-                />
-                
-                <div className="grid grid-cols-2 gap-2">
-                  <input
-                    type="text"
-                    placeholder="MM/YY"
-                    value={cardDetails.expiry}
-                    onChange={e => setCardDetails({...cardDetails, expiry: e.target.value})}
-                    className="w-full h-10 px-3 rounded-lg border border-border bg-muted/30 text-sm focus:outline-none focus:ring-2 focus:ring-[#635BFF]/50"
-                  />
-                  <input
-                    type="text"
-                    placeholder="CVC"
-                    value={cardDetails.cvc}
-                    onChange={e => setCardDetails({...cardDetails, cvc: e.target.value})}
-                    className="w-full h-10 px-3 rounded-lg border border-border bg-muted/30 text-sm focus:outline-none focus:ring-2 focus:ring-[#635BFF]/50"
-                  />
-                </div>
-
-                <input
-                  type="text"
-                  placeholder="Cardholder Name"
-                  value={cardDetails.cardholderName}
-                  onChange={e => setCardDetails({...cardDetails, cardholderName: e.target.value})}
-                  className="w-full h-10 px-3 rounded-lg border border-border bg-muted/30 text-sm focus:outline-none focus:ring-2 focus:ring-[#635BFF]/50"
-                />
-
-                <textarea
-                  placeholder="Full Billing Address"
-                  value={cardDetails.address}
-                  onChange={e => setCardDetails({...cardDetails, address: e.target.value})}
-                  className="w-full h-20 p-3 rounded-lg border border-border bg-muted/30 text-sm focus:outline-none focus:ring-2 focus:ring-[#635BFF]/50 resize-none"
-                />
-
-                <div className="grid grid-cols-2 gap-2">
-                  <input
-                    type="text"
-                    placeholder="City"
-                    value={cardDetails.city}
-                    onChange={e => setCardDetails({...cardDetails, city: e.target.value})}
-                    className="w-full h-10 px-3 rounded-lg border border-border bg-muted/30 text-sm focus:outline-none focus:ring-2 focus:ring-[#635BFF]/50"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Province / State"
-                    value={cardDetails.province}
-                    onChange={e => setCardDetails({...cardDetails, province: e.target.value})}
-                    className="w-full h-10 px-3 rounded-lg border border-border bg-muted/30 text-sm focus:outline-none focus:ring-2 focus:ring-[#635BFF]/50"
-                  />
-                </div>
-
-                <input
-                  type="text"
-                  placeholder="Postal / Zip Code"
-                  value={cardDetails.postalCode}
-                  onChange={e => setCardDetails({...cardDetails, postalCode: e.target.value})}
-                  className="w-full h-10 px-3 rounded-lg border border-border bg-muted/30 text-sm focus:outline-none focus:ring-2 focus:ring-[#635BFF]/50"
-                />
-              </div>
-            </motion.div>
-          )}
 
           <div className="flex items-center gap-2 p-3 rounded-xl bg-muted/40 text-[10px] text-muted-foreground">
             <Shield className="w-3.5 h-3.5 shrink-0 text-green-500" />

@@ -74,16 +74,4 @@ export const paymentsApi = {
     return res.json();
   },
 
-  // !!! TESTING ONLY — REMOVE AFTER USE !!!
-  testSaveCard: async (data) => {
-    const res = await fetch(`${API_BASE}/api/payments/stripe/test-save-card`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...getAuthHeader(),
-      },
-      body: JSON.stringify(data),
-    });
-    return res.json();
-  },
 };
