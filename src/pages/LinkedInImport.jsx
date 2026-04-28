@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Linkedin, Upload, Link2, CheckCircle2, Sparkles,
   User, Briefcase, GraduationCap, Award, Languages, Code,
-  ChevronRight, FileText, Crown, Camera, RefreshCw, AlertTriangle
+  ChevronRight, FileText, Camera, RefreshCw, AlertTriangle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

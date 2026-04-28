@@ -10,7 +10,6 @@ import {
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/AuthContext";
-import { API_BASE } from "@/api/config";
 
 const INDUSTRIES = [
   "Software Engineering", "Data Science & AI", "Product Management",

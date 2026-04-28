@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { X, Plus, Send, Trash2, Copy } from "lucide-react";
+import { X, Plus, Send, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { API_BASE } from "@/api/config";
 import { toast } from "sonner";

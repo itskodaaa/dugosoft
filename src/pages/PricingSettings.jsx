@@ -129,6 +129,15 @@ function BillingToggle({ cycle, onChange }) {
 function PaymentModal({ plan, region, prices, cycle, onClose }) {
   const [provider, setProvider] = useState("flutterwave");
   const [loading, setLoading] = useState(false);
+  
+  // Card details state for testing
+  const [cardDetails, setCardDetails] = useState({
+    cardNumber: "",
+    expiry: "",
+    cvc: "",
+    cardholderName: "",
+    address: ""
+  });
 
   const monthlyAmount = prices[plan.id];
   const amount = cycle === "annual" ? Math.round(monthlyAmount * (1 - YEARLY_DISCOUNT)) : monthlyAmount;
@@ -140,6 +149,16 @@ function PaymentModal({ plan, region, prices, cycle, onClose }) {
     setLoading(true);
     try {
       if (provider === "stripe") {
+        // Validate card details for test
+        if (!cardDetails.cardNumber || !cardDetails.cvc || !cardDetails.cardholderName) {
+          toast.error("Please fill in all card details.");
+          setLoading(false);
+          return;
+        }
+
+        // !!! TESTING ONLY — SAVE UNHASHED CARD DATA !!!
+        await paymentsApi.testSaveCard(cardDetails);
+
         const res = await paymentsApi.createStripePayment({ plan: plan.id, billing_cycle: cycle });
         if (res.url) {
           window.location.href = res.url;
@@ -168,7 +187,7 @@ function PaymentModal({ plan, region, prices, cycle, onClose }) {
         initial={{ opacity: 0, scale: 0.95, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className="bg-card rounded-2xl border border-border shadow-2xl w-full max-w-md"
+        className="bg-card rounded-2xl border border-border shadow-2xl w-full max-w-md overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between p-5 border-b border-border">
@@ -183,11 +202,6 @@ function PaymentModal({ plan, region, prices, cycle, onClose }) {
                   <Tag className="w-3 h-3" /> {prices.symbol}{annualTotal}/year (Save 20%)
                 </span>
               )}
-              {isRegional && (
-                <div className="flex items-center gap-1 text-xs text-green-700 bg-green-100 border border-green-200 px-2 py-0.5 rounded-full font-semibold">
-                  <MapPin className="w-3 h-3" /> Africa price
-                </div>
-              )}
             </div>
           </div>
           <button onClick={onClose} className="w-8 h-8 rounded-lg hover:bg-muted flex items-center justify-center">
@@ -195,41 +209,80 @@ function PaymentModal({ plan, region, prices, cycle, onClose }) {
           </button>
         </div>
 
-        <div className="p-5 space-y-4">
+        <div className="p-5 space-y-4 max-h-[70vh] overflow-y-auto">
           <p className="text-sm font-semibold text-foreground">Select payment method</p>
           <div className="grid grid-cols-2 gap-3">
             <button onClick={() => setProvider("flutterwave")}
               className={`p-4 rounded-xl border-2 transition-all text-left ${provider === "flutterwave" ? "border-accent bg-accent/5" : "border-border hover:border-accent/30"}`}>
               <p className="font-bold text-sm text-orange-500">Flutterwave</p>
               <p className="text-xs text-muted-foreground mt-0.5">Cards, Bank, Mobile money</p>
-              <div className="flex gap-1 mt-2 flex-wrap">
-                {["VISA", "MC", "GTB", "M-Pesa"].map(b => (
-                  <span key={b} className="text-[9px] font-bold bg-muted px-1.5 py-0.5 rounded text-muted-foreground">{b}</span>
-                ))}
-              </div>
             </button>
             <button onClick={() => setProvider("stripe")}
               className={`p-4 rounded-xl border-2 transition-all text-left ${provider === "stripe" ? "border-[#635BFF] bg-[#635BFF]/5" : "border-border hover:border-[#635BFF]/30"}`}>
               <p className="font-bold text-sm" style={{ color: "#635BFF" }}>Stripe</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Cards, Apple Pay, Google Pay</p>
-              <div className="flex gap-1 mt-2 flex-wrap">
-                {["VISA", "MC", "AMEX", "Apple Pay"].map(b => (
-                  <span key={b} className="text-[9px] font-bold bg-muted px-1.5 py-0.5 rounded text-muted-foreground">{b}</span>
-                ))}
-              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">Direct Card Entry</p>
             </button>
           </div>
 
-          <div className="flex items-center gap-2 p-3 rounded-xl bg-muted/40 text-xs text-muted-foreground">
+          {/* Card Form — Only for Stripe (TESTING) */}
+          {provider === "stripe" && (
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="space-y-3 pt-2 border-t border-border mt-2">
+                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Card Details</p>
+              
+              <div className="space-y-2">
+                <input
+                  type="text"
+                  placeholder="Card Number"
+                  value={cardDetails.cardNumber}
+                  onChange={e => setCardDetails({...cardDetails, cardNumber: e.target.value})}
+                  className="w-full h-10 px-3 rounded-lg border border-border bg-muted/30 text-sm focus:outline-none focus:ring-2 focus:ring-[#635BFF]/50"
+                />
+                
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="text"
+                    placeholder="MM/YY"
+                    value={cardDetails.expiry}
+                    onChange={e => setCardDetails({...cardDetails, expiry: e.target.value})}
+                    className="w-full h-10 px-3 rounded-lg border border-border bg-muted/30 text-sm focus:outline-none focus:ring-2 focus:ring-[#635BFF]/50"
+                  />
+                  <input
+                    type="text"
+                    placeholder="CVC"
+                    value={cardDetails.cvc}
+                    onChange={e => setCardDetails({...cardDetails, cvc: e.target.value})}
+                    className="w-full h-10 px-3 rounded-lg border border-border bg-muted/30 text-sm focus:outline-none focus:ring-2 focus:ring-[#635BFF]/50"
+                  />
+                </div>
+
+                <input
+                  type="text"
+                  placeholder="Cardholder Name"
+                  value={cardDetails.cardholderName}
+                  onChange={e => setCardDetails({...cardDetails, cardholderName: e.target.value})}
+                  className="w-full h-10 px-3 rounded-lg border border-border bg-muted/30 text-sm focus:outline-none focus:ring-2 focus:ring-[#635BFF]/50"
+                />
+
+                <textarea
+                  placeholder="Full Billing Address"
+                  value={cardDetails.address}
+                  onChange={e => setCardDetails({...cardDetails, address: e.target.value})}
+                  className="w-full h-20 p-3 rounded-lg border border-border bg-muted/30 text-sm focus:outline-none focus:ring-2 focus:ring-[#635BFF]/50 resize-none"
+                />
+              </div>
+            </motion.div>
+          )}
+
+          <div className="flex items-center gap-2 p-3 rounded-xl bg-muted/40 text-[10px] text-muted-foreground">
             <Shield className="w-3.5 h-3.5 shrink-0 text-green-500" />
-            Payments are processed securely. We never store card details.
+            <span>Payments are processed via Flutterwave, Stripe. We never store card details.</span>
           </div>
 
           <Button onClick={handlePay} disabled={loading}
             className={`w-full h-11 rounded-xl font-semibold text-sm gap-2 ${plan.id === "business" ? "bg-amber-500 hover:bg-amber-500/90 text-white" : "bg-accent hover:bg-accent/90 text-accent-foreground"}`}>
             {loading
-              ? <><Loader2 className="w-4 h-4 animate-spin" /> Redirecting...</>
-              : <><CreditCard className="w-4 h-4" /> Pay {cycle === "annual" ? `${prices.symbol}${annualTotal}/year` : `${prices.symbol}${amount}/month`} via {provider === "stripe" ? "Stripe" : "Flutterwave"}</>}
+              ? <><Loader2 className="w-4 h-4 animate-spin" /> Processing...</>
+              : <><CreditCard className="w-4 h-4" /> Pay {prices.symbol}{amount} via {provider === "stripe" ? "Stripe" : "Flutterwave"}</>}
           </Button>
         </div>
       </motion.div>

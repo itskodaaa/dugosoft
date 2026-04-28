@@ -1,8 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  MessageCircle, Upload, FileText, Sparkles, Send, X,
-  Crown, Lightbulb, List, Globe, HelpCircle,
+  MessageCircle, Upload, FileText, Sparkles, Send, X, Lightbulb, List, Globe, HelpCircle,
   Zap, BookOpen, ChevronRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";

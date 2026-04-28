@@ -2,8 +2,8 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Search, Users, Building2, Globe, Mail, Phone, 
-  Linkedin, Twitter, Zap, ArrowRight, ExternalLink,
-  ShieldCheck, Briefcase, MapPin, TrendingUp, Filter,
+  Linkedin, Twitter, Zap, ArrowRight,
+  ShieldCheck, MapPin, TrendingUp, Filter,
   Download, Loader2, Sparkles, Plus, RefreshCw, Facebook, Brain
 } from "lucide-react";
 import { Button } from "@/components/ui/button";

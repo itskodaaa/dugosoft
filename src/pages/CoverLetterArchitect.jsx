@@ -10,7 +10,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/AuthContext";
-import { API_BASE } from "@/api/config";
 
 const TONES = [
   { id: "assertive",   label: "Assertive",   desc: "Confident & direct",  color: "from-orange-500 to-red-500" },

@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Search, Download, Trash2, Eye, FileText, File, Table, FileCode,
+  Search, Download, Trash2, FileText, File, Table, FileCode,
   CheckCircle2, AlertCircle, SlidersHorizontal, X, Folder, FolderPlus, MoveRight, Loader2
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { API_BASE } from "@/api/config";

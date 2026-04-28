@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Target, Link2, Sparkles, CheckCircle2, AlertCircle,
-  TrendingUp, Plus, ExternalLink, MapPin, Building2, Crown,
+  TrendingUp, Plus, ExternalLink, MapPin, Building2,
   RefreshCw, ChevronDown, Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";

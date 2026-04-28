@@ -4,7 +4,7 @@ import {
   AreaChart, Area, RadarChart, Radar, PolarGrid, PolarAngleAxis,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from "recharts";
-import { TrendingUp, Target, Zap, Award, ChevronUp, ChevronDown, Loader2 } from "lucide-react";
+import { TrendingUp, Target, Zap, Award, Loader2 } from "lucide-react";
 import { API_BASE } from "@/api/config";
 import { useNavigate } from "react-router-dom";
 

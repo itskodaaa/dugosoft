@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Download, File, Clock, AlertCircle, CheckCircle2, Package } from "lucide-react";
+import { Download, File, Clock, AlertCircle, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { API_BASE } from "@/api/config";
 
