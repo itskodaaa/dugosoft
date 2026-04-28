@@ -4,7 +4,7 @@ import {
   Search, Users, Building2, Globe, Mail, Phone, 
   Linkedin, Twitter, Zap, ArrowRight, ExternalLink,
   ShieldCheck, Briefcase, MapPin, TrendingUp, Filter,
-  Download, Loader2, Sparkles, Plus, RefreshCw, Facebook
+  Download, Loader2, Sparkles, Plus, RefreshCw, Facebook, Brain
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +21,8 @@ export default function VibeProspecting() {
   const [drafting, setDrafting] = useState(false);
   const [outreachModal, setOutreachModal] = useState(false);
   const [outreachData, setOutreachData] = useState(null);
+  const [userContext, setUserContext] = useState(() => localStorage.getItem("vp_user_context") || "");
+  const [isEditingContext, setIsEditingContext] = useState(false);
 
   const isValidLink = (link) => link && link !== "N/A" && link !== "null" && link !== "" && link !== "undefined";
 
@@ -95,7 +97,10 @@ export default function VibeProspecting() {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${localStorage.getItem("auth_token")}`
         },
-        body: JSON.stringify({ lead: selectedLead })
+        body: JSON.stringify({ 
+          lead: selectedLead,
+          userContext: userContext
+        })
       });
       const data = await response.json();
       if (data.error) throw new Error(data.error);
@@ -278,6 +283,46 @@ export default function VibeProspecting() {
 
         {/* Sidebar Detail / Insight Panel */}
         <div className="space-y-6">
+          {/* User Context Card */}
+          <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Brain className="w-4 h-4 text-accent" />
+                <p className="text-sm font-bold text-foreground">My Profile / Company</p>
+              </div>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => {
+                  if (isEditingContext) {
+                    localStorage.setItem("vp_user_context", userContext);
+                    toast.success("Profile context saved!");
+                  }
+                  setIsEditingContext(!isEditingContext);
+                }}
+                className="h-8 text-xs font-bold"
+              >
+                {isEditingContext ? "Save" : "Edit"}
+              </Button>
+            </div>
+            
+            {isEditingContext ? (
+              <textarea
+                value={userContext}
+                onChange={(e) => setUserContext(e.target.value)}
+                placeholder="Describe yourself or your company (e.g. 'I am a software agency specializing in AI'). This will be used to personalize your outreach."
+                className="w-full min-h-[120px] p-3 text-sm bg-muted/30 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-accent/20 transition resize-none leading-relaxed"
+              />
+            ) : (
+              <div className="text-xs text-muted-foreground leading-relaxed italic">
+                {userContext || "No context added yet. Click edit to add details about yourself or your company for better AI drafts."}
+              </div>
+            )}
+            <div className="mt-3 flex items-center gap-1.5 text-[9px] font-black text-muted-foreground uppercase tracking-widest">
+              <ShieldCheck className="w-3 h-3 text-emerald-500" /> Auto-saved to drafts
+            </div>
+          </div>
+
           <div className="bg-card border border-border rounded-2xl p-6 shadow-sm sticky top-24">
             {selectedLead ? (
               <div className="space-y-6">

@@ -55,8 +55,21 @@ export default function Navbar() {
             </button>
             {featuresOpen && (
               <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 w-[520px] bg-card border border-border rounded-2xl shadow-2xl p-3 grid grid-cols-2 gap-1.5 z-50">
-                {FEATURES_MENU.map(f => {
+                {FEATURES_MENU.map((f, idx) => {
                   const Icon = f.icon;
+                  // Map labels/descs to i18n keys
+                  const keys = [
+                    { label: "nav_features_resume", desc: "nav_features_resume_desc" },
+                    { label: "nav_features_matcher", desc: "nav_features_matcher_desc" },
+                    { label: "nav_features_translator", desc: "nav_features_translator_desc" },
+                    { label: "nav_features_ats", desc: "nav_features_ats_desc" },
+                    { label: "nav_features_vault", desc: "nav_features_vault_desc" },
+                    { label: "nav_features_chat", desc: "nav_features_chat_desc" },
+                    { label: "nav_features_workspaces", desc: "nav_features_workspaces_desc" },
+                    { label: "nav_features_all", desc: "nav_features_all_desc" }
+                  ];
+                  const key = keys[idx] || { label: "", desc: "" };
+                  
                   return (
                     <Link key={f.path} to={f.path}
                       className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-muted/60 transition-colors group"
@@ -65,8 +78,8 @@ export default function Navbar() {
                         <Icon className={`w-4 h-4 ${f.color}`} />
                       </div>
                       <div>
-                        <p className="text-xs font-semibold text-foreground group-hover:text-accent transition-colors">{f.label}</p>
-                        <p className="text-[10px] text-muted-foreground">{f.desc}</p>
+                        <p className="text-xs font-semibold text-foreground group-hover:text-accent transition-colors">{t(key.label)}</p>
+                        <p className="text-[10px] text-muted-foreground">{t(key.desc)}</p>
                       </div>
                     </Link>
                   );
@@ -79,10 +92,10 @@ export default function Navbar() {
             {t("nav_pricing")}
           </a>
           <Link to="/about" className="px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors">
-            About
+            {t("nav_about")}
           </Link>
           <Link to="/contact" className="px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors">
-            Contact
+            {t("nav_contact")}
           </Link>
         </div>
 
@@ -91,12 +104,12 @@ export default function Navbar() {
           <LanguageSwitcher />
           <Link to="/auth">
             <Button size="sm" variant="outline" className="rounded-full px-5 font-semibold text-sm">
-              {isLoggedIn ? "My Account" : "Sign In"}
+              {isLoggedIn ? t("nav_my_account") : t("nav_sign_in")}
             </Button>
           </Link>
           <Link to={isLoggedIn ? "/dashboard" : "/auth"}>
             <Button size="sm" className="bg-accent hover:bg-accent/90 text-accent-foreground rounded-full px-5 font-semibold text-sm gap-1.5">
-              <Sparkles className="w-3.5 h-3.5" /> {isLoggedIn ? t("nav_dashboard") : "Get Started Free"}
+              <Sparkles className="w-3.5 h-3.5" /> {isLoggedIn ? t("nav_dashboard") : t("nav_get_started")}
             </Button>
           </Link>
         </div>
@@ -114,30 +127,31 @@ export default function Navbar() {
       {mobileOpen && (
         <div className="md:hidden bg-background/98 backdrop-blur border-t border-border px-5 py-4 space-y-1">
           <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground px-2 pb-1 pt-1">Features</p>
-          {FEATURES_MENU.slice(0, 6).map(f => {
+          {FEATURES_MENU.slice(0, 6).map((f, idx) => {
             const Icon = f.icon;
+            const keys = ["nav_features_resume", "nav_features_matcher", "nav_features_translator", "nav_features_ats", "nav_features_vault", "nav_features_chat"];
             return (
               <Link key={f.path} to={f.path} onClick={() => setMobileOpen(false)}
                 className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-muted transition-colors">
                 <Icon className={`w-4 h-4 ${f.color}`} />
-                <span className="text-sm font-medium text-foreground">{f.label}</span>
+                <span className="text-sm font-medium text-foreground">{t(keys[idx])}</span>
               </Link>
             );
           })}
           <div className="border-t border-border my-2" />
-          <a href="#pricing" className="block px-3 py-2.5 text-sm font-medium text-foreground rounded-xl hover:bg-muted" onClick={() => setMobileOpen(false)}>Pricing</a>
-          <Link to="/about" className="block px-3 py-2.5 text-sm font-medium text-foreground rounded-xl hover:bg-muted" onClick={() => setMobileOpen(false)}>About</Link>
-          <Link to="/contact" className="block px-3 py-2.5 text-sm font-medium text-foreground rounded-xl hover:bg-muted" onClick={() => setMobileOpen(false)}>Contact</Link>
+          <a href="#pricing" className="block px-3 py-2.5 text-sm font-medium text-foreground rounded-xl hover:bg-muted" onClick={() => setMobileOpen(false)}>{t("nav_pricing")}</a>
+          <Link to="/about" className="block px-3 py-2.5 text-sm font-medium text-foreground rounded-xl hover:bg-muted" onClick={() => setMobileOpen(false)}>{t("nav_about")}</Link>
+          <Link to="/contact" className="block px-3 py-2.5 text-sm font-medium text-foreground rounded-xl hover:bg-muted" onClick={() => setMobileOpen(false)}>{t("nav_contact")}</Link>
           <div className="pt-2 space-y-2">
             <div className="py-1"><LanguageSwitcher /></div>
             <Link to="/auth" onClick={() => setMobileOpen(false)}>
               <Button size="sm" variant="outline" className="w-full rounded-full font-semibold">
-                {isLoggedIn ? "My Account" : "Sign In"}
+                {isLoggedIn ? t("nav_my_account") : t("nav_sign_in")}
               </Button>
             </Link>
             <Link to={isLoggedIn ? "/dashboard" : "/auth"} onClick={() => setMobileOpen(false)}>
               <Button size="sm" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground rounded-full font-semibold">
-                <Sparkles className="w-3.5 h-3.5 mr-1" /> {isLoggedIn ? t("nav_dashboard") : "Get Started Free"}
+                <Sparkles className="w-3.5 h-3.5 mr-1" /> {isLoggedIn ? t("nav_dashboard") : t("nav_get_started")}
               </Button>
             </Link>
           </div>

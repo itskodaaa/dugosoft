@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { LogOut, Settings, CreditCard, ChevronDown, Crown } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
+import { useLang } from "@/lib/i18n";
 
 const PLAN_STYLES = {
   free:     { label: "Free",     cls: "bg-muted text-muted-foreground" },
@@ -11,6 +12,7 @@ const PLAN_STYLES = {
 
 export default function UserProfileDropdown() {
   const { user, logout } = useAuth();
+  const { t } = useLang();
   const [open, setOpen] = useState(false);
   const ref = useRef();
 
@@ -38,7 +40,7 @@ export default function UserProfileDropdown() {
             {user.full_name || user.email}
           </p>
           <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${planStyle.cls}`}>
-            {planStyle.label}
+            {t(`plan_${plan}`)}
           </span>
         </div>
         <ChevronDown className={`w-3 h-3 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
@@ -53,14 +55,14 @@ export default function UserProfileDropdown() {
             <div className="mt-2 flex items-center gap-1.5">
               {plan === "business" && <Crown className="w-3.5 h-3.5 text-amber-500" />}
               <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${planStyle.cls}`}>
-                {planStyle.label} Plan
+                {t(`plan_${plan}`)} {t("plan_label")}
               </span>
             </div>
           </div>
 
           {/* Usage summary */}
           <div className="p-3 border-b border-border space-y-1.5">
-            <p className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Today's Usage</p>
+            <p className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">{t("usage_today")}</p>
             <UsageBar label="PDF" used={user.pdf_count || 0} limit={plan === "free" ? 5 : plan === "pro" ? 100 : null} />
             <UsageBar label="AI"  used={user.ai_requests || 0} limit={plan === "free" ? 10 : plan === "pro" ? 200 : null} />
             <UsageBar label="OCR" used={user.ocr_count || 0} limit={plan === "free" ? 3 : plan === "pro" ? 50 : null} />
@@ -70,15 +72,15 @@ export default function UserProfileDropdown() {
           <div className="p-1">
             <Link to="/dashboard/settings" onClick={() => setOpen(false)}
               className="flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-muted text-sm text-foreground transition-colors">
-              <Settings className="w-3.5 h-3.5 text-muted-foreground" /> Settings
+              <Settings className="w-3.5 h-3.5 text-muted-foreground" /> {t("side_settings")}
             </Link>
             <Link to="/dashboard/pricing" onClick={() => setOpen(false)}
               className="flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-muted text-sm text-foreground transition-colors">
-              <CreditCard className="w-3.5 h-3.5 text-muted-foreground" /> Upgrade Plan
+              <CreditCard className="w-3.5 h-3.5 text-muted-foreground" /> {t("nav_upgrade_plan")}
             </Link>
             <button onClick={() => logout(true)}
               className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-destructive/10 text-sm text-destructive transition-colors">
-              <LogOut className="w-3.5 h-3.5" /> Sign Out
+              <LogOut className="w-3.5 h-3.5" /> {t("nav_sign_out")}
             </button>
           </div>
         </div>
@@ -88,10 +90,11 @@ export default function UserProfileDropdown() {
 }
 
 function UsageBar({ label, used, limit }) {
+  const { t } = useLang();
   if (limit === null) return (
     <div className="flex items-center justify-between text-xs">
       <span className="text-muted-foreground">{label}</span>
-      <span className="font-semibold text-green-600">Unlimited</span>
+      <span className="font-semibold text-green-600">{t("usage_unlimited")}</span>
     </div>
   );
   const pct = Math.min((used / limit) * 100, 100);

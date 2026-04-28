@@ -224,7 +224,7 @@ export default function ESignSign() {
         </div>
 
         {/* Sidebar Controls */}
-        <div className="w-full md:w-[420px] bg-card border-l flex flex-col p-8 space-y-6 overflow-y-auto">
+        <div className="w-full md:w-[420px] bg-card border-l flex flex-col p-8 pb-32 pb-safe space-y-6 overflow-y-auto">
           <div className="space-y-1">
             <h1 className="text-xl font-extrabold text-foreground">Sign this document</h1>
             <p className="text-muted-foreground text-sm leading-relaxed">Please review the document on the left and provide your signature below to complete the request.</p>

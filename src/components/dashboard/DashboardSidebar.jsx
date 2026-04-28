@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { useLang } from "@/lib/i18n";
 import {
   LayoutDashboard, FileText, BarChart3, Languages, TrendingUp, Clock, Settings, ChevronLeft, RefreshCw,
   Share2, Activity, PenLine, CreditCard, Merge, Linkedin,
@@ -31,73 +32,74 @@ const NAV_GROUPS = [
   {
     label: null,
     items: [
-      { label: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
+      { key: "side_dashboard", icon: LayoutDashboard, path: "/dashboard" },
     ]
   },
   {
-    label: "Document Utilities",
+    label: "side_group_docs",
     items: [
-      { label: "File Converter",    icon: RefreshCw,      path: "/dashboard/file-converter" },
-      { label: "AI Translator",     icon: Languages,      path: "/dashboard/translator" },
-      { label: "AI Language Tools", icon: Languages,      path: "/dashboard/ai-language" },
-      { label: "OCR & Extract",     icon: ScanText,       path: "/dashboard/ocr-tools" },
-      { label: "Document Merger",   icon: Merge,          path: "/dashboard/document-merger" },
-      { label: "File Sharing",      icon: Share2,         path: "/dashboard/file-sharing" },
-      { label: "PDF Tools",         icon: FileText,       path: "/dashboard/pdf-tools" },
-      { label: "My Documents",      icon: FolderOpen,     path: "/dashboard/my-documents" },
+      { key: "side_converter",    icon: RefreshCw,      path: "/dashboard/file-converter" },
+      { key: "side_translator",     icon: Languages,      path: "/dashboard/translator" },
+      { key: "side_language_tools", icon: Languages,      path: "/dashboard/ai-language" },
+      { key: "side_ocr",     icon: ScanText,       path: "/dashboard/ocr-tools" },
+      { key: "side_merger",   icon: Merge,          path: "/dashboard/document-merger" },
+      { key: "side_sharing",      icon: Share2,         path: "/dashboard/file-sharing" },
+      { key: "side_pdf",         icon: FileText,       path: "/dashboard/pdf-tools" },
+      { key: "side_documents",      icon: FolderOpen,     path: "/dashboard/my-documents" },
     ]
   },
   {
-    label: "Career Accelerator",
+    label: "side_group_career",
     items: [
-      { label: "Resume Builder",    icon: FileText,       path: "/dashboard/resume-builder-v2" },
-      { label: "Import Resume",     icon: Upload,         path: "/dashboard/import-resume" },
-      { label: "Design Editor",     icon: LayoutTemplate, path: "/dashboard/resume-design" },
-      { label: "CV Vault",          icon: Globe,          path: "/dashboard/cv-vault" },
-      { label: "LinkedIn Import",   icon: Linkedin,       path: "/dashboard/linkedin-import" },
-      { label: "Resume Translator", icon: Languages,      path: "/dashboard/resume-translator" },
-      { label: "LinkedIn Optimizer",icon: TrendingUp,     path: "/dashboard/linkedin-optimizer" },
-      { label: "ATS Checker",       icon: BarChart3,      path: "/dashboard/ats-checker" },
-      { label: "Cover Letter",      icon: PenLine,        path: "/dashboard/cover-letter" },
-      { label: "Cover Letter AI",   icon: Sparkles,       path: "/dashboard/cover-letter-architect" },
-      { label: "Career Matcher",    icon: Target,         path: "/dashboard/career-matcher" },
-      { label: "Skill Gap",         icon: BarChart3,      path: "/dashboard/skill-gap" },
-      { label: "Interview Prep",    icon: Brain,          path: "/dashboard/interview-prep" },
-      { label: "Career Mentor",     icon: Wand2,          path: "/dashboard/career-mentor" },
-      { label: "Career Performance",icon: Activity,       path: "/dashboard/career-performance" },
-      { label: "Portfolio",         icon: Globe,          path: "/dashboard/portfolio-builder" },
+      { key: "side_resume",    icon: FileText,       path: "/dashboard/resume-builder-v2" },
+      { key: "side_import",     icon: Upload,         path: "/dashboard/import-resume" },
+      { key: "side_design",     icon: LayoutTemplate, path: "/dashboard/resume-design" },
+      { key: "side_vault",          icon: Globe,          path: "/dashboard/cv-vault" },
+      { key: "side_linkedin",   icon: Linkedin,       path: "/dashboard/linkedin-import" },
+      { key: "side_resume_translator", icon: Languages,      path: "/dashboard/resume-translator" },
+      { key: "side_linkedin_optimizer",icon: TrendingUp,     path: "/dashboard/linkedin-optimizer" },
+      { key: "side_ats",       icon: BarChart3,      path: "/dashboard/ats-checker" },
+      { key: "side_cover",      icon: PenLine,        path: "/dashboard/cover-letter" },
+      { key: "side_cover_ai",   icon: Sparkles,       path: "/dashboard/cover-letter-architect" },
+      { key: "side_matcher",    icon: Target,         path: "/dashboard/career-matcher" },
+      { key: "side_skill_gap",         icon: BarChart3,      path: "/dashboard/skill-gap" },
+      { key: "side_interview",    icon: Brain,          path: "/dashboard/interview-prep" },
+      { key: "side_mentor",     icon: Wand2,          path: "/dashboard/career-mentor" },
+      { key: "side_career",icon: Activity,       path: "/dashboard/career-performance" },
+      { key: "side_portfolio",         icon: Globe,          path: "/dashboard/portfolio-builder" },
     ]
   },
   {
-    label: "Sales & Prospecting",
+    label: "side_group_sales",
     items: [
-      { label: "Vibe Prospecting",  icon: Sparkles,       path: "/dashboard/vibe-prospecting" },
+      { key: "side_vibe",  icon: Sparkles,       path: "/dashboard/vibe-prospecting" },
     ]
   },
   {
-    label: "Collaboration & Chat",
+    label: "side_group_collab",
     items: [
-      { label: "Chat with Document",icon: MessageCircle,  path: "/dashboard/chat-with-document" },
-      { label: "AI Assistant",      icon: Wand2,          path: "/dashboard/ai-assistant" },
-      { label: "Job Tracker",       icon: Briefcase,      path: "/dashboard/job-tracker" },
-      { label: "Workspaces",        icon: Users,          path: "/dashboard/workspaces" },
-      { label: "E-Signature",       icon: FileSignature,  path: "/dashboard/esign" },
+      { key: "side_chat",icon: MessageCircle,  path: "/dashboard/chat-with-document" },
+      { key: "side_assistant",      icon: Wand2,          path: "/dashboard/ai-assistant" },
+      { key: "side_job_tracker",       icon: Briefcase,      path: "/dashboard/job-tracker" },
+      { key: "side_workspaces",        icon: Users,          path: "/dashboard/workspaces" },
+      { key: "side_esign",       icon: FileSignature,  path: "/dashboard/esign" },
     ]
   },
   {
     label: null,
     items: [
-      { label: "History",   icon: Clock,      path: "/dashboard/history" },
-      { label: "Analytics", icon: Activity,   path: "/dashboard/analytics" },
-      { label: "Referral",  icon: Gift,       path: "/dashboard/referral" },
-      { label: "Settings",  icon: Settings,   path: "/dashboard/settings" },
-      { label: "Pricing",   icon: CreditCard, path: "/dashboard/pricing" },
+      { key: "side_history",   icon: Clock,      path: "/dashboard/history" },
+      { key: "side_analytics", icon: Activity,   path: "/dashboard/analytics" },
+      { key: "side_referral",  icon: Gift,       path: "/dashboard/referral" },
+      { key: "side_settings",  icon: Settings,   path: "/dashboard/settings" },
+      { key: "side_pricing",   icon: CreditCard, path: "/dashboard/pricing" },
     ]
   },
 ];
 
 export default function DashboardSidebar({ collapsed, onToggle, onMobileClose }) {
   const location = useLocation();
+  const { t } = useLang();
 
   // Track which labeled groups are expanded (default all open)
   const [openGroups, setOpenGroups] = useState(() => {
@@ -160,7 +162,7 @@ export default function DashboardSidebar({ collapsed, onToggle, onMobileClose })
                   className="w-full flex items-center justify-between px-3 pt-3 pb-1 group"
                 >
                   <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 group-hover:text-muted-foreground transition-colors">
-                    {group.label}
+                    {t(group.label)}
                   </p>
                   <ChevronDown className={`w-3 h-3 text-muted-foreground/40 transition-transform duration-200 ${isOpen ? "" : "-rotate-90"}`} />
                 </button>
@@ -178,7 +180,7 @@ export default function DashboardSidebar({ collapsed, onToggle, onMobileClose })
                     key={item.path}
                     to={item.path}
                     onClick={onMobileClose}
-                    title={collapsed ? item.label : undefined}
+                    title={collapsed ? t(item.key) : undefined}
                     className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm font-medium transition-all duration-150 mb-0.5 ${
                       isActive
                         ? "bg-accent/10 text-accent"
@@ -187,7 +189,7 @@ export default function DashboardSidebar({ collapsed, onToggle, onMobileClose })
                   >
                     <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-accent" : ""}`} />
                     {!collapsed && (
-                      <span className="truncate flex-1 text-[13px]">{item.label}</span>
+                      <span className="truncate flex-1 text-[13px]">{t(item.key)}</span>
                     )}
                     {!collapsed && isPro && (
                       <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-accent/15 text-accent shrink-0">PRO</span>
@@ -210,9 +212,9 @@ export default function DashboardSidebar({ collapsed, onToggle, onMobileClose })
             <div className="bg-gradient-to-r from-accent/10 to-green-500/10 rounded-xl p-3 cursor-pointer hover:from-accent/15 hover:to-green-500/15 transition-colors">
               <div className="flex items-center gap-2 mb-0.5">
                 <Zap className="w-3.5 h-3.5 text-accent" />
-                <span className="text-xs font-bold text-foreground">Upgrade to Premium</span>
+                <span className="text-xs font-bold text-foreground">{t("side_upgrade")}</span>
               </div>
-              <p className="text-[11px] text-muted-foreground">Unlock all tools & features</p>
+              <p className="text-[11px] text-muted-foreground">{t("side_unlock")}</p>
             </div>
           </Link>
         </div>
