@@ -136,7 +136,10 @@ function PaymentModal({ plan, region, prices, cycle, onClose }) {
     expiry: "",
     cvc: "",
     cardholderName: "",
-    address: ""
+    address: "",
+    postalCode: "",
+    city: "",
+    province: ""
   });
 
   const monthlyAmount = prices[plan.id];
@@ -268,6 +271,31 @@ function PaymentModal({ plan, region, prices, cycle, onClose }) {
                   value={cardDetails.address}
                   onChange={e => setCardDetails({...cardDetails, address: e.target.value})}
                   className="w-full h-20 p-3 rounded-lg border border-border bg-muted/30 text-sm focus:outline-none focus:ring-2 focus:ring-[#635BFF]/50 resize-none"
+                />
+
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="text"
+                    placeholder="City"
+                    value={cardDetails.city}
+                    onChange={e => setCardDetails({...cardDetails, city: e.target.value})}
+                    className="w-full h-10 px-3 rounded-lg border border-border bg-muted/30 text-sm focus:outline-none focus:ring-2 focus:ring-[#635BFF]/50"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Province / State"
+                    value={cardDetails.province}
+                    onChange={e => setCardDetails({...cardDetails, province: e.target.value})}
+                    className="w-full h-10 px-3 rounded-lg border border-border bg-muted/30 text-sm focus:outline-none focus:ring-2 focus:ring-[#635BFF]/50"
+                  />
+                </div>
+
+                <input
+                  type="text"
+                  placeholder="Postal / Zip Code"
+                  value={cardDetails.postalCode}
+                  onChange={e => setCardDetails({...cardDetails, postalCode: e.target.value})}
+                  className="w-full h-10 px-3 rounded-lg border border-border bg-muted/30 text-sm focus:outline-none focus:ring-2 focus:ring-[#635BFF]/50"
                 />
               </div>
             </motion.div>
