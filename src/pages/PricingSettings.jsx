@@ -352,10 +352,27 @@ export default function PricingSettings() {
 
     window.history.replaceState({}, "", window.location.pathname);
 
-    // Stripe success (no server-side verify needed; webhook handles activation)
-    if (providerParam === "stripe" && (status === "success" || status === "paid")) {
-      toast.success(`Payment successful! Your ${plan} plan is now active.`);
-      setTimeout(() => authApi.getMe().then(data => setUser(data.user)), 2000);
+    // Stripe success (session_id is in URL)
+    const sessionId = params.get("session_id");
+    if (providerParam === "stripe" && (params.get("success") === "true" || sessionId)) {
+      if (sessionId) {
+        paymentsApi.verifyStripeSession({ session_id: sessionId })
+          .then(res => {
+            if (res.success) {
+              toast.success(`Payment verified! ${plan} plan activated.`);
+              return authApi.getMe();
+            }
+            throw new Error(res.message || "Stripe verification failed");
+          })
+          .then(data => setUser(data.user))
+          .catch(() => {
+            toast.error("Stripe verification failed. Retrying in 3 seconds...");
+            setTimeout(() => authApi.getMe().then(data => setUser(data.user)), 3000);
+          });
+      } else {
+        toast.success(`Payment successful! Your ${plan} plan is being activated.`);
+        setTimeout(() => authApi.getMe().then(data => setUser(data.user)), 2000);
+      }
       return;
     }
 
