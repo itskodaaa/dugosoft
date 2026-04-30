@@ -11,6 +11,7 @@ import { useDocumentTracker } from "@/lib/useDocumentTracker";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 import { useAuth } from "@/lib/AuthContext";
+import FeatureGate from "../components/shared/FeatureGate";
 
 const FREE_LIMIT_MB = 10;
 
@@ -412,6 +413,7 @@ export default function OCRTools() {
   const isPremiumUser = user?.plan !== "free";
 
   return (
+    <FeatureGate requiredPlan="pro" message="OCR Tools are available on Pro and Business plans. Upgrade to unlock file conversions and text extraction.">
     <div className="max-w-6xl space-y-6">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
         <div className="flex items-start justify-between flex-wrap gap-3 mb-1">
@@ -469,5 +471,6 @@ export default function OCRTools() {
         </div>
       )}
     </div>
+    </FeatureGate>
   );
 }

@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { API_BASE } from "@/api/config";
+import { jsPDF } from "jspdf";
 
 const INDUSTRY_TAGS = [
   { id: "tech",       label: "Technology",   icon: Code,         color: "bg-blue-100 text-blue-700 border-blue-200" },
@@ -224,6 +225,28 @@ export default function CVVault() {
     reader.readAsDataURL(file);
   };
 
+  const handleDownloadPDF = (cv) => {
+    if (!cv || !cv.content) return;
+    const doc = new jsPDF({ unit: "mm", format: "a4" });
+    const margin = 15;
+    const pageW = doc.internal.pageSize.getWidth();
+    const maxW = pageW - margin * 2;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+
+    const lines = doc.splitTextToSize(cv.content, maxW);
+    let y = margin;
+    lines.forEach((line) => {
+      if (y > 280) { doc.addPage(); y = margin; }
+      doc.text(line, margin, y);
+      y += 5.5;
+    });
+
+    doc.save(`${cv.title.replace(/\\s+/g, '_')}.pdf`);
+    toast.success("PDF downloaded!");
+  };
+
   return (
     <FeatureGate requiredPlan="pro" message="CV Vault is available on Pro and Business plans. Upgrade to store unlimited CV versions.">
     <div className="max-w-6xl space-y-6">
@@ -324,7 +347,7 @@ export default function CVVault() {
                     className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg hover:bg-muted text-xs font-medium text-muted-foreground hover:text-foreground transition-colors">
                     <Share2 className="w-3.5 h-3.5" /> Share
                   </button>
-                  <button onClick={() => toast.success("Downloading PDF...")} title="Download"
+                  <button onClick={() => handleDownloadPDF(cv)} title="Download"
                     className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg hover:bg-muted text-xs font-medium text-muted-foreground hover:text-foreground transition-colors">
                     <Download className="w-3.5 h-3.5" /> PDF
                   </button>
@@ -361,7 +384,7 @@ export default function CVVault() {
                   <p className="font-bold text-foreground">{previewCV.title}</p>
                 </div>
                 <div className="flex gap-2">
-                  <Button size="sm" onClick={() => toast.success("Downloading...")}
+                  <Button size="sm" onClick={() => handleDownloadPDF(previewCV)}
                     className="rounded-full h-8 text-xs gap-1 bg-accent hover:bg-accent/90 text-accent-foreground">
                     <Download className="w-3 h-3" /> Download PDF
                   </Button>

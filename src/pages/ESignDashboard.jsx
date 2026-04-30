@@ -1,8 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { FileSignature, Sparkles, Shield, Clock, Zap, ArrowRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { FileSignature, Sparkles, Shield, Zap } from "lucide-react";
 
 export default function ESignDashboard() {
   return (
@@ -69,42 +67,7 @@ export default function ESignDashboard() {
         ))}
       </div>
 
-      {/* CTA / Progress Section */}
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5 }}
-        className="bg-accent/5 border border-accent/20 rounded-3xl p-8 md:p-12 text-center relative overflow-hidden"
-      >
-        <div className="absolute top-0 left-0 w-full h-1 bg-accent/20">
-          <motion.div 
-            initial={{ width: "0%" }}
-            animate={{ width: "75%" }}
-            transition={{ duration: 2, ease: "easeInOut" }}
-            className="h-full bg-accent"
-          />
-        </div>
-        
-        <div className="relative z-10 space-y-6">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent/10 border border-accent/20 text-accent text-xs font-bold uppercase tracking-widest">
-            <Clock className="w-3.5 h-3.5" /> Launching May 2026
-          </div>
-          <h2 className="text-2xl font-bold text-foreground">Want early access?</h2>
-          <p className="text-muted-foreground max-w-md mx-auto">
-            Our beta testing begins soon. Be the first to try the most powerful e-signature tool for career professionals.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button className="bg-accent hover:bg-accent/90 text-accent-foreground rounded-full px-8 h-12 font-bold gap-2">
-              Join the Waitlist <ArrowRight className="w-4 h-4" />
-            </Button>
-            <Link to="/dashboard">
-              <Button variant="outline" className="rounded-full px-8 h-12 font-bold">
-                Back to Dashboard
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </motion.div>
+
     </div>
   );
 }
