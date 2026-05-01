@@ -260,7 +260,7 @@ Keep it energetic, professional, and in first person. Under 80 words. Return onl
       <div className="bg-muted/40 rounded-xl px-4 py-3 flex items-center gap-3">
         <Link2 className="w-4 h-4 text-accent shrink-0" />
         <span className="text-sm text-foreground font-mono flex-1 truncate">{portfolioUrl}</span>
-        <button onClick={copyLink} className="text-xs text-accent hover:underline font-semibold shrink-0">Copy</button>
+        <button type="button" onClick={(e) => { e.preventDefault(); copyLink(); }} className="text-xs text-accent hover:underline font-semibold shrink-0">Copy</button>
       </div>
 
       {/* Tabs */}
@@ -268,7 +268,7 @@ Keep it energetic, professional, and in first person. Under 80 words. Return onl
         {TABS.map(t => {
           const Icon = t.icon;
           return (
-            <button key={t.id} onClick={() => setActiveTab(t.id)}
+            <button key={t.id} type="button" onClick={(e) => { e.preventDefault(); setActiveTab(t.id); }}
               className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
                 activeTab === t.id ? "bg-card shadow text-foreground" : "text-muted-foreground hover:text-foreground"
               }`}>
@@ -314,7 +314,7 @@ Keep it energetic, professional, and in first person. Under 80 words. Return onl
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="text-xs font-semibold text-muted-foreground">Professional Bio</label>
-                <Button variant="ghost" size="sm" onClick={generateBio} disabled={generating}
+                <Button type="button" variant="ghost" size="sm" onClick={(e) => { e.preventDefault(); generateBio(); }} disabled={generating}
                   className="h-7 text-xs gap-1 text-accent hover:text-accent">
                   {generating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
                   Generate with AI
@@ -369,7 +369,7 @@ Keep it energetic, professional, and in first person. Under 80 words. Return onl
                     />
                     <span className="text-[10px] text-muted-foreground">endorsers</span>
                   </div>
-                  <button onClick={() => removeSkill(i)} className="w-6 h-6 rounded-md hover:bg-destructive/10 flex items-center justify-center">
+                  <button type="button" onClick={(e) => { e.preventDefault(); removeSkill(i); }} className="w-6 h-6 rounded-md hover:bg-destructive/10 flex items-center justify-center">
                     <Trash2 className="w-3.5 h-3.5 text-muted-foreground hover:text-destructive" />
                   </button>
                 </div>
@@ -411,7 +411,7 @@ Keep it energetic, professional, and in first person. Under 80 words. Return onl
             <div className="grid sm:grid-cols-2 gap-4">
               {(portfolio.projects || []).map((p, i) => (
                 <div key={i} className="bg-card ink-border rounded-2xl p-5 relative group">
-                  <button onClick={() => removeProject(i)}
+                  <button type="button" onClick={(e) => { e.preventDefault(); removeProject(i); }}
                     className="absolute top-3 right-3 w-6 h-6 rounded-md hover:bg-destructive/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <Trash2 className="w-3.5 h-3.5 text-muted-foreground hover:text-destructive" />
                   </button>
@@ -460,7 +460,7 @@ Keep it energetic, professional, and in first person. Under 80 words. Return onl
             <div className="space-y-3">
               {(portfolio.experience || []).map((e, i) => (
                 <div key={i} className="bg-card ink-border rounded-2xl p-5 flex items-start gap-4 group relative">
-                  <button onClick={() => removeExp(i)}
+                  <button type="button" onClick={(e) => { e.preventDefault(); removeExp(i); }}
                     className="absolute top-3 right-3 w-6 h-6 rounded-md hover:bg-destructive/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <Trash2 className="w-3.5 h-3.5 text-muted-foreground hover:text-destructive" />
                   </button>
@@ -485,7 +485,7 @@ Keep it energetic, professional, and in first person. Under 80 words. Return onl
             <SectionHeader icon={Palette} title="Portfolio Theme" subtitle="Choose how your page looks to recruiters" />
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {THEMES.map(t => (
-                <button key={t.id} onClick={() => update("theme", t.id)}
+                <button key={t.id} type="button" onClick={(e) => { e.preventDefault(); update("theme", t.id); }}
                   className={`rounded-2xl overflow-hidden border-2 transition-all ${
                     portfolio.theme === t.id ? "border-accent shadow-lg" : "border-border hover:border-accent/40"
                   }`}>
@@ -503,8 +503,8 @@ Keep it energetic, professional, and in first person. Under 80 words. Return onl
                 <p className="text-sm font-semibold text-foreground">Public Portfolio</p>
                 <p className="text-xs text-muted-foreground">Make your portfolio visible to anyone with the link</p>
               </div>
-              <button
-                onClick={() => update("is_public", !portfolio.is_public)}
+              <button type="button"
+                onClick={(e) => { e.preventDefault(); update("is_public", !portfolio.is_public); }}
                 className={`relative w-10 h-5 rounded-full transition-colors ${portfolio.is_public ? "bg-accent" : "bg-muted"}`}>
                 <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${portfolio.is_public ? "translate-x-5" : "translate-x-0.5"}`} />
               </button>

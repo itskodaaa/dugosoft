@@ -14,7 +14,6 @@ import { API_BASE } from "@/api/config";
 import { useAuth } from "@/lib/AuthContext";
 
 const TABS = [
-  { key: "url", label: "LinkedIn URL", icon: Link2 },
   { key: "pdf", label: "Upload PDF", icon: Upload },
 ];
 
@@ -31,7 +30,7 @@ const FIELD_SECTIONS = [
 
 export default function LinkedInImport() {
   const { user } = useAuth();
-  const [tab, setTab] = useState("url");
+  const [tab, setTab] = useState("pdf");
   const [url, setUrl] = useState("");
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -82,11 +81,6 @@ export default function LinkedInImport() {
   };
 
   const extract = async () => {
-    if (tab === "url") {
-      toast.error("LinkedIn blocks automated URL access. Please export your LinkedIn profile as a PDF (LinkedIn → Me → Settings & Privacy → Data privacy → Get a copy of your data) and use the Upload PDF tab.");
-      return;
-    }
-
     setLoading(true);
     setResult(null);
     try {
@@ -265,59 +259,43 @@ If a field truly cannot be found in the document, return an empty string "". Do 
             </div>
           </div>
 
-          {tab === "url" ? (
-            <div className="bg-card ink-border rounded-2xl p-6 space-y-4">
-              <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center mb-2">
-                <Linkedin className="w-6 h-6 text-blue-600" />
-              </div>
-              <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5">
-                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                <p className="text-xs text-amber-700">LinkedIn blocks all automated access. URL extraction is not supported. Please use the <strong>Upload PDF</strong> tab instead.</p>
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-muted-foreground mb-1">How to export your LinkedIn PDF:</p>
-                <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
-                  <li>Go to your LinkedIn profile</li>
-                  <li>Click <strong>More</strong> → <strong>Save to PDF</strong></li>
-                  <li>Upload the downloaded PDF in the Upload PDF tab</li>
-                </ol>
-              </div>
-              <Button onClick={() => { setTab("pdf"); setResult(null); }}
-                className="w-full h-10 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold gap-2 text-sm">
-                <Upload className="w-4 h-4" />Switch to Upload PDF
-              </Button>
+          <div className="bg-card ink-border rounded-2xl p-6 space-y-4">
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground mb-1">How to export your LinkedIn PDF:</p>
+              <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
+                <li>Go to your LinkedIn profile</li>
+                <li>Click <strong>More</strong> → <strong>Save to PDF</strong></li>
+                <li>Upload the downloaded PDF below</li>
+              </ol>
             </div>
-          ) : (
-            <div className="bg-card ink-border rounded-2xl p-6 space-y-4">
-              <div
-                onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
-                onDragLeave={() => setIsDragging(false)}
-                onDrop={handleDrop}
-                onClick={() => fileRef.current?.click()}
-                className={`flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-8 cursor-pointer transition-all ${isDragging ? "border-accent bg-accent/5" : "border-border hover:border-accent/40"}`}
-              >
-                <Upload className="w-8 h-8 text-muted-foreground mb-2" />
-                {file ? (
-                  <div className="text-center">
-                    <p className="text-sm font-semibold text-foreground">{file.name}</p>
-                    <p className="text-xs text-muted-foreground">{(file.size / 1024).toFixed(1)} KB</p>
-                    <button onClick={e => { e.stopPropagation(); setFile(null); }} className="text-xs text-destructive mt-1">Remove</button>
-                  </div>
-                ) : (
-                  <div className="text-center">
-                    <p className="text-sm font-semibold text-foreground mb-1">Drop LinkedIn PDF export</p>
-                    <p className="text-xs text-muted-foreground">or any CV/resume PDF</p>
-                  </div>
-                )}
-                <input ref={fileRef} type="file" accept=".pdf,.docx,.txt" className="hidden" onChange={e => setFile(e.target.files[0])} />
-              </div>
-              <Button onClick={extract} disabled={!file || loading}
-                className="w-full h-10 bg-accent hover:bg-accent/90 text-accent-foreground rounded-xl font-semibold gap-2 text-sm">
-                {loading ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Extracting...</>
-                  : <><Sparkles className="w-4 h-4" />Parse & Extract</>}
-              </Button>
+            <div
+              onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
+              onDragLeave={() => setIsDragging(false)}
+              onDrop={handleDrop}
+              onClick={() => fileRef.current?.click()}
+              className={`flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-8 cursor-pointer transition-all ${isDragging ? "border-accent bg-accent/5" : "border-border hover:border-accent/40"}`}
+            >
+              <Upload className="w-8 h-8 text-muted-foreground mb-2" />
+              {file ? (
+                <div className="text-center">
+                  <p className="text-sm font-semibold text-foreground">{file.name}</p>
+                  <p className="text-xs text-muted-foreground">{(file.size / 1024).toFixed(1)} KB</p>
+                  <button onClick={e => { e.stopPropagation(); setFile(null); }} className="text-xs text-destructive mt-1">Remove</button>
+                </div>
+              ) : (
+                <div className="text-center">
+                  <p className="text-sm font-semibold text-foreground mb-1">Drop LinkedIn PDF export</p>
+                  <p className="text-xs text-muted-foreground">or any CV/resume PDF</p>
+                </div>
+              )}
+              <input ref={fileRef} type="file" accept=".pdf,.docx,.txt" className="hidden" onChange={e => setFile(e.target.files[0])} />
             </div>
-          )}
+            <Button onClick={extract} disabled={!file || loading}
+              className="w-full h-10 bg-accent hover:bg-accent/90 text-accent-foreground rounded-xl font-semibold gap-2 text-sm">
+              {loading ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Extracting...</>
+                : <><Sparkles className="w-4 h-4" />Parse & Extract</>}
+            </Button>
+          </div>
         </div>
 
         {/* Result */}

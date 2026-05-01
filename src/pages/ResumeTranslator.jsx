@@ -59,10 +59,9 @@ export default function ResumeTranslator() {
   const fetchVaultCVs = async () => {
     try {
       const data = await vaultApi.getAll();
-      if (Array.isArray(data)) {
-        setVaultCVs(data);
-        if (data.length > 0) setSelectedCVId(data[0].id);
-      }
+      const cvs = Array.isArray(data) ? data : data.cvs || [];
+      setVaultCVs(cvs);
+      if (cvs.length > 0) setSelectedCVId(cvs[0].id);
     } catch (error) {
       console.error("Failed to fetch vault CVs:", error);
     }

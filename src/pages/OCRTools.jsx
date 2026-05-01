@@ -19,7 +19,6 @@ const TABS = [
   { key: "ocr", label: "OCR Tools", icon: Eye, color: "#4f8ef7" },
   { key: "to-pdf", label: "Convert to PDF", icon: FileText, color: "#f97316" },
   { key: "from-pdf", label: "Convert from PDF", icon: RefreshCw, color: "#10b981" },
-  { key: "images", label: "Image Tools", icon: Image, color: "#8b5cf6" },
 ];
 
 const OCR_FEATURES = [
@@ -47,22 +46,10 @@ const CONVERSION_MATRIX = {
     { from: "TXT",  to: "PDF", label: "Text → PDF", free: true },
     { from: "JPG",  to: "PDF", label: "JPG → PDF",  free: true },
     { from: "PNG",  to: "PDF", label: "PNG → PDF",  free: true },
-    { from: "PPTX", to: "PDF", label: "PowerPoint → PDF", free: false },
-    { from: "XLSX", to: "PDF", label: "Excel → PDF",      free: false },
-    { from: "RTF",  to: "PDF", label: "RTF → PDF",        free: false },
-    { from: "TIFF", to: "PDF", label: "TIFF → PDF",       free: false },
   ],
   "from-pdf": [
     { from: "PDF", to: "DOCX", label: "PDF → Word", free: true },
     { from: "PDF", to: "TXT",  label: "PDF → Text", free: true },
-    { from: "PDF", to: "XLSX", label: "PDF → Excel",       free: false },
-    { from: "PDF", to: "PPTX", label: "PDF → PowerPoint",  free: false },
-  ],
-  "images": [
-    { from: "HEIC", to: "JPG", label: "HEIC → JPG", free: true },
-    { from: "WebP", to: "JPG", label: "WebP → JPG", free: true },
-    { from: "BMP",  to: "JPG", label: "BMP → JPG",  free: true },
-    { from: "GIF",  to: "PNG", label: "GIF → PNG",  free: false },
   ],
 };
 
